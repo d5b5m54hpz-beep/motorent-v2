@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/jobs/vencimientos",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/jobs/contratos-por-vencer",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/jobs/facturar-pagos",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/jobs/renovar-contratos",
+      "schedule": "30 4 * * *"
+    }
+  ]
+}

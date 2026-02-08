@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  image           String?
+  provider        String    // "credentials" | "google" | "apple" | "facebook"
+  password        String?
+  phone           String?
+  phoneVerifiedAt DateTime?
+  role            Role      @default(CLIENTE)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  cliente         Cliente?
+}
+
+enum Role {
+  ADMIN
+  OPERADOR
+  CLIENTE
+}
+
+// ─── Negocio ─────────────────────────────────────────────────────────────────
+
+model Cliente {
+  id          String     @id @default(cuid())
+  userId      String     @unique
+  nombre      String?
+  email       String     @unique
+  telefono    String?
+  estado      String     @default("pendiente") // pendiente | aprobado | rechazado
+  preRegistro Json?
+  aprobadoPor String?
+  aprobadoAt  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation(fields: [userId], references: [id])
+  contratos   Contrato[]
+}
+
+model Moto {
+  id        String     @id @default(cuid())
+  marca     String
+  modelo    String
+  patente   String     @unique
+  anio      Int
+  estado    String     @default("disponible") // disponible | alquilada | mantenimiento
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  contratos Contrato[]
+}
+
+model Contrato {
+  id                String    @id @default(cuid())
+  clienteId         String
+  motoId            String
+  fechaInicio       DateTime
+  fechaFin          DateTime
+  precioSemana      Float
+  estado            String    @default("pendiente") // pendiente | activo | vencido | finalizado
+  duracionMeses     Int?
+  tipoPago          String?   // mensual | semanal
+  precioMensual     Float?
+  precioSemanal     Float?
+  descuentoDuracion Float?
+  descuentoSemanal  Float?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  cliente           Cliente   @relation(fields: [clienteId], references: [id])
+  moto              Moto      @relation(fields: [motoId], references: [id])
+  pagos             Pago[]
+  facturas          Factura[]
+  alertas           Alerta[]
+}
+
+model Pago {
+  id            String    @id @default(cuid())
+  contratoId    String
+  monto         Int
+  metodo        String    // transferencia | tarjeta | mercadopago | efectivo
+  estado        String    @default("pendiente") // pendiente | pagado | vencido | fallido
+  referencia    String?
+  pagadoAt      DateTime?
+  vencimientoAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  contrato      Contrato  @relation(fields: [contratoId], references: [id])
+  factura       Factura?
+  alertas       Alerta[]
+}
+
+model Factura {
+  id           String    @id @default(cuid())
+  contratoId   String
+  pagoId       String    @unique
+  numero       String
+  monto        Int
+  estado       String    @default("emitida") // emitida | enviada | anulada
+  emitidaAt    DateTime
+  cae          String?
+  caeVto       DateTime?
+  afipEstado   String    @default("pendiente") // pendiente | enviado | error
+  emailEnviado Boolean   @default(false)
+  emailAt      DateTime?
+  createdAt    DateTime  @default(now())
+  pago         Pago      @relation(fields: [pagoId], references: [id])
+  contrato     Contrato  @relation(fields: [contratoId], references: [id])
+}
+
+model Alerta {
+  id              String    @id @default(cuid())
+  tipo            String
+  mensaje         String
+  contratoId      String?
+  pagoId          String?
+  leida           Boolean   @default(false)
+  dniVerificacion Json?
+  createdAt       DateTime  @default(now())
+  contrato        Contrato? @relation(fields: [contratoId], references: [id])
+  pago            Pago?     @relation(fields: [pagoId], references: [id])
+}
+
+model PricingConfig {
+  id                String   @id @unique @default("default")
+  precioBaseMensual Float
+  descuentoSemanal  Float
+  descuentoMeses3   Float
+  descuentoMeses6   Float
+  descuentoMeses9   Float
+  descuentoMeses12  Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
