@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
+import { auth } from "@/lib/auth";
 import { contratoSchema } from "@/lib/validations";
 import {
   calcularPreciosContrato,
@@ -100,47 +101,45 @@ export async function GET(req: NextRequest) {
 
 // POST /api/contratos — create contrato with pricing and payment generation
 export async function POST(req: NextRequest) {
-  const { error, userId, user } = await requireRole(["ADMIN", "OPERADOR", "CLIENTE"]);
-  if (error) return error;
-  if (!userId) {
-    return NextResponse.json({ error: "Usuario no autenticado" }, { status: 401 });
-  }
-
   try {
+    // Auth check - cualquier usuario autenticado puede crear contratos
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
+
+    // Buscar usuario por email
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, role: true, name: true, email: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 401 });
+    }
+
     const body = await req.json();
 
     // If user is CLIENTE, get their clienteId automatically (ignore body.clienteId)
     let clienteId = body.clienteId;
 
-    if (user?.role === "CLIENTE") {
+    if (user.role === "CLIENTE") {
       // Find or create cliente for this user
       let cliente = await prisma.cliente.findUnique({
-        where: { userId },
+        where: { userId: user.id },
       });
 
       if (!cliente) {
         // Auto-create cliente
-        const userData = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { name: true, email: true },
-        });
-
-        if (!userData) {
-          return NextResponse.json(
-            { error: "Usuario no encontrado" },
-            { status: 404 }
-          );
-        }
-
         cliente = await prisma.cliente.create({
           data: {
-            userId,
-            nombre: userData.name,
-            email: userData.email,
+            userId: user.id,
+            nombre: user.name,
+            email: user.email,
           },
         });
 
-        console.log("✅ Cliente auto-created for contract:", userId);
+        console.log("✅ Cliente auto-created for contract:", user.id);
       }
 
       clienteId = cliente.id;
