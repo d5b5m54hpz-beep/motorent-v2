@@ -100,11 +100,50 @@ export async function GET(req: NextRequest) {
 
 // POST /api/contratos — create contrato with pricing and payment generation
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId, user } = await requireRole(["ADMIN", "OPERADOR", "CLIENTE"]);
   if (error) return error;
 
   try {
     const body = await req.json();
+
+    // If user is CLIENTE, get their clienteId automatically (ignore body.clienteId)
+    let clienteId = body.clienteId;
+
+    if (user?.role === "CLIENTE") {
+      // Find or create cliente for this user
+      let cliente = await prisma.cliente.findUnique({
+        where: { userId },
+      });
+
+      if (!cliente) {
+        // Auto-create cliente
+        const userData = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        });
+
+        if (!userData) {
+          return NextResponse.json(
+            { error: "Usuario no encontrado" },
+            { status: 404 }
+          );
+        }
+
+        cliente = await prisma.cliente.create({
+          data: {
+            userId,
+            nombre: userData.name,
+            email: userData.email,
+          },
+        });
+
+        console.log("✅ Cliente auto-created for contract:", userId);
+      }
+
+      clienteId = cliente.id;
+      body.clienteId = clienteId; // Override body to ensure validation passes
+    }
+
     const parsed = contratoSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -117,7 +156,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { clienteId, motoId, fechaInicio, fechaFin, frecuenciaPago, deposito, notas, renovacionAuto } = parsed.data;
+    const { motoId, fechaInicio, fechaFin, frecuenciaPago, deposito, notas, renovacionAuto } = parsed.data;
 
     // Validar cliente existe
     const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });

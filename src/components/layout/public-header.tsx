@@ -35,9 +35,9 @@ export function PublicHeader() {
           <Image
             src={theme === "dark" ? "/logo-light.svg" : "/logo-dark.svg"}
             alt="motolibre"
-            width={150}
-            height={43}
-            className="h-9 w-auto"
+            width={140}
+            height={40}
+            className="h-10 w-auto"
             priority
           />
         </Link>

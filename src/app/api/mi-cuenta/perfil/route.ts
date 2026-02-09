@@ -83,15 +83,43 @@ export async function PUT(req: NextRequest) {
     }
 
     // Check if cliente exists
-    const existing = await prisma.cliente.findUnique({
+    let existing = await prisma.cliente.findUnique({
       where: { userId },
     });
 
+    // If cliente doesn't exist, create it automatically
     if (!existing) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+
+      if (!user) {
+        return NextResponse.json(
+          { error: "Usuario no encontrado" },
+          { status: 404 }
+        );
+      }
+
+      existing = await prisma.cliente.create({
+        data: {
+          userId,
+          nombre: user.name,
+          email: user.email,
+          ...parsed.data,
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      console.log("✅ Cliente auto-created and updated for user:", userId);
+      return NextResponse.json(existing);
     }
 
     // Update cliente profile
