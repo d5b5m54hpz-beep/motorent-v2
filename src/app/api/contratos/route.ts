@@ -238,18 +238,16 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Generar pagos
-      for (const fechaVencimiento of fechasVencimiento) {
-        await tx.pago.create({
-          data: {
-            contratoId: nuevoContrato.id,
-            monto: calculo.montoPeriodo,
-            metodo: "pendiente",
-            estado: "pendiente",
-            vencimientoAt: fechaVencimiento,
-          },
-        });
-      }
+      // Generar pagos (batch para mejor performance)
+      await tx.pago.createMany({
+        data: fechasVencimiento.map((fechaVencimiento) => ({
+          contratoId: nuevoContrato.id,
+          monto: calculo.montoPeriodo,
+          metodo: "pendiente",
+          estado: "pendiente",
+          vencimientoAt: fechaVencimiento,
+        })),
+      });
 
       // Actualizar estado de moto a alquilada
       await tx.moto.update({
