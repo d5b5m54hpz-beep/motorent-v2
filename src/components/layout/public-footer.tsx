@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { Bike, Mail, Phone, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+import Image from "next/image";
+import { useTheme } from "next-themes";
+import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
+  const { theme } = useTheme();
 
   return (
     <footer className="border-t bg-muted/40">
@@ -10,9 +15,14 @@ export function PublicFooter() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Columna 1: Logo + Tagline */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-              <Bike className="h-6 w-6 text-primary" />
-              <span>MotoRent</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src={theme === "dark" ? "/logo-light.svg" : "/logo-dark.svg"}
+                alt="motolibre"
+                width={140}
+                height={40}
+                className="h-8 w-auto"
+              />
             </Link>
             <p className="text-sm text-muted-foreground">
               Tu mejor opción para alquilar motos en Buenos Aires. Planes flexibles y motos de
@@ -66,10 +76,10 @@ export function PublicFooter() {
               <li className="flex items-start gap-2">
                 <Mail className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <a
-                  href="mailto:contacto@motorent.com"
+                  href="mailto:contacto@motolibre.com.ar"
                   className="text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  contacto@motorent.com
+                  contacto@motolibre.com.ar
                 </a>
               </li>
               <li className="flex items-start gap-2">
@@ -129,7 +139,7 @@ export function PublicFooter() {
 
         {/* Bottom Bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 text-sm text-muted-foreground md:flex-row">
-          <p>© {currentYear} MotoRent. Todos los derechos reservados.</p>
+          <p>© {currentYear} motolibre. Todos los derechos reservados.</p>
           <p className="flex items-center gap-1">
             Powered by{" "}
             <a

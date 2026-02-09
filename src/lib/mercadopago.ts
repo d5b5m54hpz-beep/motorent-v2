@@ -57,7 +57,7 @@ export async function createPaymentPreference(params: {
       },
       notification_url: `${appUrl}/api/webhooks/mercadopago`,
       auto_return: "approved",
-      statement_descriptor: "MOTORENT",
+      statement_descriptor: "MOTOLIBRE",
       payment_methods: {
         excluded_payment_types: [],
         installments: 1, // Solo 1 cuota

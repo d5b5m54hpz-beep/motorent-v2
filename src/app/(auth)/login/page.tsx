@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +18,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -50,8 +53,17 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
       <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">MotoRent</CardTitle>
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <Image
+              src={theme === "dark" ? "/logo-light.svg" : "/logo-dark.svg"}
+              alt="motolibre"
+              width={160}
+              height={45}
+              className="h-10 w-auto"
+              priority
+            />
+          </div>
           <CardDescription>Ingresá a tu cuenta</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

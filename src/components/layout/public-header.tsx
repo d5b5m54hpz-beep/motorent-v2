@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -30,9 +31,15 @@ export function PublicHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <Bike className="h-6 w-6 text-primary" />
-          <span>MotoRent</span>
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src={theme === "dark" ? "/logo-light.svg" : "/logo-dark.svg"}
+            alt="motolibre"
+            width={140}
+            height={40}
+            className="h-8 w-auto"
+            priority
+          />
         </Link>
 
         {/* Desktop Navigation */}

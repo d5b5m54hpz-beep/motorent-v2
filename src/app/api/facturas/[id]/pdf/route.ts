@@ -77,7 +77,7 @@ export async function GET(
     // Header - Logo y datos de la empresa
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("MotoRent", 20, yPos);
+    doc.text("motolibre", 20, yPos);
 
     // Tipo de Factura en cuadro superior derecho
     doc.setLineWidth(2);
@@ -88,7 +88,7 @@ export async function GET(
     yPos += 8;
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text("MotoRent S.R.L.", 20, yPos);
+    doc.text("motolibre S.R.L.", 20, yPos);
     yPos += 4;
     doc.text("CUIT: 30-12345678-9", 20, yPos);
     yPos += 4;

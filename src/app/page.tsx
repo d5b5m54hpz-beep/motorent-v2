@@ -331,7 +331,7 @@ export default async function HomePage() {
               Empezá a Rodar Hoy
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Unite a cientos de riders que ya confían en MotoRent para sus aventuras
+              Unite a cientos de riders que ya confían en motolibre para sus aventuras
             </p>
             <div className="mt-8">
               <Button asChild size="lg" className="text-base">

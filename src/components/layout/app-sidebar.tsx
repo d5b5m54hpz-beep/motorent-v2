@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   Bike,
@@ -34,6 +36,7 @@ type Props = {
 export function AppSidebar({ user }: Props) {
   const pathname = usePathname();
   const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } = useSidebar();
+  const { theme } = useTheme();
   const [alertasCount, setAlertasCount] = useState(0);
 
   const navItems: NavItem[] = [
@@ -94,16 +97,27 @@ export function AppSidebar({ user }: Props) {
         {/* Logo header */}
         <div className="flex h-14 items-center border-b px-4">
           {!isCollapsed && (
-            <Link href="/admin" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-              <Bike className="h-6 w-6 text-sidebar-primary" />
-              <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
-                MotoRent
-              </span>
+            <Link href="/admin" className="flex items-center transition-opacity hover:opacity-80">
+              <Image
+                src={theme === "dark" ? "/logo-light.svg" : "/logo-dark.svg"}
+                alt="motolibre"
+                width={120}
+                height={35}
+                className="h-7 w-auto"
+                priority
+              />
             </Link>
           )}
           {isCollapsed && (
             <Link href="/admin" className="mx-auto transition-opacity hover:opacity-80">
-              <Bike className="h-6 w-6 text-sidebar-primary" />
+              <Image
+                src="/logo-color.svg"
+                alt="motolibre"
+                width={28}
+                height={28}
+                className="h-7 w-7"
+                priority
+              />
             </Link>
           )}
 

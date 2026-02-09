@@ -9,10 +9,10 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: {
-    default: "MotoRent",
-    template: "%s | MotoRent",
+    default: "motolibre",
+    template: "%s | motolibre",
   },
-  description: "Sistema de gestión de alquiler de motos",
+  description: "Alquilá motos en Buenos Aires con planes flexibles. motolibre - Tu libertad sobre ruedas.",
 };
 
 export default function RootLayout({

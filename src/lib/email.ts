@@ -47,7 +47,7 @@ function generateFacturaPDF(factura: any) {
   // Header - Logo y datos de la empresa
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("MotoRent", 20, yPos);
+  doc.text("motolibre", 20, yPos);
 
   // Tipo de Factura en cuadro superior derecho
   doc.setLineWidth(2);
@@ -58,7 +58,7 @@ function generateFacturaPDF(factura: any) {
   yPos += 8;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("MotoRent S.R.L.", 20, yPos);
+  doc.text("motolibre S.R.L.", 20, yPos);
   yPos += 4;
   doc.text("CUIT: 30-12345678-9", 20, yPos);
   yPos += 4;
@@ -241,7 +241,7 @@ function getEmailTemplate(data: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Factura MotoRent</title>
+  <title>Factura motolibre</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 40px 0;">
@@ -252,7 +252,7 @@ function getEmailTemplate(data: {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">MotoRent</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">motolibre</h1>
               <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">Tu factura está lista</p>
             </td>
           </tr>
@@ -310,11 +310,11 @@ function getEmailTemplate(data: {
           <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; font-weight: 600;">MotoRent S.R.L.</p>
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; font-weight: 600;">motolibre S.R.L.</p>
               <p style="margin: 0 0 5px 0; font-size: 13px; color: #999999;">Av. Corrientes 1234, CABA</p>
               <p style="margin: 0 0 5px 0; font-size: 13px; color: #999999;">contacto@motorent.com | +54 11 4567-8901</p>
               <p style="margin: 15px 0 0 0; font-size: 12px; color: #bbbbbb;">
-                © ${new Date().getFullYear()} MotoRent. Todos los derechos reservados.
+                © ${new Date().getFullYear()} motolibre. Todos los derechos reservados.
               </p>
             </td>
           </tr>
@@ -408,7 +408,7 @@ export async function enviarFacturaEmail(facturaId: string): Promise<{
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || "onboarding@resend.dev",
       to: cliente.user.email,
-      subject: `MotoRent - Factura ${factura.tipo} ${numeroCompleto}`,
+      subject: `motolibre - Factura ${factura.tipo} ${numeroCompleto}`,
       html: getEmailTemplate(emailData),
       attachments: [
         {
