@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     template: "%s | motolibre",
   },
   description: "Alquilá motos en Buenos Aires con planes flexibles. motolibre - Tu libertad sobre ruedas.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
