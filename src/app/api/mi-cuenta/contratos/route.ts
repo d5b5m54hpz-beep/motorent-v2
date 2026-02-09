@@ -8,13 +8,35 @@ export async function GET(req: NextRequest) {
 
   try {
     // Get cliente from userId
-    const cliente = await prisma.cliente.findUnique({
+    let cliente = await prisma.cliente.findUnique({
       where: { userId },
     });
 
-    // If cliente doesn't exist, return empty array
+    // If cliente doesn't exist, auto-create it
     if (!cliente) {
-      console.log("⚠️  No Cliente found for user:", userId, "- returning empty array");
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+
+      if (!user) {
+        return NextResponse.json(
+          { error: "Usuario no encontrado" },
+          { status: 404 }
+        );
+      }
+
+      cliente = await prisma.cliente.create({
+        data: {
+          userId,
+          nombre: user.name || "",
+          email: user.email,
+        },
+      });
+
+      console.log("✅ Cliente auto-created for contratos GET:", userId);
+
+      // Return empty array since new user has no contracts yet
       return NextResponse.json({
         data: [],
         total: 0,
