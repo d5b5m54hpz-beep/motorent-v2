@@ -78,7 +78,7 @@ export default function RegistroPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Side - Brand */}
-      <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-[#23e0ff] to-[#0891b2] items-center justify-center p-12">
+      <div className="hidden lg:flex lg:flex-1 lg:flex-col bg-gradient-to-br from-[#23e0ff] to-[#0891b2] items-center justify-center min-h-screen p-12">
         <div className="max-w-md text-center space-y-6">
           <Image
             src="/logo-light.svg"
@@ -98,7 +98,7 @@ export default function RegistroPage() {
       </div>
 
       {/* Right Side - Register Form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-background">
+      <div className="flex-1 flex items-center justify-center min-h-screen p-6 bg-background">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
