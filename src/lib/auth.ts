@@ -66,6 +66,22 @@ const config = {
 
           token.role = upserted.role;
           token.userId = upserted.id;
+
+          // Auto-create Cliente if doesn't exist
+          const existingCliente = await prisma.cliente.findUnique({
+            where: { userId: upserted.id },
+          });
+
+          if (!existingCliente) {
+            await prisma.cliente.create({
+              data: {
+                userId: upserted.id,
+                nombre: upserted.name,
+                email: upserted.email,
+              },
+            });
+            console.log("✅ Cliente auto-created for user:", upserted.email);
+          }
         }
       }
 
@@ -84,27 +100,6 @@ const config = {
         session.user.id = token.userId as string;
       }
       return session;
-    },
-  },
-
-  events: {
-    async signIn({ user }) {
-      // Auto-create Cliente for OAuth users (CLIENTE and ADMIN)
-      if (!user.id) return;
-      const u = await prisma.user.findUnique({ where: { id: user.id } });
-      if (u && (u.role === Role.CLIENTE || u.role === Role.ADMIN)) {
-        const exists = await prisma.cliente.findUnique({ where: { userId: u.id } });
-        if (!exists) {
-          await prisma.cliente.create({
-            data: {
-              userId: u.id,
-              nombre: u.name,
-              email: u.email,
-              telefono: u.phone,
-            },
-          });
-        }
-      }
     },
   },
 

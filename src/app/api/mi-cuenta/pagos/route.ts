@@ -12,11 +12,16 @@ export async function GET(req: NextRequest) {
       where: { userId },
     });
 
+    // If cliente doesn't exist, return empty array
     if (!cliente) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
+      console.log("⚠️  No Cliente found for user:", userId, "- returning empty array");
+      return NextResponse.json({
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+      });
     }
 
     const url = new URL(req.url);

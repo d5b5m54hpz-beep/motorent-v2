@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   try {
-    const cliente = await prisma.cliente.findUnique({
+    // Try to find existing cliente
+    let cliente = await prisma.cliente.findUnique({
       where: { userId },
       include: {
         user: {
@@ -20,11 +21,37 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // If cliente doesn't exist, create it automatically
     if (!cliente) {
-      return NextResponse.json(
-        { error: "Cliente no encontrado" },
-        { status: 404 }
-      );
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+
+      if (!user) {
+        return NextResponse.json(
+          { error: "Usuario no encontrado" },
+          { status: 404 }
+        );
+      }
+
+      cliente = await prisma.cliente.create({
+        data: {
+          userId,
+          nombre: user.name,
+          email: user.email,
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      console.log("✅ Cliente auto-created for user:", userId);
     }
 
     return NextResponse.json(cliente);
