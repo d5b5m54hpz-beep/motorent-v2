@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { auth } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  const { error, userId } = await requireRole(["CLIENTE", "ADMIN"]);
-  if (error) return error;
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "No autenticado" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
 
   try {
     // Get cliente from userId
