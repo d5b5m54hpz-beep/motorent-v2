@@ -1,163 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { updateProfileSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: "No autenticado" },
-      { status: 401 }
-    );
-  }
-
-  const userId = session.user.id;
-
   try {
-    // Try to find existing cliente
-    let cliente = await prisma.cliente.findUnique({
-      where: { userId },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    // If cliente doesn't exist, create it automatically
-    if (!cliente) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { name: true, email: true },
-      });
-
-      if (!user) {
-        return NextResponse.json(
-          { error: "Usuario no encontrado" },
-          { status: 404 }
-        );
-      }
-
-      cliente = await prisma.cliente.create({
-        data: {
-          userId,
-          nombre: user.name || "",
-          email: user.email,
-        },
-        include: {
-          user: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      console.log("✅ Cliente auto-created for user:", userId);
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
-
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 401 });
+    }
+    let cliente = await prisma.cliente.findUnique({ where: { userId: user.id }, include: { user: { select: { name: true, email: true, image: true } } } });
+    if (!cliente) {
+      cliente = await prisma.cliente.create({ data: { userId: user.id, nombre: user.name || "", email: user.email || "" }, include: { user: { select: { name: true, email: true, image: true } } } });
+    }
     return NextResponse.json(cliente);
   } catch (error: unknown) {
-    console.error("Error fetching client profile:", error);
-    return NextResponse.json(
-      { error: "Error al cargar perfil" },
-      { status: 500 }
-    );
+    console.error("Error fetching profile:", error);
+    return NextResponse.json({ error: "Error al cargar perfil" }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: "No autenticado" },
-      { status: 401 }
-    );
-  }
-
-  const userId = session.user.id;
-
   try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 401 });
+    }
     const body = await req.json();
-    const parsed = updateProfileSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Datos inválidos",
-          details: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+    let cliente = await prisma.cliente.findUnique({ where: { userId: user.id } });
+    if (!cliente) {
+      cliente = await prisma.cliente.create({ data: { userId: user.id, nombre: body.nombre || user.name || "", email: user.email || "", telefono: body.telefono || null, dni: body.dni || null, licencia: body.licencia || null, direccion: body.direccion || null, ciudad: body.ciudad || null, provincia: body.provincia || null, codigoPostal: body.codigoPostal || null }, include: { user: { select: { name: true, email: true, image: true } } } });
+      return NextResponse.json(cliente);
     }
-
-    // Check if cliente exists
-    let existing = await prisma.cliente.findUnique({
-      where: { userId },
-    });
-
-    // If cliente doesn't exist, create it automatically
-    if (!existing) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { name: true, email: true },
-      });
-
-      if (!user) {
-        return NextResponse.json(
-          { error: "Usuario no encontrado" },
-          { status: 404 }
-        );
-      }
-
-      existing = await prisma.cliente.create({
-        data: {
-          userId,
-          nombre: user.name || "",
-          email: user.email,
-          ...parsed.data,
-        },
-        include: {
-          user: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      console.log("✅ Cliente auto-created and updated for user:", userId);
-      return NextResponse.json(existing);
-    }
-
-    // Update cliente profile
-    const updated = await prisma.cliente.update({
-      where: { userId },
-      data: parsed.data,
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
-
+    const updated = await prisma.cliente.update({ where: { id: cliente.id }, data: { nombre: body.nombre ?? cliente.nombre, telefono: body.telefono ?? cliente.telefono, dni: body.dni ?? cliente.dni, licencia: body.licencia ?? cliente.licencia, direccion: body.direccion ?? cliente.direccion, ciudad: body.ciudad ?? cliente.ciudad, provincia: body.provincia ?? cliente.provincia, codigoPostal: body.codigoPostal ?? cliente.codigoPostal }, include: { user: { select: { name: true, email: true, image: true } } } });
     return NextResponse.json(updated);
   } catch (error: unknown) {
-    console.error("Error updating client profile:", error);
-    return NextResponse.json(
-      { error: "Error al actualizar perfil" },
-      { status: 500 }
-    );
+    console.error("Error updating profile:", error);
+    return NextResponse.json({ error: "Error al guardar perfil" }, { status: 500 });
   }
 }
