@@ -8,7 +8,7 @@ async function main() {
   // Find all users without role
   const usersWithoutRole = await prisma.user.findMany({
     where: {
-      role: null,
+      role: { equals: null },
     },
   });
 

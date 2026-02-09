@@ -102,6 +102,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const { error, userId, user } = await requireRole(["ADMIN", "OPERADOR", "CLIENTE"]);
   if (error) return error;
+  if (!userId) {
+    return NextResponse.json({ error: "Usuario no autenticado" }, { status: 401 });
+  }
 
   try {
     const body = await req.json();
