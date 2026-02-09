@@ -256,6 +256,8 @@ export async function POST(req: NextRequest) {
       });
 
       return nuevoContrato;
+    }, {
+      timeout: 20000, // 20 segundos (por defecto es 5000ms)
     });
 
     return NextResponse.json(contrato, { status: 201 });
