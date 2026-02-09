@@ -8,7 +8,7 @@ type AuthResult = {
   userId?: string;
 };
 
-export async function requireRole(roles: Role[]): Promise<AuthResult> {
+export async function requireRole(roles: Role[]): Promise<AuthResult & { user?: any }> {
   const session = await auth();
 
   console.log("[requireRole] Session:", {
@@ -21,23 +21,39 @@ export async function requireRole(roles: Role[]): Promise<AuthResult> {
 
   if (!session?.user) {
     return {
-      error: NextResponse.json({ error: "No autenticado" }, { status: 401 }),
+      error: NextResponse.json(
+        { error: "No autenticado. Por favor iniciá sesión de nuevo." },
+        { status: 401 }
+      ),
     };
   }
 
   const role = session.user.role;
   const userId = session.user.id;
 
-  if (!role || !roles.includes(role)) {
+  // Check if user has role (handles old sessions without role)
+  if (!role) {
+    console.log("[requireRole] User has no role - session may be invalid");
+    return {
+      error: NextResponse.json(
+        {
+          error: "Sesión inválida. Por favor cerrá sesión e iniciá sesión de nuevo.",
+        },
+        { status: 401 }
+      ),
+    };
+  }
+
+  if (!roles.includes(role)) {
     console.log("[requireRole] Permission denied:", {
       userRole: role,
       requiredRoles: roles,
-      includes: role ? roles.includes(role) : false,
+      includes: false,
     });
     return {
       error: NextResponse.json({ error: "Sin permisos" }, { status: 403 }),
     };
   }
 
-  return { error: null, role, userId };
+  return { error: null, role, userId, user: session.user };
 }

@@ -60,7 +60,13 @@ const config = {
 
           const upserted = await prisma.user.upsert({
             where: { email },
-            update: { name, image, provider: account.provider },
+            update: {
+              name,
+              image,
+              provider: account.provider,
+              // FIX: Assign role to existing users without role
+              role: role
+            },
             create: { email, name, image, provider: account.provider, role },
           });
 
