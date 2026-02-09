@@ -89,10 +89,10 @@ const config = {
 
   events: {
     async signIn({ user }) {
-      // Auto-create Cliente for CLIENTE role users
+      // Auto-create Cliente for OAuth users (CLIENTE and ADMIN)
       if (!user.id) return;
       const u = await prisma.user.findUnique({ where: { id: user.id } });
-      if (u && u.role === Role.CLIENTE) {
+      if (u && (u.role === Role.CLIENTE || u.role === Role.ADMIN)) {
         const exists = await prisma.cliente.findUnique({ where: { userId: u.id } });
         if (!exists) {
           await prisma.cliente.create({

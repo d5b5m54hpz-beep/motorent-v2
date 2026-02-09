@@ -12,15 +12,28 @@ import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter } from "@/components/layout/public-footer";
 import { MotoCard } from "@/components/catalog/moto-card";
 import { Search, Calendar, Bike, TrendingDown, Clock, Shield } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
 async function getFeaturedMotos() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/public/motos/featured`, {
-      cache: "no-store",
+    const motos = await prisma.moto.findMany({
+      where: { estado: "disponible" },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        marca: true,
+        modelo: true,
+        anio: true,
+        color: true,
+        precioMensual: true,
+        cilindrada: true,
+        tipo: true,
+        descripcion: true,
+        imagen: true,
+      },
     });
-    if (!res.ok) return [];
-    return res.json();
+    return motos;
   } catch (error) {
     console.error("Error fetching featured motos:", error);
     return [];
@@ -29,12 +42,10 @@ async function getFeaturedMotos() {
 
 async function getPricing() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/public/pricing`, {
-      cache: "no-store",
+    const pricing = await prisma.pricingConfig.findUnique({
+      where: { id: "default" },
     });
-    if (!res.ok) return null;
-    return res.json();
+    return pricing;
   } catch (error) {
     console.error("Error fetching pricing:", error);
     return null;
