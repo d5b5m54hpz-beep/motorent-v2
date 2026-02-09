@@ -99,19 +99,11 @@ export function AppSidebar({ user }: Props) {
           {!isCollapsed && (
             <Link href="/admin" className="flex items-center transition-opacity hover:opacity-80">
               <Image
-                src="/logo-dark.png"
+                src="/logo.png"
                 alt="motolibre"
                 width={130}
                 height={38}
-                className="h-8 w-auto dark:hidden"
-                priority
-              />
-              <Image
-                src="/logo-light.png"
-                alt="motolibre"
-                width={130}
-                height={38}
-                className="h-8 w-auto hidden dark:block"
+                className="h-8 w-auto"
                 priority
               />
             </Link>

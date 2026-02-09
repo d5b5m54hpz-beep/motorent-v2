@@ -17,18 +17,11 @@ export function PublicFooter() {
           <div className="space-y-4">
             <Link href="/" className="flex items-center">
               <Image
-                src="/logo-dark.png"
+                src="/logo.png"
                 alt="motolibre"
                 width={150}
                 height={43}
-                className="h-9 w-auto dark:hidden"
-              />
-              <Image
-                src="/logo-light.png"
-                alt="motolibre"
-                width={150}
-                height={43}
-                className="h-9 w-auto hidden dark:block"
+                className="h-9 w-auto"
               />
             </Link>
             <p className="text-sm text-muted-foreground">
