@@ -151,7 +151,7 @@ export default function AdminDashboardPage() {
         {kpiCards.map((card) => (
           <div
             key={card.title}
-            className="rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+            className="rounded-lg border bg-card p-4 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(35,224,255,0.12)]"
           >
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-muted-foreground">

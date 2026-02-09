@@ -88,7 +88,7 @@ export async function GET(
     yPos += 8;
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text("motolibre S.R.L.", 20, yPos);
+    doc.text("MotoLibre S.A.", 20, yPos);
     yPos += 4;
     doc.text("CUIT: 30-12345678-9", 20, yPos);
     yPos += 4;

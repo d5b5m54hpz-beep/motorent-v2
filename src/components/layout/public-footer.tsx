@@ -37,7 +37,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/catalogo"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground transition-colors hover:text-[#23e0ff]"
                 >
                   Catálogo de Motos
                 </Link>
@@ -45,7 +45,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/#como-funciona"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground transition-colors hover:text-[#23e0ff]"
                 >
                   Cómo Funciona
                 </Link>
@@ -53,7 +53,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/#preguntas"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground transition-colors hover:text-[#23e0ff]"
                 >
                   Preguntas Frecuentes
                 </Link>
@@ -61,7 +61,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/terminos"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground transition-colors hover:text-[#23e0ff]"
                 >
                   Términos y Condiciones
                 </Link>
@@ -77,7 +77,7 @@ export function PublicFooter() {
                 <Mail className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <a
                   href="mailto:contacto@motolibre.com.ar"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground transition-colors hover:text-[#23e0ff]"
                 >
                   contacto@motolibre.com.ar
                 </a>
@@ -86,7 +86,7 @@ export function PublicFooter() {
                 <Phone className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <a
                   href="tel:+5491112345678"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground transition-colors hover:text-[#23e0ff]"
                 >
                   +54 9 11 1234-5678
                 </a>
@@ -139,14 +139,14 @@ export function PublicFooter() {
 
         {/* Bottom Bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 text-sm text-muted-foreground md:flex-row">
-          <p>© {currentYear} motolibre. Todos los derechos reservados.</p>
+          <p>© {currentYear} MotoLibre S.A. Todos los derechos reservados.</p>
           <p className="flex items-center gap-1">
             Powered by{" "}
             <a
               href="https://claude.com/claude-code"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium transition-colors hover:text-foreground"
+              className="font-medium transition-colors hover:text-[#23e0ff]"
             >
               Claude Code
             </a>

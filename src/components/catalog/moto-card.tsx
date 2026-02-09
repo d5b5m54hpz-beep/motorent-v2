@@ -37,7 +37,7 @@ export function MotoCard({ moto, variant = "grid" }: Props) {
 
   if (variant === "list") {
     return (
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+      <Card className="overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(35,224,255,0.15)]">
         <div className="flex flex-col md:flex-row">
           <div className="relative h-48 md:h-auto md:w-64 bg-muted flex-shrink-0">
             {moto.imagen ? (
@@ -100,7 +100,7 @@ export function MotoCard({ moto, variant = "grid" }: Props) {
 
   return (
     <Link href={`/catalogo/${moto.id}`}>
-      <Card className="overflow-hidden hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
+      <Card className="overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(35,224,255,0.15)] hover:scale-[1.02]">
         <div className="relative h-48 bg-muted">
           {moto.imagen ? (
             <img

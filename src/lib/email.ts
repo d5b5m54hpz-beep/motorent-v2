@@ -58,7 +58,7 @@ function generateFacturaPDF(factura: any) {
   yPos += 8;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("motolibre S.R.L.", 20, yPos);
+  doc.text("MotoLibre S.A.", 20, yPos);
   yPos += 4;
   doc.text("CUIT: 30-12345678-9", 20, yPos);
   yPos += 4;
@@ -310,7 +310,7 @@ function getEmailTemplate(data: {
           <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; font-weight: 600;">motolibre S.R.L.</p>
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; font-weight: 600;">MotoLibre S.A.</p>
               <p style="margin: 0 0 5px 0; font-size: 13px; color: #999999;">Av. Corrientes 1234, CABA</p>
               <p style="margin: 0 0 5px 0; font-size: 13px; color: #999999;">contacto@motorent.com | +54 11 4567-8901</p>
               <p style="margin: 15px 0 0 0; font-size: 12px; color: #bbbbbb;">
