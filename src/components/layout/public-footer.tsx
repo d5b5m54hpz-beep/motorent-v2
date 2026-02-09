@@ -17,14 +17,14 @@ export function PublicFooter() {
           <div className="space-y-4">
             <Link href="/" className="flex items-center">
               <Image
-                src="/logo-dark.svg"
+                src="/logo-dark.png"
                 alt="motolibre"
                 width={150}
                 height={43}
                 className="h-9 w-auto dark:hidden"
               />
               <Image
-                src="/logo-light.svg"
+                src="/logo-light.png"
                 alt="motolibre"
                 width={150}
                 height={43}

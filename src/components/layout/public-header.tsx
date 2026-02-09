@@ -33,7 +33,7 @@ export function PublicHeader() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/logo-dark.svg"
+            src="/logo-dark.png"
             alt="motolibre"
             width={140}
             height={40}
@@ -41,7 +41,7 @@ export function PublicHeader() {
             priority
           />
           <Image
-            src="/logo-light.svg"
+            src="/logo-light.png"
             alt="motolibre"
             width={140}
             height={40}

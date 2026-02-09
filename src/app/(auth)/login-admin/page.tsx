@@ -50,7 +50,7 @@ export default function LoginAdminPage() {
             <Shield className="h-16 w-16 text-white" />
           </div>
           <Image
-            src="/logo-light.svg"
+            src="/logo-light.png"
             alt="motolibre"
             width={280}
             height={80}
@@ -72,7 +72,7 @@ export default function LoginAdminPage() {
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
             <Image
-              src="/logo-color.svg"
+              src="/logo-color.png"
               alt="motolibre"
               width={200}
               height={60}

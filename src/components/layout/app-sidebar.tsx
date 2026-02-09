@@ -99,7 +99,7 @@ export function AppSidebar({ user }: Props) {
           {!isCollapsed && (
             <Link href="/admin" className="flex items-center transition-opacity hover:opacity-80">
               <Image
-                src="/logo-dark.svg"
+                src="/logo-dark.png"
                 alt="motolibre"
                 width={130}
                 height={38}
@@ -107,7 +107,7 @@ export function AppSidebar({ user }: Props) {
                 priority
               />
               <Image
-                src="/logo-light.svg"
+                src="/logo-light.png"
                 alt="motolibre"
                 width={130}
                 height={38}
@@ -119,7 +119,7 @@ export function AppSidebar({ user }: Props) {
           {isCollapsed && (
             <Link href="/admin" className="mx-auto transition-opacity hover:opacity-80">
               <Image
-                src="/logo-color.svg"
+                src="/logo-color.png"
                 alt="motolibre"
                 width={40}
                 height={40}

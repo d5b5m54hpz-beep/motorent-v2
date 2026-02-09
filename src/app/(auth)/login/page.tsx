@@ -50,7 +50,7 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:flex-1 lg:flex-col bg-gradient-to-br from-[#23e0ff] to-[#0891b2] items-center justify-center min-h-screen p-12">
         <div className="max-w-md text-center space-y-6">
           <Image
-            src="/logo-light.svg"
+            src="/logo-light.png"
             alt="motolibre"
             width={280}
             height={80}
@@ -72,7 +72,7 @@ export default function LoginPage() {
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
             <Image
-              src="/logo-color.svg"
+              src="/logo-color.png"
               alt="motolibre"
               width={200}
               height={60}
