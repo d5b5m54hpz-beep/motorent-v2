@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 type NavItem = {
   title: string;
@@ -26,18 +27,6 @@ type NavItem = {
   badge?: number;
 };
 
-const navItems: NavItem[] = [
-  { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { title: "Motos", href: "/admin/motos", icon: Bike },
-  { title: "Contratos", href: "/admin/contratos", icon: FileText },
-  { title: "Pagos", href: "/admin/pagos", icon: CreditCard },
-  { title: "Facturas", href: "/admin/facturas", icon: Receipt },
-  { title: "Clientes", href: "/admin/clientes", icon: Users },
-  { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
-  { title: "Alertas", href: "/admin/alertas", icon: Bell },
-  { title: "Pricing", href: "/admin/pricing", icon: DollarSign },
-];
-
 type Props = {
   user: { name: string; email: string; image?: string | null };
 };
@@ -45,6 +34,40 @@ type Props = {
 export function AppSidebar({ user }: Props) {
   const pathname = usePathname();
   const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } = useSidebar();
+  const [alertasCount, setAlertasCount] = useState(0);
+
+  const navItems: NavItem[] = [
+    { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { title: "Motos", href: "/admin/motos", icon: Bike },
+    { title: "Contratos", href: "/admin/contratos", icon: FileText },
+    { title: "Pagos", href: "/admin/pagos", icon: CreditCard },
+    { title: "Facturas", href: "/admin/facturas", icon: Receipt },
+    { title: "Clientes", href: "/admin/clientes", icon: Users },
+    { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
+    { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
+    { title: "Pricing", href: "/admin/pricing", icon: DollarSign },
+  ];
+
+  // Fetch alertas count
+  useEffect(() => {
+    const fetchAlertasCount = async () => {
+      try {
+        const res = await fetch("/api/alertas?leida=false&limit=1");
+        if (res.ok) {
+          const data = await res.json();
+          setAlertasCount(data.total || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching alertas count:", error);
+      }
+    };
+
+    fetchAlertasCount();
+
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchAlertasCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Close mobile on route change
   useEffect(() => {
@@ -71,15 +94,15 @@ export function AppSidebar({ user }: Props) {
         {/* Logo header */}
         <div className="flex h-14 items-center border-b px-4">
           {!isCollapsed && (
-            <Link href="/admin" className="flex items-center gap-2">
+            <Link href="/admin" className="flex items-center gap-2 transition-opacity hover:opacity-80">
               <Bike className="h-6 w-6 text-sidebar-primary" />
-              <span className="text-lg font-bold text-sidebar-foreground">
+              <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
                 MotoRent
               </span>
             </Link>
           )}
           {isCollapsed && (
-            <Link href="/admin" className="mx-auto">
+            <Link href="/admin" className="mx-auto transition-opacity hover:opacity-80">
               <Bike className="h-6 w-6 text-sidebar-primary" />
             </Link>
           )}
@@ -118,16 +141,43 @@ export function AppSidebar({ user }: Props) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
                   isCollapsed && "justify-center px-2"
                 )}
                 title={isCollapsed ? item.title : undefined}
               >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {!isCollapsed && <span>{item.title}</span>}
+                {/* Active indicator */}
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-primary" />
+                )}
+
+                <item.icon className={cn(
+                  "h-4 w-4 shrink-0 transition-transform duration-200",
+                  !isActive && "group-hover:scale-110"
+                )} />
+
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1 tracking-tight">{item.title}</span>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="h-5 min-w-[20px] px-1 text-[10px] font-bold"
+                      >
+                        {item.badge > 99 ? "99+" : item.badge}
+                      </Badge>
+                    )}
+                  </>
+                )}
+
+                {isCollapsed && item.badge !== undefined && item.badge > 0 && (
+                  <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                    {item.badge > 9 ? "9+" : item.badge}
+                  </div>
+                )}
               </Link>
             );
           })}
@@ -137,16 +187,16 @@ export function AppSidebar({ user }: Props) {
         <div className="border-t p-3">
           <div
             className={cn(
-              "flex items-center gap-3",
+              "flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-sidebar-accent/50",
               isCollapsed && "justify-center"
             )}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground shadow-sm">
               {user.name?.charAt(0)?.toUpperCase() ?? "U"}
             </div>
             {!isCollapsed && (
               <div className="flex-1 overflow-hidden">
-                <p className="truncate text-sm font-medium text-sidebar-foreground">
+                <p className="truncate text-sm font-medium tracking-tight text-sidebar-foreground">
                   {user.name}
                 </p>
                 <p className="truncate text-xs text-sidebar-foreground/60">

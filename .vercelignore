@@ -1,0 +1,29 @@
+# Dependencies
+node_modules
+
+# Development files
+.env.local
+.env*.local
+
+# Testing
+coverage
+*.test.ts
+*.test.tsx
+__tests__
+
+# Documentation
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Prisma
+prisma/migrations
+
+# Build artifacts that Vercel handles
+.next
+out

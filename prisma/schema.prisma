@@ -34,31 +34,49 @@ enum Role {
 // ─── Negocio ─────────────────────────────────────────────────────────────────
 
 model Cliente {
-  id          String     @id @default(cuid())
-  userId      String     @unique
-  nombre      String?
-  email       String     @unique
-  telefono    String?
-  estado      String     @default("pendiente") // pendiente | aprobado | rechazado
-  preRegistro Json?
-  aprobadoPor String?
-  aprobadoAt  DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  user        User       @relation(fields: [userId], references: [id])
-  contratos   Contrato[]
+  id                  String     @id @default(cuid())
+  userId              String     @unique
+  nombre              String?
+  email               String     @unique
+  telefono            String?
+  dni                 String?
+  dniVerificado       Boolean    @default(false)
+  licencia            String?
+  licenciaVencimiento DateTime?
+  licenciaVerificada  Boolean    @default(false)
+  direccion           String?
+  ciudad              String?
+  provincia           String?
+  codigoPostal        String?
+  fechaNacimiento     DateTime?
+  notas               String?
+  estado              String     @default("pendiente") // pendiente | aprobado | rechazado
+  preRegistro         Json?
+  aprobadoPor         String?
+  aprobadoAt          DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  user                User       @relation(fields: [userId], references: [id])
+  contratos           Contrato[]
 }
 
 model Moto {
-  id        String     @id @default(cuid())
-  marca     String
-  modelo    String
-  patente   String     @unique
-  anio      Int
-  estado    String     @default("disponible") // disponible | alquilada | mantenimiento
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  contratos Contrato[]
+  id            String     @id @default(cuid())
+  marca         String
+  modelo        String
+  patente       String     @unique
+  anio          Int
+  color         String?
+  kilometraje   Int        @default(0)
+  precioMensual Float      @default(0)
+  cilindrada    Int?
+  tipo          String?    // naked | touring | sport | scooter | custom
+  descripcion   String?
+  imagen        String?
+  estado        String     @default("disponible") // disponible | alquilada | mantenimiento | baja
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  contratos     Contrato[]
 }
 
 model Contrato {
@@ -67,30 +85,32 @@ model Contrato {
   motoId            String
   fechaInicio       DateTime
   fechaFin          DateTime
-  precioSemana      Float
-  estado            String    @default("pendiente") // pendiente | activo | vencido | finalizado
-  duracionMeses     Int?
-  tipoPago          String?   // mensual | semanal
-  precioMensual     Float?
-  precioSemanal     Float?
-  descuentoDuracion Float?
-  descuentoSemanal  Float?
+  frecuenciaPago    String    @default("mensual") // semanal | quincenal | mensual
+  montoPeriodo      Float     // Monto por período según frecuencia
+  montoTotal        Float     // Monto total del contrato
+  deposito          Float     @default(0)
+  descuentoAplicado Float     @default(0)
+  notas             String?
+  renovacionAuto    Boolean   @default(false)
+  estado            String    @default("pendiente") // pendiente | activo | finalizado | cancelado
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   cliente           Cliente   @relation(fields: [clienteId], references: [id])
   moto              Moto      @relation(fields: [motoId], references: [id])
   pagos             Pago[]
-  facturas          Factura[]
   alertas           Alerta[]
 }
 
 model Pago {
   id            String    @id @default(cuid())
   contratoId    String
-  monto         Int
-  metodo        String    // transferencia | tarjeta | mercadopago | efectivo
-  estado        String    @default("pendiente") // pendiente | pagado | vencido | fallido
+  monto         Float
+  metodo        String    @default("pendiente") // transferencia | tarjeta | mercadopago | efectivo | pendiente
+  estado        String    @default("pendiente") // pendiente | aprobado | rechazado | reembolsado | cancelado
   referencia    String?
+  mpPaymentId   String?   // ID de transacción de MercadoPago
+  comprobante   String?   // URL o texto del comprobante
+  notas         String?   // Notas adicionales del pago
   pagadoAt      DateTime?
   vencimientoAt DateTime?
   createdAt     DateTime  @default(now())
@@ -101,27 +121,31 @@ model Pago {
 }
 
 model Factura {
-  id           String    @id @default(cuid())
-  contratoId   String
-  pagoId       String    @unique
-  numero       String
-  monto        Int
-  estado       String    @default("emitida") // emitida | enviada | anulada
-  emitidaAt    DateTime
-  cae          String?
-  caeVto       DateTime?
-  afipEstado   String    @default("pendiente") // pendiente | enviado | error
-  emailEnviado Boolean   @default(false)
-  emailAt      DateTime?
-  createdAt    DateTime  @default(now())
-  pago         Pago      @relation(fields: [pagoId], references: [id])
-  contrato     Contrato  @relation(fields: [contratoId], references: [id])
+  id             String    @id @default(cuid())
+  numero         String    // Autoincremental 00000001, 00000002, etc.
+  tipo           String    // A, B, C
+  puntoVenta     Int       @default(1)
+  montoNeto      Float     // Subtotal sin IVA (si tipo A)
+  montoIva       Float     // IVA 21% (si tipo A)
+  montoTotal     Float     // Total final
+  cae            String?   // Código de Autorización Electrónico de AFIP
+  caeVencimiento String?   // Fecha de vencimiento del CAE
+  razonSocial    String?   // Razón social del cliente (opcional)
+  cuit           String?   // CUIT del cliente (opcional)
+  emitida        Boolean   @default(false) // false = pendiente AFIP, true = emitida con CAE
+  emailEnviado   Boolean   @default(false) // true si se envió por email
+  emailEnviadoAt DateTime? // Fecha/hora del último envío por email
+  pagoId         String    @unique
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  pago           Pago      @relation(fields: [pagoId], references: [id])
 }
 
 model Alerta {
   id              String    @id @default(cuid())
   tipo            String
   mensaje         String
+  metadata        Json?
   contratoId      String?
   pagoId          String?
   leida           Boolean   @default(false)
