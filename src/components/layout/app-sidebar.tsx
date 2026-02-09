@@ -101,9 +101,9 @@ export function AppSidebar({ user }: Props) {
               <Image
                 src={theme === "dark" ? "/logo-light.svg" : "/logo-dark.svg"}
                 alt="motolibre"
-                width={120}
-                height={35}
-                className="h-7 w-auto"
+                width={130}
+                height={38}
+                className="h-8 w-auto"
                 priority
               />
             </Link>
@@ -113,9 +113,9 @@ export function AppSidebar({ user }: Props) {
               <Image
                 src="/logo-color.svg"
                 alt="motolibre"
-                width={28}
-                height={28}
-                className="h-7 w-7"
+                width={40}
+                height={40}
+                className="h-10 w-10"
                 priority
               />
             </Link>
