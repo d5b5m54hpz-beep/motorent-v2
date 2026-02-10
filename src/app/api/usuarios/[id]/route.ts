@@ -169,8 +169,6 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     // Eliminar el usuario y todas sus relaciones (en transacción)
     await prisma.$transaction([
       prisma.cliente.deleteMany({ where: { userId: id } }),
-      prisma.account.deleteMany({ where: { userId: id } }),
-      prisma.session.deleteMany({ where: { userId: id } }),
       prisma.user.delete({ where: { id } }),
     ]);
 
