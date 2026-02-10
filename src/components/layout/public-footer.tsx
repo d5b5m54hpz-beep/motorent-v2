@@ -17,8 +17,8 @@ export function PublicFooter() {
               <Image
                 src="/logo-light.png"
                 alt="motolibre"
-                width={150}
-                height={43}
+                width={140}
+                height={40}
                 className="h-10 w-auto"
               />
             </Link>

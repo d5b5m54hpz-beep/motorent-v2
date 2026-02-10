@@ -166,9 +166,11 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // Eliminar el usuario y su cliente asociado si existe (en transacción)
+    // Eliminar el usuario y todas sus relaciones (en transacción)
     await prisma.$transaction([
       prisma.cliente.deleteMany({ where: { userId: id } }),
+      prisma.account.deleteMany({ where: { userId: id } }),
+      prisma.session.deleteMany({ where: { userId: id } }),
       prisma.user.delete({ where: { id } }),
     ]);
 

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   Bike,
@@ -36,7 +35,6 @@ type Props = {
 export function AppSidebar({ user }: Props) {
   const pathname = usePathname();
   const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } = useSidebar();
-  const { theme } = useTheme();
   const [alertasCount, setAlertasCount] = useState(0);
 
   const navItems: NavItem[] = [
