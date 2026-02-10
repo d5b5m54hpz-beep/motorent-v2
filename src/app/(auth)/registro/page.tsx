@@ -172,7 +172,7 @@ export default function RegistroPage() {
 
             <Button
               type="submit"
-              className="w-full h-11 bg-[#23e0ff] text-white font-semibold hover:bg-[#1bc4e0]"
+              className="w-full h-11 bg-[#23e0ff] text-white dark:text-black font-semibold hover:bg-[#1bc4e0]"
               disabled={loading}
             >
               {loading ? "Creando cuenta..." : "Registrarse"}
