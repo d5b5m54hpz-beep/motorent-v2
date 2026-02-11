@@ -78,11 +78,15 @@ export default function FacturasCompraPage() {
       const res = await fetch(`/api/facturas-compra?${params}`, { signal });
       if (!res.ok) throw new Error("Error");
       const json: FacturasApiResponse = await res.json();
-      setData(json.data);
-      setTotal(json.total);
-      setTotalPages(json.totalPages);
+      setData(json?.data ?? []);
+      setTotal(json?.total ?? 0);
+      setTotalPages(json?.totalPages ?? 0);
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Error fetching facturas:", err);
+      setData([]);
+      setTotal(0);
+      setTotalPages(0);
       toast.error("Error al cargar facturas de compra");
     } finally {
       setIsLoading(false);

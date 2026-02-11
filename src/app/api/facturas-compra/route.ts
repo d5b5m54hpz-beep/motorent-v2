@@ -58,7 +58,14 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: unknown) {
     console.error("Error fetching facturas compra:", err);
-    return NextResponse.json({ data: [], total: 0, page: 1, limit: 15, totalPages: 0 });
+    return NextResponse.json({
+      error: "Error interno del servidor",
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 15,
+      totalPages: 0,
+    }, { status: 500 });
   }
 }
 

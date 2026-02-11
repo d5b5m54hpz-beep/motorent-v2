@@ -51,7 +51,14 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: unknown) {
     console.error("Error fetching cuentas contables:", err);
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    return NextResponse.json({
+      error: "Error interno del servidor",
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 100,
+      totalPages: 0,
+    }, { status: 500 });
   }
 }
 

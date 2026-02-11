@@ -77,11 +77,15 @@ export default function CuentasContablesPage() {
       const res = await fetch(`/api/cuentas-contables?${params}`, { signal });
       if (!res.ok) throw new Error("Error");
       const json: CuentasApiResponse = await res.json();
-      setData(json.data);
-      setTotal(json.total);
-      setTotalPages(json.totalPages);
+      setData(json?.data ?? []);
+      setTotal(json?.total ?? 0);
+      setTotalPages(json?.totalPages ?? 0);
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Error fetching cuentas:", err);
+      setData([]);
+      setTotal(0);
+      setTotalPages(0);
       toast.error("Error al cargar cuentas contables");
     } finally {
       setIsLoading(false);
