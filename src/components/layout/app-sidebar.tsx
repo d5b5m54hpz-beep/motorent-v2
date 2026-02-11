@@ -23,11 +23,15 @@ import {
   Calculator,
   Wallet,
   Sparkles,
+  Briefcase,
+  Factory,
+  Building2,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { CollapsibleNavSection } from "./collapsible-nav-section";
 
 type NavItem = {
   title: string;
@@ -35,7 +39,6 @@ type NavItem = {
   icon: React.ElementType;
   badge?: number;
   badgeText?: string;
-  separator?: boolean;
 };
 
 type Props = {
@@ -47,28 +50,40 @@ export function AppSidebar({ user }: Props) {
   const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } = useSidebar();
   const [alertasCount, setAlertasCount] = useState(0);
 
-  const navItems: NavItem[] = [
-    { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  // Dashboard (direct link, no submenu)
+  const dashboardItem: NavItem = {
+    title: "Dashboard",
+    href: "/admin",
+    icon: LayoutDashboard,
+  };
+
+  // Categories with subitems
+  const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
+    { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
+    { title: "Repuestos", href: "/admin/repuestos", icon: Package },
+  ];
+
+  const comercial: NavItem[] = [
+    { title: "Clientes", href: "/admin/clientes", icon: Users },
     { title: "Contratos", href: "/admin/contratos", icon: FileText },
     { title: "Pagos", href: "/admin/pagos", icon: CreditCard },
     { title: "Facturas", href: "/admin/facturas", icon: Receipt },
-    { title: "Clientes", href: "/admin/clientes", icon: Users },
-    // Operaciones
-    { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench, separator: true },
-    { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
-    { title: "Repuestos", href: "/admin/repuestos", icon: Package },
-    // Finanzas
-    { title: "Finanzas", href: "/admin/finanzas", icon: BarChart3, separator: true },
+  ];
+
+  const finanzas: NavItem[] = [
+    { title: "Finanzas", href: "/admin/finanzas", icon: BarChart3 },
     { title: "Gastos", href: "/admin/gastos", icon: Wallet },
     { title: "Rentabilidad", href: "/admin/finanzas/rentabilidad", icon: TrendingUp },
-    { title: "Pricing", href: "/admin/finanzas/pricing", icon: DollarSign },
     { title: "Presupuestos", href: "/admin/presupuestos", icon: Calculator },
-    // IA
-    { title: "Asistente IA", href: "/admin/asistente", icon: Sparkles, separator: true, badgeText: "IA" },
-    // Sistema
-    { title: "Usuarios", href: "/admin/usuarios", icon: UserCog, separator: true },
+    { title: "Pricing", href: "/admin/finanzas/pricing", icon: DollarSign },
+  ];
+
+  const sistema: NavItem[] = [
+    { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
+    { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
+    { title: "Asistente IA", href: "/admin/asistente", icon: Sparkles, badgeText: "IA" },
   ];
 
   // Fetch alertas count
@@ -97,6 +112,8 @@ export function AppSidebar({ user }: Props) {
     closeMobile();
   }, [pathname, closeMobile]);
 
+  const isDashboardActive = pathname === dashboardItem.href;
+
   return (
     <>
       {/* Mobile overlay */}
@@ -109,13 +126,13 @@ export function AppSidebar({ user }: Props) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-sidebar transition-all duration-300 lg:static lg:z-auto",
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-sidebar transition-all duration-300",
           isCollapsed ? "w-16" : "w-64",
           isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Logo header */}
-        <div className="flex h-14 items-center border-b px-4">
+        <div className="flex h-14 shrink-0 items-center border-b px-4">
           {!isCollapsed && (
             <Link href="/admin" className="flex items-center transition-opacity hover:opacity-80">
               <Image
@@ -164,70 +181,86 @@ export function AppSidebar({ user }: Props) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-          {navItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/admin" && pathname.startsWith(item.href));
+        <nav className="flex-1 space-y-2 overflow-y-auto p-2">
+          {/* Dashboard - direct link */}
+          <Link
+            href={dashboardItem.href}
+            className={cn(
+              "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+              isDashboardActive
+                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+              isCollapsed && "justify-center px-2"
+            )}
+            title={isCollapsed ? dashboardItem.title : undefined}
+          >
+            {isDashboardActive && (
+              <div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-primary" />
+            )}
 
-            return (
-              <div key={item.href}>
-                {item.separator && (
-                  <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
-                )}
-              <Link
-                href={item.href}
-                className={cn(
-                  "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-                  isCollapsed && "justify-center px-2"
-                )}
-                title={isCollapsed ? item.title : undefined}
-              >
-                {/* Active indicator */}
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-primary" />
-                )}
+            <dashboardItem.icon
+              className={cn(
+                "h-4 w-4 shrink-0 transition-transform duration-200",
+                !isDashboardActive && "group-hover:scale-110"
+              )}
+            />
 
-                <item.icon className={cn(
-                  "h-4 w-4 shrink-0 transition-transform duration-200",
-                  !isActive && "group-hover:scale-110"
-                )} />
+            {!isCollapsed && (
+              <span className="flex-1 tracking-tight">{dashboardItem.title}</span>
+            )}
+          </Link>
 
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1 tracking-tight">{item.title}</span>
-                    {item.badgeText && (
-                      <span className="rounded-md bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-500">
-                        {item.badgeText}
-                      </span>
-                    )}
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-[20px] px-1 text-[10px] font-bold"
-                      >
-                        {item.badge > 99 ? "99+" : item.badge}
-                      </Badge>
-                    )}
-                  </>
-                )}
+          {/* Separator */}
+          <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
 
-                {isCollapsed && item.badge !== undefined && item.badge > 0 && (
-                  <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                    {item.badge > 9 ? "9+" : item.badge}
-                  </div>
-                )}
-              </Link>
-              </div>
-            );
-          })}
+          {/* Flota */}
+          <CollapsibleNavSection
+            title="Flota"
+            icon={Factory}
+            items={flota}
+            isCollapsed={isCollapsed}
+            storageKey="sidebar-flota-open"
+          />
+
+          {/* Separator */}
+          <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
+
+          {/* Comercial */}
+          <CollapsibleNavSection
+            title="Comercial"
+            icon={Briefcase}
+            items={comercial}
+            isCollapsed={isCollapsed}
+            storageKey="sidebar-comercial-open"
+          />
+
+          {/* Separator */}
+          <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
+
+          {/* Finanzas */}
+          <CollapsibleNavSection
+            title="Finanzas"
+            icon={DollarSign}
+            items={finanzas}
+            isCollapsed={isCollapsed}
+            storageKey="sidebar-finanzas-open"
+          />
+
+          {/* Separator */}
+          <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
+
+          {/* Sistema */}
+          <CollapsibleNavSection
+            title="Sistema"
+            icon={Settings}
+            items={sistema}
+            isCollapsed={isCollapsed}
+            storageKey="sidebar-sistema-open"
+          />
         </nav>
 
         {/* User footer */}
-        <div className="border-t p-3">
+        <div className="shrink-0 border-t p-3">
           <div
             className={cn(
               "flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-sidebar-accent/50",
