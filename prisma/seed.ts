@@ -391,7 +391,10 @@ async function main() {
     await prisma.cuentaContable.upsert({
       where: { codigo: cuenta.codigo },
       update: {},
-      create: cuenta,
+      create: {
+        ...cuenta,
+        tipo: cuenta.tipo as TipoCuenta,
+      },
     });
   }
   console.log(`✅ ${cuentas.length} cuentas contables created`);
