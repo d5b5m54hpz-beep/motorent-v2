@@ -88,6 +88,11 @@ export function AppSidebar({ user }: Props) {
     { title: "Reportes", href: "/admin/contabilidad/reportes", icon: BarChart3 },
   ];
 
+  const rrhh: NavItem[] = [
+    { title: "Dashboard RRHH", href: "/admin/rrhh", icon: Users },
+    { title: "Empleados", href: "/admin/rrhh/empleados", icon: UserCog },
+  ];
+
   const sistema: NavItem[] = [
     { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
     { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
@@ -265,6 +270,18 @@ export function AppSidebar({ user }: Props) {
             items={contabilidad}
             isCollapsed={isCollapsed}
             storageKey="sidebar-contabilidad-open"
+          />
+
+          {/* Separator */}
+          <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
+
+          {/* RRHH */}
+          <CollapsibleNavSection
+            title="RRHH"
+            icon={Users}
+            items={rrhh}
+            isCollapsed={isCollapsed}
+            storageKey="sidebar-rrhh-open"
           />
 
           {/* Separator */}

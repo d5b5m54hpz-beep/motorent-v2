@@ -476,3 +476,198 @@ enum TipoAsiento {
   AJUSTE
   CIERRE
 }
+
+// ─── RRHH ────────────────────────────────────────────────────────────────────
+
+model Empleado {
+  id        String @id @default(cuid())
+  visibleId String @unique @default(cuid())
+
+  // Datos personales
+  nombre             String
+  apellido           String
+  dni                String    @unique
+  cuil               String?   @unique
+  fechaNacimiento    DateTime?
+  sexo               String? // M, F, X
+  estadoCivil        String? // SOLTERO, CASADO, DIVORCIADO, VIUDO, UNION_CONVIVENCIAL
+  nacionalidad       String?   @default("Argentina")
+  direccion          String?
+  ciudad             String?
+  provincia          String?
+  codigoPostal       String?
+  telefono           String?
+  email              String?
+  contactoEmergencia String?
+  telefonoEmergencia String?
+
+  // Datos laborales
+  fechaIngreso   DateTime
+  fechaEgreso    DateTime?
+  estado         EstadoEmpleado @default(ACTIVO)
+  cargo          String
+  departamento   String? // OPERACIONES, ADMINISTRACION, COMERCIAL, TALLER
+  tipoContrato   TipoContrato   @default(TIEMPO_INDETERMINADO)
+  jornadaLaboral String? // COMPLETA, PARCIAL
+  horasSemanales Int?           @default(48)
+
+  // Datos salariales
+  salarioBasico Float
+  categoriaCCT  String? // Categoría del convenio colectivo
+  obraSocial    String?
+  sindicato     String?
+  nroAfiliado   String?
+  cbu           String?
+  banco         String?
+
+  // Documentación
+  altaAFIP      Boolean   @default(false)
+  fechaAltaAFIP DateTime?
+  artContratada String? // Nombre de la ART
+  nroART        String?
+
+  imagen String?
+  notas  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recibos    ReciboSueldo[]
+  ausencias  Ausencia[]
+  documentos DocumentoEmpleado[]
+
+  @@index([estado])
+  @@index([dni])
+}
+
+model ReciboSueldo {
+  id         String   @id @default(cuid())
+  visibleId  String   @unique @default(cuid())
+  empleadoId String
+  empleado   Empleado @relation(fields: [empleadoId], references: [id])
+
+  // Período
+  mes  Int // 1-12
+  anio Int
+  tipo TipoRecibo @default(MENSUAL) // MENSUAL, SAC_1, SAC_2, FINAL, VACACIONES
+
+  // Haberes (conceptos que suman)
+  salarioBasico Float
+  presentismo   Float @default(0)
+  antiguedad    Float @default(0)
+  horasExtra50  Float @default(0)
+  horasExtra100 Float @default(0)
+  adicionales   Float @default(0)
+  totalHaberes  Float
+
+  // Deducciones (conceptos que restan)
+  jubilacion        Float @default(0) // 11%
+  obraSocial        Float @default(0) // 3%
+  sindicato         Float @default(0) // 2-3%
+  ley19032          Float @default(0) // 3% PAMI/INSSJP
+  impuestoGanancias Float @default(0)
+  otrasDeduccciones Float @default(0)
+  totalDeducciones  Float
+
+  // Aportes patronales (no descuento al empleado, costo empresa)
+  aporteJubilacion       Float @default(0) // 16%
+  aporteObraSocial       Float @default(0) // 6%
+  aportePAMI             Float @default(0) // 1.5%
+  aporteART              Float @default(0)
+  seguroVida             Float @default(0)
+  totalAportesPatronales Float
+
+  // Neto
+  netoAPagar Float
+
+  // Estado
+  estado    EstadoRecibo @default(BORRADOR)
+  fechaPago DateTime?
+
+  pdfUrl String?
+  notas  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([empleadoId])
+  @@index([mes, anio])
+  @@index([estado])
+}
+
+model Ausencia {
+  id          String       @id @default(cuid())
+  empleadoId  String
+  empleado    Empleado     @relation(fields: [empleadoId], references: [id])
+  tipo        TipoAusencia
+  fechaInicio DateTime
+  fechaFin    DateTime
+  dias        Int
+  justificada Boolean      @default(false)
+  certificado String?
+  notas       String?
+  estado      String       @default("PENDIENTE") // PENDIENTE, APROBADA, RECHAZADA
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([empleadoId])
+  @@index([fechaInicio, fechaFin])
+}
+
+model DocumentoEmpleado {
+  id         String   @id @default(cuid())
+  empleadoId String
+  empleado   Empleado @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  tipo       String // DNI, CUIL, CONTRATO, ALTA_AFIP, ART, CV, CERTIFICADO, OTRO
+  nombre     String
+  url        String?
+  notas      String?
+  createdAt  DateTime @default(now())
+
+  @@index([empleadoId])
+}
+
+enum EstadoEmpleado {
+  ACTIVO
+  LICENCIA
+  SUSPENDIDO
+  BAJA
+}
+
+enum TipoContrato {
+  TIEMPO_INDETERMINADO
+  PLAZO_FIJO
+  EVENTUAL
+  TEMPORADA
+  PASANTIA
+}
+
+enum TipoRecibo {
+  MENSUAL
+  SAC_1
+  SAC_2
+  FINAL
+  VACACIONES
+}
+
+enum TipoAusencia {
+  VACACIONES
+  ENFERMEDAD
+  ACCIDENTE_LABORAL
+  LICENCIA_MATERNIDAD
+  LICENCIA_PATERNIDAD
+  ESTUDIO
+  MATRIMONIO
+  FALLECIMIENTO_FAMILIAR
+  MUDANZA
+  DONACION_SANGRE
+  INJUSTIFICADA
+  OTRO
+}
+
+enum EstadoRecibo {
+  BORRADOR
+  CONFIRMADO
+  PAGADO
+  ANULADO
+}

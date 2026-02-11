@@ -467,3 +467,94 @@ export const asientoContableSchema = z.object({
 
 export type AsientoContableInput = z.infer<typeof asientoContableSchema>;
 export type LineaAsientoInput = z.infer<typeof lineaAsientoSchema>;
+
+// ─── RRHH ────────────────────────────────────────────────────────────────────
+
+export const estadosEmpleado = ["ACTIVO", "LICENCIA", "SUSPENDIDO", "BAJA"] as const;
+export const tiposContrato = ["TIEMPO_INDETERMINADO", "PLAZO_FIJO", "EVENTUAL", "TEMPORADA", "PASANTIA"] as const;
+export const tiposRecibo = ["MENSUAL", "SAC_1", "SAC_2", "FINAL", "VACACIONES"] as const;
+export const estadosRecibo = ["BORRADOR", "CONFIRMADO", "PAGADO", "ANULADO"] as const;
+export const tiposAusencia = ["VACACIONES", "ENFERMEDAD", "ACCIDENTE_LABORAL", "LICENCIA_MATERNIDAD", "LICENCIA_PATERNIDAD", "ESTUDIO", "MATRIMONIO", "FALLECIMIENTO_FAMILIAR", "MUDANZA", "DONACION_SANGRE", "INJUSTIFICADA", "OTRO"] as const;
+
+export const empleadoSchema = z.object({
+  nombre: z.string().min(1, "Nombre es requerido"),
+  apellido: z.string().min(1, "Apellido es requerido"),
+  dni: z.string().min(7, "DNI inválido"),
+  cuil: z.string().optional().or(z.literal("")),
+  fechaNacimiento: z.string().optional(),
+  sexo: z.string().optional(),
+  estadoCivil: z.string().optional(),
+  nacionalidad: z.string().optional(),
+  direccion: z.string().optional(),
+  ciudad: z.string().optional(),
+  provincia: z.string().optional(),
+  codigoPostal: z.string().optional(),
+  telefono: z.string().optional(),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  contactoEmergencia: z.string().optional(),
+  telefonoEmergencia: z.string().optional(),
+  fechaIngreso: z.string().min(1, "Fecha de ingreso es requerida"),
+  fechaEgreso: z.string().optional(),
+  estado: z.enum(estadosEmpleado).default("ACTIVO"),
+  cargo: z.string().min(1, "Cargo es requerido"),
+  departamento: z.string().optional(),
+  tipoContrato: z.enum(tiposContrato).default("TIEMPO_INDETERMINADO"),
+  jornadaLaboral: z.string().optional(),
+  horasSemanales: z.coerce.number().optional(),
+  salarioBasico: z.coerce.number().min(0, "Salario no puede ser negativo"),
+  categoriaCCT: z.string().optional(),
+  obraSocial: z.string().optional(),
+  sindicato: z.string().optional(),
+  nroAfiliado: z.string().optional(),
+  cbu: z.string().optional(),
+  banco: z.string().optional(),
+  altaAFIP: z.boolean().optional(),
+  fechaAltaAFIP: z.string().optional(),
+  artContratada: z.string().optional(),
+  nroART: z.string().optional(),
+  imagen: z.string().optional(),
+  notas: z.string().optional(),
+});
+
+export const reciboSueldoSchema = z.object({
+  empleadoId: z.string().min(1, "Empleado es requerido"),
+  mes: z.coerce.number().min(1).max(12),
+  anio: z.coerce.number().min(2020).max(2050),
+  tipo: z.enum(tiposRecibo).default("MENSUAL"),
+  salarioBasico: z.coerce.number().min(0),
+  presentismo: z.coerce.number().min(0).default(0),
+  antiguedad: z.coerce.number().min(0).default(0),
+  horasExtra50: z.coerce.number().min(0).default(0),
+  horasExtra100: z.coerce.number().min(0).default(0),
+  adicionales: z.coerce.number().min(0).default(0),
+  jubilacion: z.coerce.number().min(0).default(0),
+  obraSocial: z.coerce.number().min(0).default(0),
+  sindicato: z.coerce.number().min(0).default(0),
+  ley19032: z.coerce.number().min(0).default(0),
+  impuestoGanancias: z.coerce.number().min(0).default(0),
+  otrasDeduccciones: z.coerce.number().min(0).default(0),
+  aporteJubilacion: z.coerce.number().min(0).default(0),
+  aporteObraSocial: z.coerce.number().min(0).default(0),
+  aportePAMI: z.coerce.number().min(0).default(0),
+  aporteART: z.coerce.number().min(0).default(0),
+  seguroVida: z.coerce.number().min(0).default(0),
+  estado: z.enum(estadosRecibo).default("BORRADOR"),
+  fechaPago: z.string().optional(),
+  notas: z.string().optional(),
+});
+
+export const ausenciaSchema = z.object({
+  empleadoId: z.string().min(1, "Empleado es requerido"),
+  tipo: z.enum(tiposAusencia),
+  fechaInicio: z.string().min(1, "Fecha inicio es requerida"),
+  fechaFin: z.string().min(1, "Fecha fin es requerida"),
+  dias: z.coerce.number().min(1),
+  justificada: z.boolean().default(false),
+  certificado: z.string().optional(),
+  notas: z.string().optional(),
+  estado: z.string().default("PENDIENTE"),
+});
+
+export type EmpleadoInput = z.infer<typeof empleadoSchema>;
+export type ReciboSueldoInput = z.infer<typeof reciboSueldoSchema>;
+export type AusenciaInput = z.infer<typeof ausenciaSchema>;
