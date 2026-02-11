@@ -67,6 +67,7 @@ export function AppSidebar({ user }: Props) {
   // Categories with subitems
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
+    { title: "Patentamiento RUNA", href: "/admin/motos/patentamiento", icon: Calendar },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
     { title: "Repuestos", href: "/admin/repuestos", icon: Package },
   ];
