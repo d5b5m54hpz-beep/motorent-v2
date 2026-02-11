@@ -15,7 +15,7 @@ model User {
   email           String    @unique
   name            String
   image           String?
-  provider        String    // "credentials" | "google" | "apple" | "facebook"
+  provider        String // "credentials" | "google" | "apple" | "facebook"
   password        String?
   phone           String?
   phoneVerifiedAt DateTime?
@@ -61,44 +61,45 @@ model Cliente {
 }
 
 model Moto {
-  id            String     @id @default(cuid())
-  marca         String
-  modelo        String
-  patente       String     @unique
-  anio          Int
-  color         String?
-  kilometraje   Int        @default(0)
-  precioMensual Float      @default(0)
-  cilindrada    Int?
-  tipo          String?    // naked | touring | sport | scooter | custom
-  descripcion   String?
-  imagen        String?
-  estado        String     @default("disponible") // disponible | alquilada | mantenimiento | baja
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id             String          @id @default(cuid())
+  marca          String
+  modelo         String
+  patente        String          @unique
+  anio           Int
+  color          String?
+  kilometraje    Int             @default(0)
+  precioMensual  Float           @default(0)
+  cilindrada     Int?
+  tipo           String? // naked | touring | sport | scooter | custom
+  descripcion    String?
+  imagen         String?
+  estado         String          @default("disponible") // disponible | alquilada | mantenimiento | baja
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   contratos      Contrato[]
   mantenimientos Mantenimiento[]
   gastos         Gasto[]
+  facturasCompra FacturaCompra[]
 }
 
 model Contrato {
-  id                String    @id @default(cuid())
+  id                String   @id @default(cuid())
   clienteId         String
   motoId            String
   fechaInicio       DateTime
   fechaFin          DateTime
-  frecuenciaPago    String    @default("mensual") // semanal | quincenal | mensual
-  montoPeriodo      Float     // Monto por período según frecuencia
-  montoTotal        Float     // Monto total del contrato
-  deposito          Float     @default(0)
-  descuentoAplicado Float     @default(0)
+  frecuenciaPago    String   @default("mensual") // semanal | quincenal | mensual
+  montoPeriodo      Float // Monto por período según frecuencia
+  montoTotal        Float // Monto total del contrato
+  deposito          Float    @default(0)
+  descuentoAplicado Float    @default(0)
   notas             String?
-  renovacionAuto    Boolean   @default(false)
-  estado            String    @default("pendiente") // pendiente | activo | finalizado | cancelado
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  cliente           Cliente   @relation(fields: [clienteId], references: [id])
-  moto              Moto      @relation(fields: [motoId], references: [id])
+  renovacionAuto    Boolean  @default(false)
+  estado            String   @default("pendiente") // pendiente | activo | finalizado | cancelado
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  moto              Moto     @relation(fields: [motoId], references: [id])
   pagos             Pago[]
   alertas           Alerta[]
 }
@@ -110,9 +111,9 @@ model Pago {
   metodo        String    @default("pendiente") // transferencia | tarjeta | mercadopago | efectivo | pendiente
   estado        String    @default("pendiente") // pendiente | aprobado | rechazado | reembolsado | cancelado
   referencia    String?
-  mpPaymentId   String?   // ID de transacción de MercadoPago
-  comprobante   String?   // URL o texto del comprobante
-  notas         String?   // Notas adicionales del pago
+  mpPaymentId   String? // ID de transacción de MercadoPago
+  comprobante   String? // URL o texto del comprobante
+  notas         String? // Notas adicionales del pago
   pagadoAt      DateTime?
   vencimientoAt DateTime?
   createdAt     DateTime  @default(now())
@@ -124,16 +125,16 @@ model Pago {
 
 model Factura {
   id             String    @id @default(cuid())
-  numero         String    // Autoincremental 00000001, 00000002, etc.
-  tipo           String    // A, B, C
+  numero         String // Autoincremental 00000001, 00000002, etc.
+  tipo           String // A, B, C
   puntoVenta     Int       @default(1)
-  montoNeto      Float     // Subtotal sin IVA (si tipo A)
-  montoIva       Float     // IVA 21% (si tipo A)
-  montoTotal     Float     // Total final
-  cae            String?   // Código de Autorización Electrónico de AFIP
-  caeVencimiento String?   // Fecha de vencimiento del CAE
-  razonSocial    String?   // Razón social del cliente (opcional)
-  cuit           String?   // CUIT del cliente (opcional)
+  montoNeto      Float // Subtotal sin IVA (si tipo A)
+  montoIva       Float // IVA 21% (si tipo A)
+  montoTotal     Float // Total final
+  cae            String? // Código de Autorización Electrónico de AFIP
+  caeVencimiento String? // Fecha de vencimiento del CAE
+  razonSocial    String? // Razón social del cliente (opcional)
+  cuit           String? // CUIT del cliente (opcional)
   emitida        Boolean   @default(false) // false = pendiente AFIP, true = emitida con CAE
   emailEnviado   Boolean   @default(false) // true si se envió por email
   emailEnviadoAt DateTime? // Fecha/hora del último envío por email
@@ -160,31 +161,31 @@ model Alerta {
 // ─── Mantenimiento ──────────────────────────────────────────────────────────
 
 model Mantenimiento {
-  id                String              @id @default(cuid())
-  visibleId         String              @unique @default(cuid())
-  motoId            String
-  moto              Moto                @relation(fields: [motoId], references: [id])
-  tipo              TipoMantenimiento
-  estado            EstadoMantenimiento @default(PENDIENTE)
-  descripcion       String
-  diagnostico       String?
-  solucion          String?
-  costoRepuestos    Float               @default(0)
-  costoManoObra     Float               @default(0)
-  costoTotal        Float               @default(0)
-  proveedorId       String?
-  proveedor         Proveedor?          @relation(fields: [proveedorId], references: [id])
-  kmAlMomento       Int?
-  fechaProgramada   DateTime?
-  fechaInicio       DateTime?
-  fechaFin          DateTime?
+  id                  String              @id @default(cuid())
+  visibleId           String              @unique @default(cuid())
+  motoId              String
+  moto                Moto                @relation(fields: [motoId], references: [id])
+  tipo                TipoMantenimiento
+  estado              EstadoMantenimiento @default(PENDIENTE)
+  descripcion         String
+  diagnostico         String?
+  solucion            String?
+  costoRepuestos      Float               @default(0)
+  costoManoObra       Float               @default(0)
+  costoTotal          Float               @default(0)
+  proveedorId         String?
+  proveedor           Proveedor?          @relation(fields: [proveedorId], references: [id])
+  kmAlMomento         Int?
+  fechaProgramada     DateTime?
+  fechaInicio         DateTime?
+  fechaFin            DateTime?
   proximoServiceKm    Int?
   proximoServiceFecha DateTime?
-  notas             String?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  repuestos         RepuestoUsado[]
-  gastos            Gasto[]
+  notas               String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  repuestos           RepuestoUsado[]
+  gastos              Gasto[]
 }
 
 model Proveedor {
@@ -203,22 +204,23 @@ model Proveedor {
   mantenimientos Mantenimiento[]
   repuestos      Repuesto[]
   gastos         Gasto[]
+  facturasCompra FacturaCompra[]
 }
 
 model Repuesto {
-  id           String         @id @default(cuid())
-  visibleId    String         @unique @default(cuid())
+  id           String          @id @default(cuid())
+  visibleId    String          @unique @default(cuid())
   nombre       String
   codigo       String?
   categoria    String?
-  precioCompra Float          @default(0)
-  precioVenta  Float          @default(0)
-  stock        Int            @default(0)
-  stockMinimo  Int            @default(2)
+  precioCompra Float           @default(0)
+  precioVenta  Float           @default(0)
+  stock        Int             @default(0)
+  stockMinimo  Int             @default(2)
   proveedorId  String?
-  proveedor    Proveedor?     @relation(fields: [proveedorId], references: [id])
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  proveedor    Proveedor?      @relation(fields: [proveedorId], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   usos         RepuestoUsado[]
 }
 
@@ -274,6 +276,7 @@ model Gasto {
   comprobante     String?
   fecha           DateTime       @default(now())
   notas           String?
+  facturaCompra   FacturaCompra?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -318,4 +321,158 @@ model PricingConfig {
   descuentoMeses12  Float
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+// ─── Contabilidad ───────────────────────────────────────────────────────────
+
+model FacturaCompra {
+  id        String @id @default(cuid())
+  visibleId String @unique @default(cuid())
+
+  // Proveedor
+  proveedorId String?
+  proveedor   Proveedor? @relation(fields: [proveedorId], references: [id])
+  razonSocial String
+  cuit        String?
+
+  // Invoice
+  tipo        TipoFacturaCompra
+  numero      String
+  puntoVenta  String?
+  fecha       DateTime
+  vencimiento DateTime?
+
+  // Impuestos argentinos
+  subtotal       Float
+  iva21          Float @default(0)
+  iva105         Float @default(0)
+  iva27          Float @default(0)
+  percepcionIVA  Float @default(0)
+  percepcionIIBB Float @default(0)
+  impInterno     Float @default(0)
+  noGravado      Float @default(0)
+  exento         Float @default(0)
+  total          Float
+
+  // Categorización
+  categoria    CategoriaGasto
+  subcategoria String?
+  centroGasto  String?
+  motoId       String?
+  moto         Moto?          @relation(fields: [motoId], references: [id])
+
+  // Estado
+  estado       EstadoFacturaCompra @default(PENDIENTE)
+  montoAbonado Float               @default(0)
+
+  // Archivo + OCR
+  archivoUrl    String?
+  archivoNombre String?
+  ocrRawData    Json?
+  ocrConfianza  Float?
+  ocrRevisado   Boolean @default(false)
+
+  // Relaciones
+  gastoId   String?          @unique
+  gasto     Gasto?           @relation(fields: [gastoId], references: [id])
+  asientoId String?          @unique
+  asiento   AsientoContable? @relation(fields: [asientoId], references: [id])
+
+  notas     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fecha])
+  @@index([proveedorId])
+  @@index([estado])
+  @@index([vencimiento])
+}
+
+model CuentaContable {
+  id          String         @id @default(cuid())
+  codigo      String         @unique
+  nombre      String
+  tipo        TipoCuenta
+  padre       String?
+  nivel       Int            @default(1)
+  imputable   Boolean        @default(true)
+  activa      Boolean        @default(true)
+  descripcion String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  lineas      LineaAsiento[]
+
+  @@index([tipo])
+  @@index([codigo])
+}
+
+model AsientoContable {
+  id              String         @id @default(cuid())
+  visibleId       String         @unique @default(cuid())
+  numero          Int            @unique @default(autoincrement())
+  fecha           DateTime
+  tipo            TipoAsiento
+  descripcion     String
+  totalDebe       Float
+  totalHaber      Float
+  facturaCompraId String?        @unique
+  facturaCompra   FacturaCompra?
+  cerrado         Boolean        @default(false)
+  creadoPor       String?
+  notas           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  lineas          LineaAsiento[]
+
+  @@index([fecha])
+  @@index([tipo])
+}
+
+model LineaAsiento {
+  id          String          @id @default(cuid())
+  asientoId   String
+  asiento     AsientoContable @relation(fields: [asientoId], references: [id], onDelete: Cascade)
+  orden       Int
+  cuentaId    String
+  cuenta      CuentaContable  @relation(fields: [cuentaId], references: [id])
+  debe        Float           @default(0)
+  haber       Float           @default(0)
+  descripcion String?
+  createdAt   DateTime        @default(now())
+
+  @@index([asientoId])
+}
+
+enum TipoFacturaCompra {
+  A
+  B
+  C
+  TICKET
+  RECIBO
+}
+
+enum EstadoFacturaCompra {
+  PENDIENTE
+  PAGADA
+  PAGADA_PARCIAL
+  VENCIDA
+  ANULADA
+}
+
+enum TipoCuenta {
+  ACTIVO
+  PASIVO
+  PATRIMONIO
+  INGRESO
+  EGRESO
+}
+
+enum TipoAsiento {
+  APERTURA
+  COMPRA
+  VENTA
+  PAGO
+  COBRO
+  AJUSTE
+  CIERRE
 }

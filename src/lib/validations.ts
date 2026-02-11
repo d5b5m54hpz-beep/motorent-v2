@@ -344,3 +344,126 @@ export const updateProfileSchema = clienteSchema
   .partial();
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+// ─── Contabilidad ───────────────────────────────────────────────────────────
+
+export const tiposFacturaCompra = ["A", "B", "C", "TICKET", "RECIBO"] as const;
+export const estadosFacturaCompra = ["PENDIENTE", "PAGADA", "PAGADA_PARCIAL", "VENCIDA", "ANULADA"] as const;
+
+export const facturaCompraSchema = z.object({
+  // Proveedor
+  proveedorId: z.string().optional().nullable(),
+  razonSocial: z.string().min(1, "Razón social es requerida"),
+  cuit: z.string()
+    .regex(/^\d{2}-\d{8}-\d{1}$/, "CUIT inválido (formato: 20-12345678-9)")
+    .optional()
+    .or(z.literal("")),
+
+  // Invoice
+  tipo: z.enum(tiposFacturaCompra),
+  numero: z.string().min(1, "Número es requerido"),
+  puntoVenta: z.string().optional(),
+  fecha: z.string().min(1, "Fecha es requerida"),
+  vencimiento: z.string().optional(),
+
+  // Tax breakdown
+  subtotal: z.coerce.number().min(0, "Subtotal no puede ser negativo"),
+  iva21: z.coerce.number().min(0).default(0),
+  iva105: z.coerce.number().min(0).default(0),
+  iva27: z.coerce.number().min(0).default(0),
+  percepcionIVA: z.coerce.number().min(0).default(0),
+  percepcionIIBB: z.coerce.number().min(0).default(0),
+  impInterno: z.coerce.number().min(0).default(0),
+  noGravado: z.coerce.number().min(0).default(0),
+  exento: z.coerce.number().min(0).default(0),
+
+  // Categorization
+  categoria: z.enum(categoriasGasto),
+  subcategoria: z.string().optional(),
+  centroGasto: z.string().optional(),
+  motoId: z.string().optional().nullable(),
+
+  // Estado
+  estado: z.enum(estadosFacturaCompra).default("PENDIENTE"),
+  montoAbonado: z.coerce.number().min(0).default(0),
+
+  // Archivo
+  archivoUrl: z.string().optional(),
+  archivoNombre: z.string().optional(),
+
+  // Notes
+  notas: z.string().optional(),
+}).refine((data) => {
+  // Calculate total and validate
+  const calculatedTotal =
+    data.subtotal +
+    data.iva21 +
+    data.iva105 +
+    data.iva27 +
+    data.percepcionIVA +
+    data.percepcionIIBB +
+    data.impInterno +
+    data.noGravado +
+    data.exento;
+  return calculatedTotal > 0;
+}, {
+  message: "El total debe ser mayor a 0",
+  path: ["subtotal"],
+});
+
+export type FacturaCompraInput = z.infer<typeof facturaCompraSchema>;
+
+// ─── Chart of Accounts ──────────────────────────────────────────────────────
+
+export const tiposCuenta = ["ACTIVO", "PASIVO", "PATRIMONIO", "INGRESO", "EGRESO"] as const;
+
+export const cuentaContableSchema = z.object({
+  codigo: z.string()
+    .min(1, "Código es requerido")
+    .regex(/^\d+(\.\d+)*$/, "Formato inválido (ej: 1.1.01.001)"),
+  nombre: z.string().min(1, "Nombre es requerido"),
+  tipo: z.enum(tiposCuenta),
+  padre: z.string().optional().nullable(),
+  nivel: z.coerce.number().min(1).max(5).default(1),
+  imputable: z.boolean().default(true),
+  activa: z.boolean().default(true),
+  descripcion: z.string().optional(),
+});
+
+export type CuentaContableInput = z.infer<typeof cuentaContableSchema>;
+
+// ─── Journal Entries ────────────────────────────────────────────────────────
+
+export const tiposAsiento = ["APERTURA", "COMPRA", "VENTA", "PAGO", "COBRO", "AJUSTE", "CIERRE"] as const;
+
+export const lineaAsientoSchema = z.object({
+  cuentaId: z.string().min(1, "Cuenta es requerida"),
+  debe: z.coerce.number().min(0).default(0),
+  haber: z.coerce.number().min(0).default(0),
+  descripcion: z.string().optional(),
+}).refine((data) => {
+  // Either debe or haber, not both
+  return (data.debe > 0 && data.haber === 0) || (data.haber > 0 && data.debe === 0);
+}, {
+  message: "Una línea debe tener debe O haber, no ambos",
+  path: ["debe"],
+});
+
+export const asientoContableSchema = z.object({
+  fecha: z.string().min(1, "Fecha es requerida"),
+  tipo: z.enum(tiposAsiento),
+  descripcion: z.string().min(1, "Descripción es requerida"),
+  notas: z.string().optional(),
+  lineas: z.array(lineaAsientoSchema).min(2, "Mínimo 2 líneas requeridas"),
+}).refine((data) => {
+  // Double-entry validation: total debe = total haber
+  const totalDebe = data.lineas.reduce((sum, l) => sum + (l.debe || 0), 0);
+  const totalHaber = data.lineas.reduce((sum, l) => sum + (l.haber || 0), 0);
+  return Math.abs(totalDebe - totalHaber) < 0.01; // Float precision
+}, {
+  message: "El total del Debe debe ser igual al total del Haber",
+  path: ["lineas"],
+});
+
+export type AsientoContableInput = z.infer<typeof asientoContableSchema>;
+export type LineaAsientoInput = z.infer<typeof lineaAsientoSchema>;

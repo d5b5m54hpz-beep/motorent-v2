@@ -27,6 +27,8 @@ import {
   Factory,
   Building2,
   Settings,
+  FileSpreadsheet,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -77,6 +79,12 @@ export function AppSidebar({ user }: Props) {
     { title: "Rentabilidad", href: "/admin/finanzas/rentabilidad", icon: TrendingUp },
     { title: "Presupuestos", href: "/admin/presupuestos", icon: Calculator },
     { title: "Pricing", href: "/admin/finanzas/pricing", icon: DollarSign },
+  ];
+
+  const contabilidad: NavItem[] = [
+    { title: "Facturas Compra", href: "/admin/facturas-compra", icon: FileSpreadsheet },
+    { title: "Plan de Cuentas", href: "/admin/cuentas-contables", icon: BookOpen },
+    { title: "Asientos Contables", href: "/admin/asientos-contables", icon: Calculator },
   ];
 
   const sistema: NavItem[] = [
@@ -244,6 +252,18 @@ export function AppSidebar({ user }: Props) {
             items={finanzas}
             isCollapsed={isCollapsed}
             storageKey="sidebar-finanzas-open"
+          />
+
+          {/* Separator */}
+          <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
+
+          {/* Contabilidad */}
+          <CollapsibleNavSection
+            title="Contabilidad"
+            icon={Building2}
+            items={contabilidad}
+            isCollapsed={isCollapsed}
+            storageKey="sidebar-contabilidad-open"
           />
 
           {/* Separator */}

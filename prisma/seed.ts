@@ -304,6 +304,91 @@ async function main() {
     console.log("✅ Contrato 2 created (Maria - Yamaha FZ25 - Pendiente)");
   }
 
+  // Plan de Cuentas Argentino
+  const cuentas = [
+    // ACTIVO
+    { codigo: "1", nombre: "ACTIVO", tipo: "ACTIVO", nivel: 1, imputable: false },
+    { codigo: "1.1", nombre: "ACTIVO CORRIENTE", tipo: "ACTIVO", padre: "1", nivel: 2, imputable: false },
+    { codigo: "1.1.01", nombre: "Caja y Bancos", tipo: "ACTIVO", padre: "1.1", nivel: 3, imputable: false },
+    { codigo: "1.1.01.001", nombre: "Caja en Pesos", tipo: "ACTIVO", padre: "1.1.01", nivel: 4, imputable: true },
+    { codigo: "1.1.01.002", nombre: "Banco Cuenta Corriente", tipo: "ACTIVO", padre: "1.1.01", nivel: 4, imputable: true },
+    { codigo: "1.1.01.003", nombre: "Mercado Pago", tipo: "ACTIVO", padre: "1.1.01", nivel: 4, imputable: true },
+    { codigo: "1.1.02", nombre: "Créditos por Ventas", tipo: "ACTIVO", padre: "1.1", nivel: 3, imputable: false },
+    { codigo: "1.1.02.001", nombre: "Deudores por Alquileres", tipo: "ACTIVO", padre: "1.1.02", nivel: 4, imputable: true },
+    { codigo: "1.1.03", nombre: "Otros Créditos", tipo: "ACTIVO", padre: "1.1", nivel: 3, imputable: false },
+    { codigo: "1.1.03.001", nombre: "Anticipos a Proveedores", tipo: "ACTIVO", padre: "1.1.03", nivel: 4, imputable: true },
+
+    { codigo: "1.2", nombre: "ACTIVO NO CORRIENTE", tipo: "ACTIVO", padre: "1", nivel: 2, imputable: false },
+    { codigo: "1.2.01", nombre: "Bienes de Uso", tipo: "ACTIVO", padre: "1.2", nivel: 3, imputable: false },
+    { codigo: "1.2.01.001", nombre: "Motos", tipo: "ACTIVO", padre: "1.2.01", nivel: 4, imputable: true },
+    { codigo: "1.2.01.002", nombre: "Motos - Amortización Acumulada", tipo: "ACTIVO", padre: "1.2.01", nivel: 4, imputable: true },
+    { codigo: "1.2.01.003", nombre: "Muebles y Útiles", tipo: "ACTIVO", padre: "1.2.01", nivel: 4, imputable: true },
+    { codigo: "1.2.01.004", nombre: "Equipos de Computación", tipo: "ACTIVO", padre: "1.2.01", nivel: 4, imputable: true },
+
+    // PASIVO
+    { codigo: "2", nombre: "PASIVO", tipo: "PASIVO", nivel: 1, imputable: false },
+    { codigo: "2.1", nombre: "PASIVO CORRIENTE", tipo: "PASIVO", padre: "2", nivel: 2, imputable: false },
+    { codigo: "2.1.01", nombre: "Deudas Comerciales", tipo: "PASIVO", padre: "2.1", nivel: 3, imputable: false },
+    { codigo: "2.1.01.001", nombre: "Proveedores", tipo: "PASIVO", padre: "2.1.01", nivel: 4, imputable: true },
+    { codigo: "2.1.02", nombre: "Deudas Fiscales", tipo: "PASIVO", padre: "2.1", nivel: 3, imputable: false },
+    { codigo: "2.1.02.001", nombre: "IVA Débito Fiscal", tipo: "PASIVO", padre: "2.1.02", nivel: 4, imputable: true },
+    { codigo: "2.1.02.002", nombre: "IVA Crédito Fiscal", tipo: "PASIVO", padre: "2.1.02", nivel: 4, imputable: true },
+    { codigo: "2.1.02.003", nombre: "IIBB a Pagar", tipo: "PASIVO", padre: "2.1.02", nivel: 4, imputable: true },
+    { codigo: "2.1.02.004", nombre: "Impuestos a Pagar", tipo: "PASIVO", padre: "2.1.02", nivel: 4, imputable: true },
+
+    // PATRIMONIO
+    { codigo: "3", nombre: "PATRIMONIO NETO", tipo: "PATRIMONIO", nivel: 1, imputable: false },
+    { codigo: "3.1", nombre: "Capital", tipo: "PATRIMONIO", padre: "3", nivel: 2, imputable: true },
+    { codigo: "3.2", nombre: "Resultados Acumulados", tipo: "PATRIMONIO", padre: "3", nivel: 2, imputable: true },
+    { codigo: "3.3", nombre: "Resultado del Ejercicio", tipo: "PATRIMONIO", padre: "3", nivel: 2, imputable: true },
+
+    // INGRESOS
+    { codigo: "4", nombre: "INGRESOS", tipo: "INGRESO", nivel: 1, imputable: false },
+    { codigo: "4.1", nombre: "Ingresos Operativos", tipo: "INGRESO", padre: "4", nivel: 2, imputable: false },
+    { codigo: "4.1.01", nombre: "Alquileres de Motos", tipo: "INGRESO", padre: "4.1", nivel: 3, imputable: true },
+    { codigo: "4.1.02", nombre: "Venta de Servicios Adicionales", tipo: "INGRESO", padre: "4.1", nivel: 3, imputable: true },
+    { codigo: "4.2", nombre: "Otros Ingresos", tipo: "INGRESO", padre: "4", nivel: 2, imputable: false },
+    { codigo: "4.2.01", nombre: "Intereses Ganados", tipo: "INGRESO", padre: "4.2", nivel: 3, imputable: true },
+
+    // EGRESOS
+    { codigo: "5", nombre: "EGRESOS", tipo: "EGRESO", nivel: 1, imputable: false },
+    { codigo: "5.1", nombre: "Costo de Servicios", tipo: "EGRESO", padre: "5", nivel: 2, imputable: false },
+    { codigo: "5.1.01", nombre: "Mantenimiento de Motos", tipo: "EGRESO", padre: "5.1", nivel: 3, imputable: true },
+    { codigo: "5.1.02", nombre: "Repuestos", tipo: "EGRESO", padre: "5.1", nivel: 3, imputable: true },
+    { codigo: "5.1.03", nombre: "Combustible", tipo: "EGRESO", padre: "5.1", nivel: 3, imputable: true },
+    { codigo: "5.1.04", nombre: "Seguros", tipo: "EGRESO", padre: "5.1", nivel: 3, imputable: true },
+    { codigo: "5.1.05", nombre: "Patentes", tipo: "EGRESO", padre: "5.1", nivel: 3, imputable: true },
+
+    { codigo: "5.2", nombre: "Gastos Administrativos", tipo: "EGRESO", padre: "5", nivel: 2, imputable: false },
+    { codigo: "5.2.01", nombre: "Sueldos y Jornales", tipo: "EGRESO", padre: "5.2", nivel: 3, imputable: true },
+    { codigo: "5.2.02", nombre: "Cargas Sociales", tipo: "EGRESO", padre: "5.2", nivel: 3, imputable: true },
+    { codigo: "5.2.03", nombre: "Alquiler Local", tipo: "EGRESO", padre: "5.2", nivel: 3, imputable: true },
+    { codigo: "5.2.04", nombre: "Servicios (Luz, Gas, Internet)", tipo: "EGRESO", padre: "5.2", nivel: 3, imputable: true },
+    { codigo: "5.2.05", nombre: "Honorarios Profesionales", tipo: "EGRESO", padre: "5.2", nivel: 3, imputable: true },
+    { codigo: "5.2.06", nombre: "Gastos de Oficina", tipo: "EGRESO", padre: "5.2", nivel: 3, imputable: true },
+
+    { codigo: "5.3", nombre: "Gastos Comerciales", tipo: "EGRESO", padre: "5", nivel: 2, imputable: false },
+    { codigo: "5.3.01", nombre: "Publicidad y Marketing", tipo: "EGRESO", padre: "5.3", nivel: 3, imputable: true },
+    { codigo: "5.3.02", nombre: "Comisiones", tipo: "EGRESO", padre: "5.3", nivel: 3, imputable: true },
+
+    { codigo: "5.4", nombre: "Gastos Financieros", tipo: "EGRESO", padre: "5", nivel: 2, imputable: false },
+    { codigo: "5.4.01", nombre: "Intereses Bancarios", tipo: "EGRESO", padre: "5.4", nivel: 3, imputable: true },
+    { codigo: "5.4.02", nombre: "Comisiones Bancarias", tipo: "EGRESO", padre: "5.4", nivel: 3, imputable: true },
+
+    { codigo: "5.5", nombre: "Otros Egresos", tipo: "EGRESO", padre: "5", nivel: 2, imputable: false },
+    { codigo: "5.5.01", nombre: "Impuestos y Tasas", tipo: "EGRESO", padre: "5.5", nivel: 3, imputable: true },
+    { codigo: "5.5.02", nombre: "Gastos Varios", tipo: "EGRESO", padre: "5.5", nivel: 3, imputable: true },
+  ];
+
+  for (const cuenta of cuentas) {
+    await prisma.cuentaContable.upsert({
+      where: { codigo: cuenta.codigo },
+      update: {},
+      create: cuenta,
+    });
+  }
+  console.log(`✅ ${cuentas.length} cuentas contables created`);
+
   console.log("🎉 Seed completed!");
 }
 
