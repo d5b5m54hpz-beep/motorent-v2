@@ -70,19 +70,28 @@ type MantenimientoStats = {
   stockBajo: number;
 };
 
+type FinanzasResumen = {
+  ingresosMes: number;
+  gastosMes: number;
+  resultadoNeto: number;
+};
+
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [mantStats, setMantStats] = useState<MantenimientoStats | null>(null);
+  const [finanzas, setFinanzas] = useState<FinanzasResumen | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/dashboard").then((res) => res.json()),
       fetch("/api/mantenimientos/stats").then((res) => res.ok ? res.json() : null).catch(() => null),
+      fetch("/api/finanzas/resumen").then((res) => res.ok ? res.json() : null).catch(() => null),
     ])
-      .then(([dashData, statsData]) => {
+      .then(([dashData, statsData, finData]) => {
         setData(dashData);
         setMantStats(statsData);
+        setFinanzas(finData);
       })
       .catch((err) => console.error("Error loading dashboard:", err))
       .finally(() => setIsLoading(false));
@@ -225,6 +234,39 @@ export default function AdminDashboardPage() {
             </div>
             <p className="mt-2 text-2xl font-bold tracking-tight">{mantStats.stockBajo}</p>
             <p className="text-xs text-muted-foreground">Repuestos por debajo del mínimo</p>
+          </div>
+        </div>
+      )}
+
+      {/* Resultado Neto */}
+      {finanzas && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Ingresos del Mes</p>
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-green-600 dark:text-green-400">
+              {formatCurrency(finanzas.ingresosMes)}
+            </p>
+          </div>
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Gastos del Mes</p>
+              <DollarSign className="h-5 w-5 text-red-600 dark:text-red-400" />
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-red-600 dark:text-red-400">
+              {formatCurrency(finanzas.gastosMes)}
+            </p>
+          </div>
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Resultado Neto</p>
+              <DollarSign className={`h-5 w-5 ${finanzas.resultadoNeto >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`} />
+            </div>
+            <p className={`mt-2 text-2xl font-bold tracking-tight ${finanzas.resultadoNeto >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+              {formatCurrency(finanzas.resultadoNeto)}
+            </p>
           </div>
         </div>
       )}

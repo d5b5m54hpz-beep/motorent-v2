@@ -268,6 +268,56 @@ export const repuestoSchema = z.object({
 
 export type RepuestoInput = z.infer<typeof repuestoSchema>;
 
+// ─── Gastos ─────────────────────────────────────────────────────────────────
+
+export const categoriasGasto = [
+  "MANTENIMIENTO", "COMBUSTIBLE", "SEGURO", "PATENTE", "REPUESTOS",
+  "ALQUILER_LOCAL", "SERVICIOS", "SUELDOS", "MARKETING", "IMPUESTOS",
+  "GRUA", "ADMINISTRATIVO", "OTRO",
+] as const;
+
+export const categoriaGastoLabels: Record<string, string> = {
+  MANTENIMIENTO: "Mantenimiento",
+  COMBUSTIBLE: "Combustible",
+  SEGURO: "Seguro",
+  PATENTE: "Patente",
+  REPUESTOS: "Repuestos",
+  ALQUILER_LOCAL: "Alquiler Local",
+  SERVICIOS: "Servicios",
+  SUELDOS: "Sueldos",
+  MARKETING: "Marketing",
+  IMPUESTOS: "Impuestos",
+  GRUA: "Grúa",
+  ADMINISTRATIVO: "Administrativo",
+  OTRO: "Otro",
+};
+
+export const gastoSchema = z.object({
+  concepto: z.string().min(1, "Concepto es requerido"),
+  descripcion: z.string().optional(),
+  monto: z.coerce.number().min(0.01, "Monto debe ser mayor a 0"),
+  categoria: z.enum(categoriasGasto),
+  subcategoria: z.string().optional(),
+  motoId: z.string().optional().nullable(),
+  proveedorId: z.string().optional().nullable(),
+  mantenimientoId: z.string().optional().nullable(),
+  metodoPago: z.string().optional(),
+  comprobante: z.string().optional(),
+  fecha: z.string().optional(),
+  notas: z.string().optional(),
+});
+
+export type GastoInput = z.infer<typeof gastoSchema>;
+
+export const presupuestoSchema = z.object({
+  mes: z.coerce.number().min(1).max(12),
+  anio: z.coerce.number().min(2024).max(2030),
+  categoria: z.enum(categoriasGasto),
+  montoPresupuestado: z.coerce.number().min(0),
+});
+
+export type PresupuestoInput = z.infer<typeof presupuestoSchema>;
+
 // ─── Client Portal ───────────────────────────────────────────────────────────
 
 // Rental flow schema

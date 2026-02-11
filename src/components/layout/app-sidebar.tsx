@@ -18,6 +18,10 @@ import {
   Wrench,
   Truck,
   Package,
+  BarChart3,
+  TrendingUp,
+  Calculator,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -52,10 +56,15 @@ export function AppSidebar({ user }: Props) {
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench, separator: true },
     { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
     { title: "Repuestos", href: "/admin/repuestos", icon: Package },
+    // Finanzas
+    { title: "Finanzas", href: "/admin/finanzas", icon: BarChart3, separator: true },
+    { title: "Gastos", href: "/admin/gastos", icon: Wallet },
+    { title: "Rentabilidad", href: "/admin/finanzas/rentabilidad", icon: TrendingUp },
+    { title: "Pricing", href: "/admin/finanzas/pricing", icon: DollarSign },
+    { title: "Presupuestos", href: "/admin/presupuestos", icon: Calculator },
     // Sistema
     { title: "Usuarios", href: "/admin/usuarios", icon: UserCog, separator: true },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
-    { title: "Pricing", href: "/admin/pricing", icon: DollarSign },
   ];
 
   // Fetch alertas count

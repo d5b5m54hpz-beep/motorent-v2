@@ -76,8 +76,9 @@ model Moto {
   estado        String     @default("disponible") // disponible | alquilada | mantenimiento | baja
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
-  contratos     Contrato[]
+  contratos      Contrato[]
   mantenimientos Mantenimiento[]
+  gastos         Gasto[]
 }
 
 model Contrato {
@@ -183,6 +184,7 @@ model Mantenimiento {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   repuestos         RepuestoUsado[]
+  gastos            Gasto[]
 }
 
 model Proveedor {
@@ -200,6 +202,7 @@ model Proveedor {
   updatedAt      DateTime        @updatedAt
   mantenimientos Mantenimiento[]
   repuestos      Repuesto[]
+  gastos         Gasto[]
 }
 
 model Repuesto {
@@ -249,6 +252,58 @@ enum EstadoMantenimiento {
   ESPERANDO_REPUESTO
   COMPLETADO
   CANCELADO
+}
+
+// ─── Finanzas ───────────────────────────────────────────────────────────────
+
+model Gasto {
+  id              String         @id @default(cuid())
+  visibleId       String         @unique @default(cuid())
+  concepto        String
+  descripcion     String?
+  monto           Float
+  categoria       CategoriaGasto
+  subcategoria    String?
+  motoId          String?
+  moto            Moto?          @relation(fields: [motoId], references: [id])
+  proveedorId     String?
+  proveedor       Proveedor?     @relation(fields: [proveedorId], references: [id])
+  mantenimientoId String?
+  mantenimiento   Mantenimiento? @relation(fields: [mantenimientoId], references: [id])
+  metodoPago      String?
+  comprobante     String?
+  fecha           DateTime       @default(now())
+  notas           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model PresupuestoMensual {
+  id                 String         @id @default(cuid())
+  mes                Int
+  anio               Int
+  categoria          CategoriaGasto
+  montoPresupuestado Float
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([mes, anio, categoria])
+}
+
+enum CategoriaGasto {
+  MANTENIMIENTO
+  COMBUSTIBLE
+  SEGURO
+  PATENTE
+  REPUESTOS
+  ALQUILER_LOCAL
+  SERVICIOS
+  SUELDOS
+  MARKETING
+  IMPUESTOS
+  GRUA
+  ADMINISTRATIVO
+  OTRO
 }
 
 // ─── Pricing ────────────────────────────────────────────────────────────────
