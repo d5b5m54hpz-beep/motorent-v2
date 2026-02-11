@@ -30,6 +30,8 @@ import {
   FileSpreadsheet,
   BookOpen,
   Tag,
+  Calendar,
+  Banknote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -93,6 +95,8 @@ export function AppSidebar({ user }: Props) {
   const rrhh: NavItem[] = [
     { title: "Dashboard RRHH", href: "/admin/rrhh", icon: Users },
     { title: "Empleados", href: "/admin/rrhh/empleados", icon: UserCog },
+    { title: "Ausencias", href: "/admin/rrhh/ausencias", icon: Calendar },
+    { title: "Liquidación", href: "/admin/rrhh/liquidacion", icon: Banknote },
   ];
 
   const sistema: NavItem[] = [
