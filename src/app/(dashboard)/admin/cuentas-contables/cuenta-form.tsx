@@ -148,14 +148,17 @@ export function CuentaForm({ cuenta, onSubmit, isLoading }: Props) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cuenta Padre</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isLoading}>
+                  <Select
+                    onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                    value={field.value || "none"}
+                    disabled={isLoading}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sin padre (nivel 1)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Sin padre (nivel 1)</SelectItem>
+                      <SelectItem value="none">Sin padre (nivel 1)</SelectItem>
                       {cuentasPadre.map((c) => (
                         <SelectItem key={c.codigo} value={c.codigo}>
                           {c.codigo} - {c.nombre}

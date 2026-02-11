@@ -149,14 +149,17 @@ export function FacturaCompraForm({ factura, onSubmit, isLoading }: Props) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Proveedor</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isLoading}>
+                  <Select
+                    onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                    value={field.value || "none"}
+                    disabled={isLoading}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar proveedor" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Sin proveedor</SelectItem>
+                      <SelectItem value="none">Sin proveedor</SelectItem>
                       {proveedores.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                       ))}
@@ -492,14 +495,17 @@ export function FacturaCompraForm({ factura, onSubmit, isLoading }: Props) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Moto Asociada</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isLoading}>
+                    <Select
+                      onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                      value={field.value || "none"}
+                      disabled={isLoading}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar moto" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Sin moto</SelectItem>
+                        <SelectItem value="none">Sin moto</SelectItem>
                         {motos.map((m) => (
                           <SelectItem key={m.id} value={m.id}>{m.marca} {m.modelo} - {m.patente}</SelectItem>
                         ))}
