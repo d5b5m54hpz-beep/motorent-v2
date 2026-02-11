@@ -1,4 +1,4 @@
-import { streamText, tool, stepCountIs, convertToModelMessages } from "ai";
+import { streamText, tool, stepCountIs, convertToCoreMessages } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -45,7 +45,7 @@ Cuando te pregunten algo que requiera datos, usá las herramientas disponibles p
 Formateá montos en pesos argentinos (ej: $150.000) y fechas en formato dd/mm/yyyy.
 Usá markdown para formatear las respuestas cuando sea útil (tablas, listas, negrita).
 Si no tenés datos suficientes para responder, indicalo claramente.`,
-    messages,
+    messages: convertToCoreMessages(messages),
     stopWhen: stepCountIs(5),
     tools: {
       getFleetSummary: tool({
