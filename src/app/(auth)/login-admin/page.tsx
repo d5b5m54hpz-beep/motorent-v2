@@ -4,25 +4,20 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield } from "lucide-react";
 
 export default function LoginAdminPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [status, setStatus] = useState("");
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setStatus("Enviando credenciales...");
     setLoading(true);
 
     try {
@@ -32,44 +27,17 @@ export default function LoginAdminPage() {
         redirect: false,
       });
 
-      setStatus(`signIn: ok=${res?.ok}, error=${res?.error}, status=${res?.status}`);
-
-      if (res?.error) {
+      if (res?.error || !res?.ok) {
         setLoading(false);
         setError("Credenciales inválidas. Verificá email y contraseña.");
         return;
       }
 
-      if (!res?.ok) {
-        setLoading(false);
-        setError(`Login falló (status ${res?.status})`);
-        return;
-      }
-
-      // Verify session was actually created before redirecting
-      setStatus("Verificando sesión...");
-      const sessionRes = await fetch("/api/auth/session");
-      const session = await sessionRes.json();
-
-      if (!session?.user?.role) {
-        setLoading(false);
-        setError("Sesión no válida. Cookie de sesión no se creó correctamente.");
-        setStatus(`Session check: ${JSON.stringify(session)}`);
-        return;
-      }
-
-      if (session.user.role !== "ADMIN" && session.user.role !== "OPERADOR") {
-        setLoading(false);
-        setError(`Sin permisos de admin (role: ${session.user.role})`);
-        return;
-      }
-
-      setStatus("Sesión verificada. Redirigiendo...");
       window.location.href = "/admin";
     } catch (err: unknown) {
       setLoading(false);
       const message = err instanceof Error ? err.message : String(err);
-      setError(`Excepción: ${message}`);
+      setError(`Error: ${message}`);
     }
   }
 
@@ -147,9 +115,6 @@ export default function LoginAdminPage() {
                 className="h-11"
               />
             </div>
-            {status && (
-              <p className="text-sm text-blue-600 dark:text-blue-400">{status}</p>
-            )}
             {error && (
               <p className="text-sm text-destructive">{error}</p>
             )}
