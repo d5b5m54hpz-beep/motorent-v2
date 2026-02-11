@@ -29,6 +29,10 @@ enum Role {
   ADMIN
   OPERADOR
   CLIENTE
+  CONTADOR
+  RRHH_MANAGER
+  COMERCIAL
+  VIEWER
 }
 
 // ─── Negocio ─────────────────────────────────────────────────────────────────
