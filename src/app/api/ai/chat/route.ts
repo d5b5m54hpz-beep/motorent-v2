@@ -1,4 +1,4 @@
-import { streamText, tool, stepCountIs, convertToCoreMessages } from "ai";
+import { streamText, tool, stepCountIs, convertToModelMessages } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
   const { messages } = await req.json();
 
-  const result = streamText({
+  const result = await streamText({
     model: anthropic("claude-sonnet-4-20250514"),
     system: `Sos el asistente de inteligencia artificial de MotoLibre, un sistema ERP de alquiler de motos en Buenos Aires, Argentina.
 Tenés acceso a datos en tiempo real del negocio. Respondé siempre en español argentino.
@@ -45,7 +45,7 @@ Cuando te pregunten algo que requiera datos, usá las herramientas disponibles p
 Formateá montos en pesos argentinos (ej: $150.000) y fechas en formato dd/mm/yyyy.
 Usá markdown para formatear las respuestas cuando sea útil (tablas, listas, negrita).
 Si no tenés datos suficientes para responder, indicalo claramente.`,
-    messages: convertToCoreMessages(messages),
+    messages: await convertToModelMessages(messages),
     stopWhen: stepCountIs(5),
     tools: {
       getFleetSummary: tool({
