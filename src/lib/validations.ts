@@ -475,6 +475,9 @@ export const tiposContrato = ["TIEMPO_INDETERMINADO", "PLAZO_FIJO", "EVENTUAL", 
 export const tiposRecibo = ["MENSUAL", "SAC_1", "SAC_2", "FINAL", "VACACIONES"] as const;
 export const estadosRecibo = ["BORRADOR", "CONFIRMADO", "PAGADO", "ANULADO"] as const;
 export const tiposAusencia = ["VACACIONES", "ENFERMEDAD", "ACCIDENTE_LABORAL", "LICENCIA_MATERNIDAD", "LICENCIA_PATERNIDAD", "ESTUDIO", "MATRIMONIO", "FALLECIMIENTO_FAMILIAR", "MUDANZA", "DONACION_SANGRE", "INJUSTIFICADA", "OTRO"] as const;
+export const estadosCiviles = ["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO", "UNION_CONVIVENCIAL"] as const;
+export const departamentos = ["OPERACIONES", "ADMINISTRACION", "COMERCIAL", "TALLER"] as const;
+export const jornadasLaborales = ["COMPLETA", "PARCIAL"] as const;
 
 export const empleadoSchema = z.object({
   nombre: z.string().min(1, "Nombre es requerido"),

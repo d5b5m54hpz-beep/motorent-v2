@@ -20,7 +20,7 @@ export type FacturaCompra = {
   noGravado: number;
   exento: number;
   total: number;
-  categoria: string;
+  categoria: "MANTENIMIENTO" | "COMBUSTIBLE" | "SEGURO" | "PATENTE" | "REPUESTOS" | "ALQUILER_LOCAL" | "SERVICIOS" | "SUELDOS" | "MARKETING" | "IMPUESTOS" | "GRUA" | "ADMINISTRATIVO" | "OTRO";
   subcategoria: string | null;
   centroGasto: string | null;
   motoId: string | null;
@@ -57,7 +57,7 @@ export type FacturaCompraFormData = {
   impInterno: number;
   noGravado: number;
   exento: number;
-  categoria: string;
+  categoria: "MANTENIMIENTO" | "COMBUSTIBLE" | "SEGURO" | "PATENTE" | "REPUESTOS" | "ALQUILER_LOCAL" | "SERVICIOS" | "SUELDOS" | "MARKETING" | "IMPUESTOS" | "GRUA" | "ADMINISTRATIVO" | "OTRO";
   subcategoria?: string;
   centroGasto?: string;
   motoId?: string | null;

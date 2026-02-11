@@ -111,8 +111,7 @@ export async function DELETE(
     const cuenta = await prisma.cuentaContable.findUnique({
       where: { id },
       include: {
-        lineasDebe: true,
-        lineasHaber: true,
+        lineas: true,
       },
     });
 
@@ -121,7 +120,7 @@ export async function DELETE(
     }
 
     // Check if has related lineas
-    if (cuenta.lineasDebe.length > 0 || cuenta.lineasHaber.length > 0) {
+    if (cuenta.lineas.length > 0) {
       return NextResponse.json(
         { error: "No se puede eliminar: tiene líneas de asiento asociadas" },
         { status: 400 }
