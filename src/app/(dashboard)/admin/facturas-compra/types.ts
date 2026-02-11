@@ -25,8 +25,14 @@ export type FacturaCompra = {
   centroGasto: string | null;
   motoId: string | null;
   moto: { id: string; marca: string; modelo: string; patente: string } | null;
-  estado: "PENDIENTE" | "PAGADA" | "PAGADA_PARCIAL" | "VENCIDA" | "ANULADA";
+  estado: "BORRADOR" | "PENDIENTE" | "PENDIENTE_REVISION" | "APROBADA" | "RECHAZADA" | "PAGADA" | "PAGADA_PARCIAL" | "VENCIDA" | "ANULADA";
+  estadoAnterior: "BORRADOR" | "PENDIENTE" | "PENDIENTE_REVISION" | "APROBADA" | "RECHAZADA" | "PAGADA" | "PAGADA_PARCIAL" | "VENCIDA" | "ANULADA" | null;
+  estadoMotivo: string | null;
   montoAbonado: number;
+  aprobadoPor: string | null;
+  aprobadoFecha: Date | null;
+  creadoPor: string | null;
+  hashUnico: string | null;
   archivoUrl: string | null;
   archivoNombre: string | null;
   ocrRawData: unknown | null;
@@ -65,8 +71,8 @@ export type FacturaCompraFormData = {
   subcategoria?: string;
   centroGasto?: string;
   motoId?: string | null;
-  estado: "PENDIENTE" | "PAGADA" | "PAGADA_PARCIAL" | "VENCIDA" | "ANULADA";
-  montoAbonado: number;
+  estado?: "BORRADOR" | "PENDIENTE" | "PENDIENTE_REVISION" | "APROBADA" | "RECHAZADA" | "PAGADA" | "PAGADA_PARCIAL" | "VENCIDA" | "ANULADA";
+  montoAbonado?: number;
   archivoUrl?: string;
   archivoNombre?: string;
   cae?: string;

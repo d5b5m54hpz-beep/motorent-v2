@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { facturaCompraSchema } from "@/lib/validations";
+import {
+  validarCUIT,
+  validarMontosFactura,
+  validarFechasFactura,
+  validarTipoComprobante,
+  generarHashFactura,
+  detectarDuplicado,
+} from "@/lib/controles-internos";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requireRole(["ADMIN", "OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   try {
@@ -44,6 +52,8 @@ export async function GET(req: NextRequest) {
         include: {
           proveedor: { select: { id: true, nombre: true } },
           moto: { select: { id: true, marca: true, modelo: true, patente: true } },
+          creador: { select: { id: true, name: true, email: true } },
+          aprobador: { select: { id: true, name: true, email: true } },
         },
       }),
       prisma.facturaCompra.count({ where }),
@@ -70,7 +80,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requireRole(["ADMIN", "OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   try {
@@ -84,9 +94,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { fecha, vencimiento, motoId, proveedorId, ...rest } = parsed.data;
+    const { fecha, vencimiento, caeVencimiento, motoId, proveedorId, ...rest } = parsed.data;
 
-    // Calculate total
+    // ═══ CONTROL 1: VALIDAR CUIT ═══
+    if (rest.cuit) {
+      const cuitValidation = validarCUIT(rest.cuit);
+      if (!cuitValidation.valido) {
+        return NextResponse.json(
+          {
+            error: "CUIT inválido",
+            details: { cuit: [cuitValidation.error] },
+            validaciones: { cuit: cuitValidation }
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ═══ CONTROL 2: VALIDAR MONTOS MATEMÁTICOS ═══
+    const fechaDate = new Date(fecha);
+    const vencimientoDate = vencimiento ? new Date(vencimiento) : null;
+    const caeVencimientoDate = caeVencimiento ? new Date(caeVencimiento) : null;
+
     const total =
       rest.subtotal +
       rest.iva21 +
@@ -98,14 +127,181 @@ export async function POST(req: NextRequest) {
       rest.noGravado +
       rest.exento;
 
+    const validacionMontos = validarMontosFactura({
+      subtotal: rest.subtotal,
+      iva21: rest.iva21,
+      iva105: rest.iva105,
+      iva27: rest.iva27,
+      percepcionIVA: rest.percepcionIVA,
+      percepcionIIBB: rest.percepcionIIBB,
+      impInterno: rest.impInterno,
+      noGravado: rest.noGravado,
+      exento: rest.exento,
+      total,
+    });
+
+    if (!validacionMontos.valido) {
+      return NextResponse.json(
+        {
+          error: "Validación matemática falló",
+          details: { montos: validacionMontos.errores },
+          validaciones: { montos: validacionMontos },
+        },
+        { status: 400 }
+      );
+    }
+
+    // ═══ CONTROL 3: VALIDAR FECHAS ═══
+    const validacionFechas = validarFechasFactura({
+      fechaEmision: fechaDate,
+      fechaVencimiento: vencimientoDate,
+      caeVencimiento: caeVencimientoDate,
+    });
+
+    if (!validacionFechas.valido) {
+      return NextResponse.json(
+        {
+          error: "Validación de fechas falló",
+          details: { fechas: validacionFechas.errores },
+          validaciones: { fechas: validacionFechas },
+        },
+        { status: 400 }
+      );
+    }
+
+    // ═══ CONTROL 4: GENERAR HASH ÚNICO ═══
+    const hashUnico = generarHashFactura({
+      cuit: rest.cuit || null,
+      tipo: rest.tipo,
+      puntoVenta: rest.puntoVenta || null,
+      numero: rest.numero,
+    });
+
+    // ═══ CONTROL 5: DETECTAR DUPLICADOS EXACTOS ═══
+    const duplicadosExactos = await prisma.facturaCompra.findMany({
+      where: {
+        OR: [
+          { hashUnico },
+          ...(rest.cae ? [{ cae: rest.cae }] : []),
+        ],
+      },
+      select: {
+        id: true,
+        visibleId: true,
+        cuit: true,
+        tipo: true,
+        puntoVenta: true,
+        numero: true,
+        total: true,
+        fecha: true,
+        cae: true,
+        estado: true,
+      },
+    });
+
+    if (duplicadosExactos.length > 0) {
+      const mensajes = duplicadosExactos.map((dup) => {
+        const deteccion = detectarDuplicado(
+          {
+            id: dup.id,
+            cuit: dup.cuit,
+            tipo: dup.tipo,
+            puntoVenta: dup.puntoVenta,
+            numero: dup.numero,
+            total: dup.total,
+            fecha: dup.fecha,
+            cae: dup.cae,
+          },
+          {
+            cuit: rest.cuit || null,
+            tipo: rest.tipo,
+            puntoVenta: rest.puntoVenta || null,
+            numero: rest.numero,
+            total,
+            fecha: fechaDate,
+            cae: rest.cae,
+          }
+        );
+        return deteccion.mensajes;
+      }).flat();
+
+      return NextResponse.json(
+        {
+          error: "Factura duplicada",
+          details: { duplicado: mensajes },
+          duplicados: duplicadosExactos.map((d) => ({
+            id: d.visibleId,
+            estado: d.estado,
+            fecha: d.fecha,
+          })),
+        },
+        { status: 409 } // Conflict
+      );
+    }
+
+    // ═══ CONTROL 6: VERIFICAR PERÍODO CERRADO ═══
+    const mesFactura = fechaDate.getMonth() + 1;
+    const anioFactura = fechaDate.getFullYear();
+
+    const periodoCerrado = await prisma.periodoContable.findUnique({
+      where: {
+        mes_anio: {
+          mes: mesFactura,
+          anio: anioFactura,
+        },
+      },
+    });
+
+    if (periodoCerrado?.cerrado) {
+      return NextResponse.json(
+        {
+          error: `El período ${mesFactura}/${anioFactura} está cerrado y no permite modificaciones`,
+          details: {
+            periodo: `Cerrado por ${periodoCerrado.cerradoPor} el ${periodoCerrado.fechaCierre}`,
+          },
+        },
+        { status: 403 }
+      );
+    }
+
+    // ═══ CONTROL 7: VALIDAR TIPO DE COMPROBANTE (WARNING ONLY) ═══
+    let warnings: string[] = [];
+
+    if (rest.cuit && proveedorId) {
+      // Obtener configuración de la empresa
+      const empresaConfig = await prisma.configuracionEmpresa.findUnique({
+        where: { id: "default" },
+      });
+
+      // Obtener proveedor
+      const proveedor = await prisma.proveedor.findUnique({
+        where: { id: proveedorId },
+      });
+
+      if (empresaConfig && proveedor?.condicionIva) {
+        const validacionTipo = validarTipoComprobante({
+          condicionIvaEmisor: proveedor.condicionIva,
+          condicionIvaReceptor: empresaConfig.condicionIva,
+          tipoComprobante: rest.tipo,
+        });
+
+        warnings = validacionTipo.warnings;
+      }
+    }
+
+    // ═══ CREAR FACTURA ═══
     const facturaCompra = await prisma.facturaCompra.create({
       data: {
         ...rest,
         total,
-        fecha: new Date(fecha),
-        vencimiento: vencimiento ? new Date(vencimiento) : null,
+        fecha: fechaDate,
+        vencimiento: vencimientoDate,
+        caeVencimiento: caeVencimientoDate,
         motoId: motoId || null,
         proveedorId: proveedorId || null,
+        hashUnico,
+        estado: "BORRADOR",
+        creadoPor: userId || null,
       },
       include: {
         proveedor: { select: { id: true, nombre: true } },
@@ -113,7 +309,35 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(facturaCompra, { status: 201 });
+    // ═══ AUDIT LOG ═══
+    if (userId) {
+      await prisma.auditLog.create({
+        data: {
+          entidad: "FacturaCompra",
+          entidadId: facturaCompra.id,
+          accion: "CREAR",
+          valorNuevo: JSON.stringify({
+            numero: rest.numero,
+            razonSocial: rest.razonSocial,
+            total,
+          }),
+          usuarioId: userId,
+          facturaCompraId: facturaCompra.id,
+        },
+      });
+    }
+
+    return NextResponse.json(
+      {
+        data: facturaCompra,
+        warnings,
+        validaciones: {
+          montos: validacionMontos,
+          fechas: validacionFechas,
+        },
+      },
+      { status: 201 }
+    );
   } catch (err: unknown) {
     console.error("Error creating factura compra:", err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });

@@ -25,6 +25,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Sparkles } from "lucide-react";
 import { OCRUploadDialog } from "./ocr-upload-dialog";
+import { VerificacionesPanel } from "@/components/facturas/verificaciones-panel";
 import type { FacturaCompra, FacturaCompraFormData, OCRResponse } from "./types";
 import { z } from "zod";
 
@@ -41,6 +42,7 @@ export function FacturaCompraForm({ factura, onSubmit, isLoading }: Props) {
   const [motos, setMotos] = useState<Moto[]>([]);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [ocrDialogOpen, setOcrDialogOpen] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
 
   useEffect(() => {
     fetch("/api/motos?limit=100")
@@ -77,7 +79,7 @@ export function FacturaCompraForm({ factura, onSubmit, isLoading }: Props) {
       subcategoria: factura?.subcategoria ?? "",
       centroGasto: factura?.centroGasto ?? "",
       motoId: factura?.motoId ?? "",
-      estado: factura?.estado ?? "PENDIENTE",
+      estado: factura?.estado ?? "BORRADOR",
       montoAbonado: factura?.montoAbonado ?? 0,
       archivoUrl: factura?.archivoUrl ?? "",
       archivoNombre: factura?.archivoNombre ?? "",
@@ -122,10 +124,35 @@ export function FacturaCompraForm({ factura, onSubmit, isLoading }: Props) {
     (watchedValues[7] || 0) +
     (watchedValues[8] || 0);
 
+  // Watch all fields for real-time validation
+  const allFormValues = form.watch();
+  const verificacionData = {
+    cuit: allFormValues.cuit,
+    tipo: allFormValues.tipo,
+    numero: allFormValues.numero,
+    puntoVenta: allFormValues.puntoVenta,
+    subtotal: allFormValues.subtotal,
+    iva21: allFormValues.iva21,
+    iva105: allFormValues.iva105,
+    iva27: allFormValues.iva27,
+    percepcionIVA: allFormValues.percepcionIVA,
+    percepcionIIBB: allFormValues.percepcionIIBB,
+    impInterno: allFormValues.impInterno,
+    noGravado: allFormValues.noGravado,
+    exento: allFormValues.exento,
+    total: totalCalculado,
+    fecha: allFormValues.fecha,
+    vencimiento: allFormValues.vencimiento,
+    cae: allFormValues.cae,
+  };
+
   return (
     <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Form - 2 columnas */}
+        <div className="lg:col-span-2">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {!factura && (
             <div className="flex justify-end">
               <Button
@@ -537,7 +564,11 @@ export function FacturaCompraForm({ factura, onSubmit, isLoading }: Props) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="BORRADOR">Borrador</SelectItem>
                         <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+                        <SelectItem value="PENDIENTE_REVISION">Pendiente Revisión</SelectItem>
+                        <SelectItem value="APROBADA">Aprobada</SelectItem>
+                        <SelectItem value="RECHAZADA">Rechazada</SelectItem>
                         <SelectItem value="PAGADA">Pagada</SelectItem>
                         <SelectItem value="PAGADA_PARCIAL">Pago Parcial</SelectItem>
                         <SelectItem value="VENCIDA">Vencida</SelectItem>
@@ -583,13 +614,23 @@ export function FacturaCompraForm({ factura, onSubmit, isLoading }: Props) {
           />
 
           <div className="flex justify-end gap-2">
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || hasValidationErrors}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {factura ? "Actualizar" : "Guardar"}
             </Button>
           </div>
         </form>
       </Form>
+        </div>
+
+        {/* Verificaciones Panel - 1 columna */}
+        <div className="lg:col-span-1">
+          <VerificacionesPanel
+            data={verificacionData}
+            onValidationChange={setHasValidationErrors}
+          />
+        </div>
+      </div>
 
       <OCRUploadDialog
         open={ocrDialogOpen}

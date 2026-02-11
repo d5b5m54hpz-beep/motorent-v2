@@ -348,7 +348,7 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 // ─── Contabilidad ───────────────────────────────────────────────────────────
 
 export const tiposFacturaCompra = ["A", "B", "C", "TICKET", "RECIBO"] as const;
-export const estadosFacturaCompra = ["PENDIENTE", "PAGADA", "PAGADA_PARCIAL", "VENCIDA", "ANULADA"] as const;
+export const estadosFacturaCompra = ["BORRADOR", "PENDIENTE", "PENDIENTE_REVISION", "APROBADA", "RECHAZADA", "PAGADA", "PAGADA_PARCIAL", "VENCIDA", "ANULADA"] as const;
 
 export const facturaCompraSchema = z.object({
   // Proveedor
@@ -384,7 +384,7 @@ export const facturaCompraSchema = z.object({
   motoId: z.string().optional().nullable(),
 
   // Estado
-  estado: z.enum(estadosFacturaCompra).default("PENDIENTE"),
+  estado: z.enum(estadosFacturaCompra).default("BORRADOR"),
   montoAbonado: z.coerce.number().min(0).default(0),
 
   // Archivo
