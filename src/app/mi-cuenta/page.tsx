@@ -162,14 +162,16 @@ function MiCuentaContent() {
 
   if (loading || status === "loading") {
     return (
-      <>
+      <div className="min-h-screen flex flex-col">
         <PublicHeader />
-        <div className="container max-w-4xl px-4 py-8">
-          <Skeleton className="h-8 w-48 mb-6" />
-          <Skeleton className="h-96 w-full" />
-        </div>
+        <main className="flex-1">
+          <div className="container max-w-4xl px-4 py-8">
+            <Skeleton className="h-8 w-48 mb-6" />
+            <Skeleton className="h-96 w-full" />
+          </div>
+        </main>
         <PublicFooter />
-      </>
+      </div>
     );
   }
 
@@ -183,9 +185,10 @@ function MiCuentaContent() {
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicHeader />
 
+      <main className="flex-1">
       <div className="container max-w-5xl px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Mi Cuenta</h1>
@@ -538,8 +541,9 @@ function MiCuentaContent() {
         </Tabs>
       </div>
 
+      </main>
       <PublicFooter />
-    </>
+    </div>
   );
 }
 

@@ -81,9 +81,10 @@ export default function CatalogoPage() {
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicHeader />
 
+      <main className="flex-1">
       <div className="container px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Nuestro Catálogo</h1>
@@ -189,7 +190,8 @@ export default function CatalogoPage() {
         </div>
       </div>
 
+      </main>
       <PublicFooter />
-    </>
+    </div>
   );
 }

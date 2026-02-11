@@ -22,9 +22,10 @@ export default function ExitoPage({
   if (!mounted) return null;
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicHeader />
 
+      <main className="flex-1">
       <div className="container max-w-2xl px-4 py-16">
         <div className="text-center space-y-6">
           {/* Success Icon */}
@@ -120,6 +121,7 @@ export default function ExitoPage({
           </div>
         </div>
       </div>
-    </>
+      </main>
+    </div>
   );
 }

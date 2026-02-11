@@ -201,12 +201,14 @@ export default function AlquilerPage({ params }: { params: Promise<{ motoId: str
 
   if (loading || status === "loading") {
     return (
-      <>
+      <div className="min-h-screen flex flex-col">
         <PublicHeader />
-        <div className="container max-w-3xl py-8">
-          <p className="text-center">Cargando...</p>
-        </div>
-      </>
+        <main className="flex-1">
+          <div className="container max-w-3xl py-8">
+            <p className="text-center">Cargando...</p>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -215,9 +217,10 @@ export default function AlquilerPage({ params }: { params: Promise<{ motoId: str
   const steps = ["Confirmar Moto", "Configurar Plan", "Tus Datos", "Confirmar"];
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicHeader />
 
+      <main className="flex-1">
       <div className="container max-w-4xl px-4 py-8">
         <Stepper currentStep={currentStep} steps={steps} />
 
@@ -429,6 +432,7 @@ export default function AlquilerPage({ params }: { params: Promise<{ motoId: str
           </div>
         )}
       </div>
-    </>
+      </main>
+    </div>
   );
 }

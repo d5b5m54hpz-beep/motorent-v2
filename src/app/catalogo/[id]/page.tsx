@@ -76,23 +76,25 @@ export default function MotoDetailPage({ params }: { params: Promise<{ id: strin
 
   if (loading) {
     return (
-      <>
+      <div className="min-h-screen flex flex-col">
         <PublicHeader />
-        <div className="container px-4 py-8">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-4">
-              <Skeleton className="h-96 w-full rounded-lg" />
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-20 w-full" />
-            </div>
-            <div className="space-y-4">
-              <Skeleton className="h-48 w-full rounded-lg" />
-              <Skeleton className="h-96 w-full rounded-lg" />
+        <main className="flex-1">
+          <div className="container px-4 py-8">
+            <div className="grid gap-8 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-4">
+                <Skeleton className="h-96 w-full rounded-lg" />
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="space-y-4">
+                <Skeleton className="h-48 w-full rounded-lg" />
+                <Skeleton className="h-96 w-full rounded-lg" />
+              </div>
             </div>
           </div>
-        </div>
+        </main>
         <PublicFooter />
-      </>
+      </div>
     );
   }
 
@@ -107,9 +109,10 @@ export default function MotoDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicHeader />
 
+      <main className="flex-1">
       <div className="container px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Main Content */}
@@ -243,7 +246,8 @@ export default function MotoDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
+      </main>
       <PublicFooter />
-    </>
+    </div>
   );
 }
