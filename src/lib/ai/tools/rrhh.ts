@@ -51,14 +51,13 @@ export const rrhhTools: ToolMetadata[] = [
       const primerDiaMes = new Date(now.getFullYear(), now.getMonth(), 1);
       const ultimoDiaMes = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-      const ausencias = await prisma.asistencia.groupBy({
+      const ausencias = await prisma.ausencia.groupBy({
         by: ["tipo"],
         where: {
-          fecha: {
+          fechaInicio: {
             gte: primerDiaMes,
             lte: ultimoDiaMes,
           },
-          tipo: { in: ["AUSENTE", "LICENCIA_MEDICA", "LICENCIA_VACACIONES"] },
         },
         _count: { id: true },
       });

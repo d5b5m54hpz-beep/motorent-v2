@@ -47,15 +47,8 @@ export async function POST(req: Request) {
   const availableTools = toolRegistry.getToolsForRole(userRole);
   const availableModules = toolRegistry.getModulesForRole(userRole);
 
-  // Convert to AI SDK format
-  const tools: Record<string, ReturnType<typeof tool>> = {};
-  for (const [name, metadata] of availableTools.entries()) {
-    tools[name] = tool({
-      description: metadata.description,
-      parameters: metadata.parameters,
-      execute: metadata.execute,
-    });
-  }
+  // Convert Map to Record for streamText
+  const tools = Object.fromEntries(availableTools);
 
   const result = await streamText({
     model: anthropic("claude-sonnet-4-20250514"),

@@ -1,9 +1,15 @@
-import { CoreTool } from "ai";
 import { z } from "zod";
 
 export type UserRole = "ADMIN" | "OPERADOR" | "CLIENTE" | "CONTADOR" | "RRHH_MANAGER" | "COMERCIAL" | "VIEWER";
 
 export type ToolModule = "flota" | "comercial" | "finanzas" | "contabilidad" | "rrhh" | "sistema";
+
+// Tool structure compatible with AI SDK
+export interface AITool {
+  description: string;
+  inputSchema: z.ZodObject<any>;
+  execute: (params: any) => Promise<any>;
+}
 
 export interface ToolMetadata {
   name: string;
@@ -25,14 +31,14 @@ class ToolRegistry {
     tools.forEach((tool) => this.register(tool));
   }
 
-  getToolsForRole(role: UserRole): Map<string, CoreTool> {
-    const filtered = new Map<string, CoreTool>();
+  getToolsForRole(role: UserRole): Map<string, AITool> {
+    const filtered = new Map<string, AITool>();
 
     for (const [name, metadata] of this.tools.entries()) {
       if (metadata.allowedRoles.includes(role)) {
         filtered.set(name, {
           description: metadata.description,
-          parameters: metadata.inputSchema,
+          inputSchema: metadata.inputSchema,
           execute: metadata.execute,
         });
       }
