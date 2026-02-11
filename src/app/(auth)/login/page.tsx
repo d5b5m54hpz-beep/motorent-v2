@@ -21,21 +21,32 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (res?.error) {
-      setError("Email o contraseña incorrectos");
-      return;
+      if (res?.error) {
+        setError(`Error: ${res.error}. Status: ${res.status}`);
+        return;
+      }
+
+      if (!res?.ok) {
+        setError(`Login falló. OK: ${res?.ok}, Status: ${res?.status}`);
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (err: unknown) {
+      setLoading(false);
+      const message = err instanceof Error ? err.message : String(err);
+      setError(`Excepción: ${message}`);
     }
-
-    router.push("/");
-    router.refresh();
   }
 
   function handleGoogle() {

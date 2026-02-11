@@ -21,11 +21,18 @@ const config = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        console.log("[authorize] Attempt:", credentials?.email);
+
+        if (!credentials?.email || !credentials?.password) {
+          console.log("[authorize] Missing credentials");
+          return null;
+        }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         });
+
+        console.log("[authorize] User found:", !!user, "Has password:", !!user?.password, "Role:", user?.role);
 
         if (!user?.password) return null;
 
@@ -33,6 +40,8 @@ const config = {
           credentials.password as string,
           user.password
         );
+
+        console.log("[authorize] Password valid:", valid);
 
         if (!valid) return null;
 
