@@ -32,6 +32,7 @@ import {
   Tag,
   Calendar,
   Banknote,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -104,6 +105,7 @@ export function AppSidebar({ user }: Props) {
     { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
     { title: "Configuración Empresa", href: "/admin/configuracion/empresa", icon: Building2 },
+    { title: "Diagnóstico", href: "/admin/sistema/diagnostico", icon: Activity },
     { title: "Asistente IA", href: "/admin/asistente", icon: Sparkles, badgeText: "IA" },
   ];
 

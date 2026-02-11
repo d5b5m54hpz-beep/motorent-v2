@@ -27,6 +27,7 @@ model User {
   facturasCreadas         FacturaCompra[]    @relation("FacturaCreador")
   auditLogs               AuditLog[]
   periodosCerrados        PeriodoContable[]
+  diagnosticosEjecutados  DiagnosticoRun[]
 }
 
 enum Role {
@@ -767,4 +768,21 @@ model PeriodoContable {
 
   @@unique([mes, anio])
   @@index([cerrado])
+}
+
+model DiagnosticoRun {
+  id           String   @id @default(cuid())
+  fecha        DateTime @default(now())
+  duracion     Int      // segundos que tardó
+  totalChecks  Int
+  passed       Int
+  warnings     Int
+  errors       Int
+  resultados   Json     // array con todos los checks
+  ejecutadoPor String
+  ejecutador   User     @relation(fields: [ejecutadoPor], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([fecha])
+  @@index([ejecutadoPor])
 }
