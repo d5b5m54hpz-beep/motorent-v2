@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Calculator,
   Wallet,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -33,6 +34,7 @@ type NavItem = {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  badgeText?: string;
   separator?: boolean;
 };
 
@@ -62,6 +64,8 @@ export function AppSidebar({ user }: Props) {
     { title: "Rentabilidad", href: "/admin/finanzas/rentabilidad", icon: TrendingUp },
     { title: "Pricing", href: "/admin/finanzas/pricing", icon: DollarSign },
     { title: "Presupuestos", href: "/admin/presupuestos", icon: Calculator },
+    // IA
+    { title: "Asistente IA", href: "/admin/asistente", icon: Sparkles, separator: true, badgeText: "IA" },
     // Sistema
     { title: "Usuarios", href: "/admin/usuarios", icon: UserCog, separator: true },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
@@ -195,6 +199,11 @@ export function AppSidebar({ user }: Props) {
                 {!isCollapsed && (
                   <>
                     <span className="flex-1 tracking-tight">{item.title}</span>
+                    {item.badgeText && (
+                      <span className="rounded-md bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-500">
+                        {item.badgeText}
+                      </span>
+                    )}
                     {item.badge !== undefined && item.badge > 0 && (
                       <Badge
                         variant="destructive"
