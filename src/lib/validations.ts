@@ -195,6 +195,79 @@ export const facturaSchema = z.object({
 
 export type FacturaInput = z.infer<typeof facturaSchema>;
 
+// ─── Mantenimientos ──────────────────────────────────────────────────────────
+
+export const tiposMantenimiento = [
+  "SERVICE_PREVENTIVO",
+  "REPARACION",
+  "CAMBIO_ACEITE",
+  "CAMBIO_NEUMATICOS",
+  "FRENOS",
+  "ELECTRICA",
+  "CHAPA_PINTURA",
+  "OTRO",
+] as const;
+
+export const estadosMantenimiento = [
+  "PENDIENTE",
+  "PROGRAMADO",
+  "EN_PROCESO",
+  "ESPERANDO_REPUESTO",
+  "COMPLETADO",
+  "CANCELADO",
+] as const;
+
+export const mantenimientoSchema = z.object({
+  motoId: z.string().min(1, "Moto es requerida"),
+  tipo: z.enum(tiposMantenimiento),
+  estado: z.enum(estadosMantenimiento).default("PENDIENTE"),
+  descripcion: z.string().min(1, "Descripción es requerida"),
+  diagnostico: z.string().optional(),
+  solucion: z.string().optional(),
+  costoRepuestos: z.coerce.number().min(0).default(0),
+  costoManoObra: z.coerce.number().min(0).default(0),
+  proveedorId: z.string().optional().nullable(),
+  kmAlMomento: z.coerce.number().min(0).optional().nullable(),
+  fechaProgramada: z.string().optional().nullable(),
+  fechaInicio: z.string().optional().nullable(),
+  fechaFin: z.string().optional().nullable(),
+  proximoServiceKm: z.coerce.number().min(0).optional().nullable(),
+  proximoServiceFecha: z.string().optional().nullable(),
+  notas: z.string().max(2000).optional(),
+});
+
+export type MantenimientoInput = z.infer<typeof mantenimientoSchema>;
+
+// ─── Proveedores ────────────────────────────────────────────────────────────
+
+export const proveedorSchema = z.object({
+  nombre: z.string().min(1, "Nombre es requerido"),
+  contacto: z.string().optional(),
+  telefono: z.string().optional(),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  direccion: z.string().optional(),
+  rubro: z.string().optional(),
+  notas: z.string().max(1000).optional(),
+  activo: z.boolean().default(true),
+});
+
+export type ProveedorInput = z.infer<typeof proveedorSchema>;
+
+// ─── Repuestos ──────────────────────────────────────────────────────────────
+
+export const repuestoSchema = z.object({
+  nombre: z.string().min(1, "Nombre es requerido"),
+  codigo: z.string().optional(),
+  categoria: z.string().optional(),
+  precioCompra: z.coerce.number().min(0).default(0),
+  precioVenta: z.coerce.number().min(0).default(0),
+  stock: z.coerce.number().min(0).default(0),
+  stockMinimo: z.coerce.number().min(0).default(2),
+  proveedorId: z.string().optional().nullable(),
+});
+
+export type RepuestoInput = z.infer<typeof repuestoSchema>;
+
 // ─── Client Portal ───────────────────────────────────────────────────────────
 
 // Rental flow schema

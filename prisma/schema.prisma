@@ -77,6 +77,7 @@ model Moto {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   contratos     Contrato[]
+  mantenimientos Mantenimiento[]
 }
 
 model Contrato {
@@ -154,6 +155,103 @@ model Alerta {
   contrato        Contrato? @relation(fields: [contratoId], references: [id])
   pago            Pago?     @relation(fields: [pagoId], references: [id])
 }
+
+// ─── Mantenimiento ──────────────────────────────────────────────────────────
+
+model Mantenimiento {
+  id                String              @id @default(cuid())
+  visibleId         String              @unique @default(cuid())
+  motoId            String
+  moto              Moto                @relation(fields: [motoId], references: [id])
+  tipo              TipoMantenimiento
+  estado            EstadoMantenimiento @default(PENDIENTE)
+  descripcion       String
+  diagnostico       String?
+  solucion          String?
+  costoRepuestos    Float               @default(0)
+  costoManoObra     Float               @default(0)
+  costoTotal        Float               @default(0)
+  proveedorId       String?
+  proveedor         Proveedor?          @relation(fields: [proveedorId], references: [id])
+  kmAlMomento       Int?
+  fechaProgramada   DateTime?
+  fechaInicio       DateTime?
+  fechaFin          DateTime?
+  proximoServiceKm    Int?
+  proximoServiceFecha DateTime?
+  notas             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  repuestos         RepuestoUsado[]
+}
+
+model Proveedor {
+  id             String          @id @default(cuid())
+  visibleId      String          @unique @default(cuid())
+  nombre         String
+  contacto       String?
+  telefono       String?
+  email          String?
+  direccion      String?
+  rubro          String?
+  notas          String?
+  activo         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  mantenimientos Mantenimiento[]
+  repuestos      Repuesto[]
+}
+
+model Repuesto {
+  id           String         @id @default(cuid())
+  visibleId    String         @unique @default(cuid())
+  nombre       String
+  codigo       String?
+  categoria    String?
+  precioCompra Float          @default(0)
+  precioVenta  Float          @default(0)
+  stock        Int            @default(0)
+  stockMinimo  Int            @default(2)
+  proveedorId  String?
+  proveedor    Proveedor?     @relation(fields: [proveedorId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  usos         RepuestoUsado[]
+}
+
+model RepuestoUsado {
+  id              String        @id @default(cuid())
+  mantenimientoId String
+  mantenimiento   Mantenimiento @relation(fields: [mantenimientoId], references: [id], onDelete: Cascade)
+  repuestoId      String
+  repuesto        Repuesto      @relation(fields: [repuestoId], references: [id])
+  cantidad        Int           @default(1)
+  precioUnitario  Float
+  subtotal        Float
+  createdAt       DateTime      @default(now())
+}
+
+enum TipoMantenimiento {
+  SERVICE_PREVENTIVO
+  REPARACION
+  CAMBIO_ACEITE
+  CAMBIO_NEUMATICOS
+  FRENOS
+  ELECTRICA
+  CHAPA_PINTURA
+  OTRO
+}
+
+enum EstadoMantenimiento {
+  PENDIENTE
+  PROGRAMADO
+  EN_PROCESO
+  ESPERANDO_REPUESTO
+  COMPLETADO
+  CANCELADO
+}
+
+// ─── Pricing ────────────────────────────────────────────────────────────────
 
 model PricingConfig {
   id                String   @id @unique @default("default")
