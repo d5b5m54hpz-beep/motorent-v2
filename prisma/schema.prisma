@@ -11,18 +11,22 @@ datasource db {
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  name            String
-  image           String?
-  provider        String // "credentials" | "google" | "apple" | "facebook"
-  password        String?
-  phone           String?
-  phoneVerifiedAt DateTime?
-  role            Role      @default(CLIENTE)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  cliente         Cliente?
+  id                      String             @id @default(cuid())
+  email                   String             @unique
+  name                    String
+  image                   String?
+  provider                String             // "credentials" | "google" | "apple" | "facebook"
+  password                String?
+  phone                   String?
+  phoneVerifiedAt         DateTime?
+  role                    Role               @default(CLIENTE)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  cliente                 Cliente?
+  facturasAprobadas       FacturaCompra[]    @relation("FacturaAprobador")
+  facturasCreadas         FacturaCompra[]    @relation("FacturaCreador")
+  auditLogs               AuditLog[]
+  periodosCerrados        PeriodoContable[]
 }
 
 enum Role {
@@ -392,9 +396,16 @@ model FacturaCompra {
   motoId       String?
   moto         Moto?          @relation(fields: [motoId], references: [id])
 
-  // Estado
-  estado       EstadoFacturaCompra @default(PENDIENTE)
-  montoAbonado Float               @default(0)
+  // Estado y Workflow
+  estado             EstadoFacturaCompra @default(BORRADOR)
+  estadoAnterior     EstadoFacturaCompra?
+  estadoMotivo       String?
+  montoAbonado       Float               @default(0)
+  aprobadoPor        String?
+  aprobadoFecha      DateTime?
+  aprobador          User?               @relation("FacturaAprobador", fields: [aprobadoPor], references: [id])
+  creadoPor          String?
+  creador            User?               @relation("FacturaCreador", fields: [creadoPor], references: [id])
 
   // Archivo + OCR
   archivoUrl    String?
@@ -409,11 +420,15 @@ model FacturaCompra {
   caeVerificado      Boolean?
   caeVerificadoFecha DateTime?
 
+  // Control de Duplicidad
+  hashUnico String? @unique
+
   // Relaciones
   gastoId   String?          @unique
   gasto     Gasto?           @relation(fields: [gastoId], references: [id])
   asientoId String?          @unique
   asiento   AsientoContable? @relation(fields: [asientoId], references: [id])
+  auditLogs AuditLog[]
 
   notas     String?
   createdAt DateTime @default(now())
@@ -423,6 +438,8 @@ model FacturaCompra {
   @@index([proveedorId])
   @@index([estado])
   @@index([vencimiento])
+  @@index([hashUnico])
+  @@index([cuit, tipo, puntoVenta, numero])
 }
 
 model CuentaContable {
@@ -489,7 +506,11 @@ enum TipoFacturaCompra {
 }
 
 enum EstadoFacturaCompra {
+  BORRADOR
   PENDIENTE
+  PENDIENTE_REVISION
+  APROBADA
+  RECHAZADA
   PAGADA
   PAGADA_PARCIAL
   VENCIDA
@@ -707,4 +728,43 @@ enum EstadoRecibo {
   CONFIRMADO
   PAGADO
   ANULADO
+}
+
+// ─── Auditoría y Controles Internos ─────────────────────────────────────────
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  entidad        String   // "FacturaCompra", "AsientoContable", "Empleado", etc
+  entidadId      String   // ID del registro
+  accion         String   // "CREAR", "EDITAR", "ELIMINAR", "CAMBIO_ESTADO", "APROBAR", "RECHAZAR"
+  campo          String?  // qué campo cambió
+  valorAnterior  String?  // valor viejo (JSON)
+  valorNuevo     String?  // valor nuevo (JSON)
+  usuarioId      String
+  usuario        User     @relation(fields: [usuarioId], references: [id])
+  ip             String?
+  userAgent      String?
+  facturaCompra  FacturaCompra? @relation(fields: [facturaCompraId], references: [id])
+  facturaCompraId String?
+  createdAt      DateTime @default(now())
+
+  @@index([entidad, entidadId])
+  @@index([usuarioId])
+  @@index([createdAt])
+}
+
+model PeriodoContable {
+  id          String    @id @default(cuid())
+  mes         Int       // 1-12
+  anio        Int
+  cerrado     Boolean   @default(false)
+  cerradoPor  String?
+  cerrador    User?     @relation(fields: [cerradoPor], references: [id])
+  fechaCierre DateTime?
+  motivo      String?   // Por qué se cerró
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([mes, anio])
+  @@index([cerrado])
 }
