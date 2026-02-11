@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 
-export async function middleware(req: NextRequest) {
+// Use NextAuth v5 auth() wrapper instead of getToken() for proper
+// cookie/secret resolution behind reverse proxies (Railway)
+export default auth((req) => {
   const { pathname } = req.nextUrl;
-  const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
-  const token = await getToken({ req, secret });
+  const session = req.auth;
 
   // Public routes - always allow
   if (
@@ -15,17 +15,18 @@ export async function middleware(req: NextRequest) {
     pathname === "/login-admin" ||
     pathname.startsWith("/motos") ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/public")
+    pathname.startsWith("/api/public") ||
+    pathname.startsWith("/api/debug")
   ) {
     return NextResponse.next();
   }
 
   // Admin routes - require ADMIN role
   if (pathname.startsWith("/admin")) {
-    if (!token) {
+    if (!session) {
       return NextResponse.redirect(new URL("/login-admin", req.url));
     }
-    if (token.role !== "ADMIN" && token.role !== "OPERADOR") {
+    if (session.user.role !== "ADMIN" && session.user.role !== "OPERADOR") {
       return NextResponse.redirect(new URL("/login-admin", req.url));
     }
     return NextResponse.next();
@@ -38,13 +39,13 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/alquiler") ||
     pathname.startsWith("/pago")
   ) {
-    if (!token) {
+    if (!session) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [

@@ -32,23 +32,39 @@ export default function LoginAdminPage() {
         redirect: false,
       });
 
-      setStatus(`signIn respondió: ok=${res?.ok}, error=${res?.error}, status=${res?.status}`);
+      setStatus(`signIn: ok=${res?.ok}, error=${res?.error}, status=${res?.status}`);
 
       if (res?.error) {
         setLoading(false);
-        setError(`Credenciales inválidas. Verificá email y contraseña.`);
+        setError("Credenciales inválidas. Verificá email y contraseña.");
         return;
       }
 
       if (!res?.ok) {
         setLoading(false);
-        setError(`Login falló. OK: ${res?.ok}, Status: ${res?.status}`);
+        setError(`Login falló (status ${res?.status})`);
         return;
       }
 
-      setStatus("Login exitoso. Redirigiendo a /admin...");
+      // Verify session was actually created before redirecting
+      setStatus("Verificando sesión...");
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
 
-      // Use window.location for a full page navigation instead of client-side routing
+      if (!session?.user?.role) {
+        setLoading(false);
+        setError("Sesión no válida. Cookie de sesión no se creó correctamente.");
+        setStatus(`Session check: ${JSON.stringify(session)}`);
+        return;
+      }
+
+      if (session.user.role !== "ADMIN" && session.user.role !== "OPERADOR") {
+        setLoading(false);
+        setError(`Sin permisos de admin (role: ${session.user.role})`);
+        return;
+      }
+
+      setStatus("Sesión verificada. Redirigiendo...");
       window.location.href = "/admin";
     } catch (err: unknown) {
       setLoading(false);

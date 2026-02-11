@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 // TEMPORARY diagnostic endpoint - DELETE after fixing auth
-export async function GET() {
+export async function GET(req: NextRequest) {
   const checks: Record<string, unknown> = {};
 
   // 1. Check env vars (only show if set, not the values)
@@ -12,7 +14,24 @@ export async function GET() {
   checks.NEXTAUTH_URL = process.env.NEXTAUTH_URL ?? "NOT SET";
   checks.NODE_ENV = process.env.NODE_ENV;
 
-  // 2. Check if admin user exists
+  // 2. Check cookies present in the request
+  const cookieNames = req.cookies.getAll().map((c) => c.name);
+  checks.cookies = cookieNames;
+  checks.hasSessionCookie =
+    cookieNames.some((n) => n.includes("session-token")) ||
+    cookieNames.some((n) => n.includes("authjs"));
+
+  // 3. Check auth() session (same function used by middleware and layout)
+  try {
+    const session = await auth();
+    checks.authSession = session
+      ? { user: session.user?.email, role: session.user?.role, id: session.user?.id }
+      : null;
+  } catch (error: unknown) {
+    checks.authSessionError = error instanceof Error ? error.message : String(error);
+  }
+
+  // 4. Check if admin user exists
   try {
     const admin = await prisma.user.findUnique({
       where: { email: "admin@motorent.com" },
@@ -29,7 +48,7 @@ export async function GET() {
         passwordLength: admin.password?.length ?? 0,
       };
 
-      // 3. Test password hash
+      // 5. Test password hash
       if (admin.password) {
         const isValid = await bcrypt.compare("admin123", admin.password);
         checks.passwordTest = {
@@ -45,7 +64,7 @@ export async function GET() {
     checks.dbError = error instanceof Error ? error.message : String(error);
   }
 
-  // 4. Check total users
+  // 6. Check total users
   try {
     const userCount = await prisma.user.count();
     checks.totalUsers = userCount;
