@@ -3,6 +3,8 @@ import { Users, UserX, TrendingDown, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = 'force-dynamic';
+
 async function getStats() {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/rrhh/stats`, {

@@ -43,10 +43,11 @@ export function getColumns(actions: ColumnActions): ColumnDef<CuentaContable>[] 
       accessorKey: "nombre",
       header: "Nombre",
       cell: ({ row }) => {
-        const nivel = row.original.nivel;
-        const indentation = (nivel - 1) * 24; // 24px per level
+        const nivel = row.original.nivel ?? 1;
+        // Use Tailwind classes instead of inline styles to avoid hydration issues
+        const paddingClass = nivel === 1 ? "" : nivel === 2 ? "pl-6" : nivel === 3 ? "pl-12" : "pl-16";
         return (
-          <div style={{ paddingLeft: `${indentation}px` }} className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${paddingClass}`}>
             <span className={nivel === 1 ? "font-bold" : nivel === 2 ? "font-semibold" : ""}>
               {row.original.nombre}
             </span>

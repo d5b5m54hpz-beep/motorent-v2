@@ -161,8 +161,8 @@ export default function FacturasCompraPage() {
     state: { sorting, pagination: { pageIndex: page - 1, pageSize: PAGE_SIZE } },
   });
 
-  const totalMostrado = data.reduce((s, f) => s + f.total, 0);
-  const pendientesPago = data.filter(f => f.estado === "PENDIENTE" || f.estado === "PAGADA_PARCIAL").reduce((s, f) => s + (f.total - f.montoAbonado), 0);
+  const totalMostrado = data.reduce((s, f) => s + (f.total ?? 0), 0);
+  const pendientesPago = data.filter(f => f.estado === "PENDIENTE" || f.estado === "PAGADA_PARCIAL").reduce((s, f) => s + ((f.total ?? 0) - (f.montoAbonado ?? 0)), 0);
 
   return (
     <div className="space-y-4">
