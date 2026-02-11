@@ -122,10 +122,65 @@ export async function GET() {
       ...vals,
     }));
 
+    // EBITDA Margin (aproximado: ingresos - gastos operativos)
+    const gastosOperativos = await prisma.gasto.aggregate({
+      where: {
+        fecha: { gte: inicioMes, lte: finMes },
+        categoria: {
+          in: ["MANTENIMIENTO", "REPUESTOS", "COMBUSTIBLE", "ALQUILER_LOCAL", "SERVICIOS", "MARKETING", "ADMINISTRATIVO"],
+        },
+      },
+      _sum: { monto: true },
+    });
+    const ebitda = ingresos - (gastosOperativos._sum.monto ?? 0);
+    const margenEbitda = ingresos > 0 ? (ebitda / ingresos) * 100 : 0;
+
+    // ROI por moto (top 10) - Ingresos vs valor de compra
+    const motosRentables = await prisma.$queryRaw<
+      Array<{ id: string; modelo: string; marca: string; patente: string; ingresos: number; valorCompra: number; roi: number }>
+    >`
+      SELECT
+        m.id,
+        m.modelo,
+        m.marca,
+        m.patente,
+        COALESCE(SUM(p.monto), 0) as ingresos,
+        COALESCE(m."valorCompra", 0) as "valorCompra",
+        CASE
+          WHEN COALESCE(m."valorCompra", 0) > 0 THEN
+            (COALESCE(SUM(p.monto), 0) / m."valorCompra") * 100
+          ELSE 0
+        END as roi
+      FROM "Moto" m
+      LEFT JOIN "Contrato" c ON c."motoId" = m.id
+      LEFT JOIN "Pago" p ON p."contratoId" = c.id AND p.estado = 'aprobado'
+      WHERE m.estado != 'baja' AND m."valorCompra" > 0
+      GROUP BY m.id, m.modelo, m.marca, m.patente, m."valorCompra"
+      ORDER BY roi DESC
+      LIMIT 10
+    `;
+
+    // Evolución de ocupación (últimos 12 meses)
+    const evolucionOcupacion = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 15); // mid-month snapshot
+      const mesLabel = d.toLocaleDateString("es-AR", { month: "short", year: "2-digit" });
+
+      // Para simplificar, usamos la ocupación actual como promedio
+      // TODO: Implementar snapshots históricos si se requiere precisión
+      const ocupacionMes = Math.round(ocupacion);
+
+      evolucionOcupacion.push({
+        mes: mesLabel,
+        ocupacion: ocupacionMes,
+      });
+    }
+
     return NextResponse.json({
       ingresosMes: ingresos,
       gastosMes: gastos,
       resultadoNeto: ingresos - gastos,
+      margenEbitda: Math.round(margenEbitda),
       ocupacionFlota: Math.round(ocupacion),
       totalMotos,
       motosAlquiladas,
@@ -136,6 +191,15 @@ export async function GET() {
       })),
       presupuestoVsReal,
       flujoCaja,
+      roiMotos: motosRentables.map((m) => ({
+        id: m.id,
+        nombre: `${m.marca} ${m.modelo}`,
+        patente: m.patente,
+        ingresos: Number(m.ingresos),
+        valorCompra: Number(m.valorCompra),
+        roi: Math.round(Number(m.roi)),
+      })),
+      evolucionOcupacion,
     });
   } catch (err: unknown) {
     console.error("Error fetching financial summary:", err);

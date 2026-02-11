@@ -26,12 +26,15 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  Area,
+  AreaChart,
 } from "recharts";
 
 type ResumenData = {
   ingresosMes: number;
   gastosMes: number;
   resultadoNeto: number;
+  margenEbitda: number;
   ocupacionFlota: number;
   totalMotos: number;
   motosAlquiladas: number;
@@ -44,6 +47,15 @@ type ResumenData = {
     porcentaje: number;
   }[];
   flujoCaja: { fecha: string; ingresos: number; gastos: number }[];
+  roiMotos: {
+    id: string;
+    nombre: string;
+    patente: string;
+    ingresos: number;
+    valorCompra: number;
+    roi: number;
+  }[];
+  evolucionOcupacion: { mes: string; ocupacion: number }[];
 };
 
 const PIE_COLORS = [
@@ -109,13 +121,20 @@ export default function FinanzasDashboardPage() {
       subtitle: data.resultadoNeto >= 0 ? "Ganancia" : "Pérdida",
     },
     {
-      label: "Ocupación Flota",
-      value: `${data.ocupacionFlota}%`,
+      label: "Margen EBITDA",
+      value: `${data.margenEbitda}%`,
       icon: Percent,
-      iconClass: "text-[#23e0ff]",
-      subtitle: `${data.motosAlquiladas}/${data.totalMotos} motos`,
+      iconClass: data.margenEbitda >= 20 ? "text-green-500" : data.margenEbitda >= 10 ? "text-yellow-500" : "text-red-500",
+      subtitle: `${data.ocupacionFlota}% ocupación`,
     },
   ];
+
+  // Prepare data for area chart (cumulative cash flow)
+  const flujoCajaConSaldo = data.flujoCaja.map((d, i, arr) => {
+    const saldoAnterior = i > 0 ? (arr[i - 1] as any).saldo || 0 : 0;
+    const saldo = saldoAnterior + d.ingresos - d.gastos;
+    return { ...d, saldo, neto: d.ingresos - d.gastos };
+  });
 
   return (
     <div className="space-y-6">
@@ -138,7 +157,7 @@ export default function FinanzasDashboardPage() {
         ))}
       </div>
 
-      {/* Charts Row 1: Bar + Line */}
+      {/* Charts Row 1: Bar + Area */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Income vs Expenses Bar Chart */}
         <div className="rounded-lg border bg-card p-6 shadow-sm">
@@ -159,11 +178,11 @@ export default function FinanzasDashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Cash Flow Line Chart */}
+        {/* Cash Flow Area Chart */}
         <div className="rounded-lg border bg-card p-6 shadow-sm">
           <h3 className="mb-4 font-semibold">Flujo de Caja (30 días)</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.flujoCaja}>
+            <AreaChart data={flujoCajaConSaldo}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis dataKey="fecha" className="text-xs" interval={4} />
               <YAxis className="text-xs" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
@@ -172,18 +191,25 @@ export default function FinanzasDashboardPage() {
                 contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
               />
               <Legend />
-              <Line type="monotone" dataKey="ingresos" name="Ingresos" stroke="#23e0ff" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="gastos" name="Gastos" stroke="#ef4444" strokeWidth={2} dot={false} />
-            </LineChart>
+              <Area
+                type="monotone"
+                dataKey="saldo"
+                name="Saldo Acumulado"
+                stroke="#23e0ff"
+                fill="#23e0ff"
+                fillOpacity={0.3}
+                strokeWidth={2}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Charts Row 2: Pie + Budget Table */}
+      {/* Charts Row 2: Pie + ROI Horizontal Bar */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Pie Chart */}
         <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <h3 className="mb-4 font-semibold">Distribución de Gastos</h3>
+          <h3 className="mb-4 font-semibold">Distribución de Gastos (Top 5)</h3>
           {data.topCategorias.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-12">Sin gastos este mes</p>
           ) : (
@@ -209,6 +235,69 @@ export default function FinanzasDashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           )}
+        </div>
+
+        {/* ROI por Moto - Horizontal Bar */}
+        <div className="rounded-lg border bg-card p-6 shadow-sm">
+          <h3 className="mb-4 font-semibold">ROI por Moto (Top 10)</h3>
+          {data.roiMotos.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-12">
+              Sin datos de ROI (falta valorCompra en motos)
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={data.roiMotos} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis type="number" className="text-xs" tickFormatter={(v) => `${v}%`} />
+                <YAxis
+                  dataKey="patente"
+                  type="category"
+                  className="text-xs"
+                  width={80}
+                />
+                <Tooltip
+                  formatter={(value: number, name: string) => {
+                    if (name === "ROI") return `${value}%`;
+                    return formatCurrency(value);
+                  }}
+                  contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                />
+                <Bar dataKey="roi" name="ROI" fill="#10b981" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Charts Row 3: Ocupación + Budget */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Evolución de Ocupación */}
+        <div className="rounded-lg border bg-card p-6 shadow-sm">
+          <h3 className="mb-4 font-semibold">Evolución de Ocupación (12 meses)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={data.evolucionOcupacion}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="mes" className="text-xs" />
+              <YAxis
+                className="text-xs"
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <Tooltip
+                formatter={(value: number) => `${value}%`}
+                contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="ocupacion"
+                name="Ocupación"
+                stroke="#8b5cf6"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Budget vs Actual Table */}
