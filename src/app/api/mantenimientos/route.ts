@@ -11,52 +11,63 @@ export async function GET(req: NextRequest) {
   const { error } = await requireRole(["ADMIN", "OPERADOR"]);
   if (error) return error;
 
-  const url = new URL(req.url);
-  const page = parseInt(url.searchParams.get("page") ?? "1");
-  const limit = parseInt(url.searchParams.get("limit") ?? "15");
-  const search = url.searchParams.get("search") ?? "";
-  const sortBy = url.searchParams.get("sortBy") ?? "createdAt";
-  const sortOrder = url.searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
-  const estado = url.searchParams.get("estado");
-  const tipo = url.searchParams.get("tipo");
+  try {
+    const url = new URL(req.url);
+    const page = parseInt(url.searchParams.get("page") ?? "1");
+    const limit = parseInt(url.searchParams.get("limit") ?? "15");
+    const search = url.searchParams.get("search") ?? "";
+    const sortBy = url.searchParams.get("sortBy") ?? "createdAt";
+    const sortOrder = url.searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
+    const estado = url.searchParams.get("estado");
+    const tipo = url.searchParams.get("tipo");
 
-  const orderByColumn = ALLOWED_SORT_COLUMNS.includes(sortBy) ? sortBy : "createdAt";
+    const orderByColumn = ALLOWED_SORT_COLUMNS.includes(sortBy) ? sortBy : "createdAt";
 
-  const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {};
 
-  if (search) {
-    where.OR = [
-      { descripcion: { contains: search, mode: "insensitive" } },
-      { moto: { patente: { contains: search, mode: "insensitive" } } },
-      { moto: { marca: { contains: search, mode: "insensitive" } } },
-      { moto: { modelo: { contains: search, mode: "insensitive" } } },
-    ];
+    if (search) {
+      where.OR = [
+        { descripcion: { contains: search, mode: "insensitive" } },
+        { moto: { patente: { contains: search, mode: "insensitive" } } },
+        { moto: { marca: { contains: search, mode: "insensitive" } } },
+        { moto: { modelo: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    if (estado) where.estado = estado;
+    if (tipo) where.tipo = tipo;
+
+    const [data, total] = await Promise.all([
+      prisma.mantenimiento.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { [orderByColumn]: sortOrder },
+        include: {
+          moto: { select: { id: true, marca: true, modelo: true, patente: true } },
+          proveedor: { select: { id: true, nombre: true } },
+        },
+      }),
+      prisma.mantenimiento.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (err: unknown) {
+    console.error("Error fetching mantenimientos:", err);
+    return NextResponse.json({
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 15,
+      totalPages: 0,
+    });
   }
-
-  if (estado) where.estado = estado;
-  if (tipo) where.tipo = tipo;
-
-  const [data, total] = await Promise.all([
-    prisma.mantenimiento.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { [orderByColumn]: sortOrder },
-      include: {
-        moto: { select: { id: true, marca: true, modelo: true, patente: true } },
-        proveedor: { select: { id: true, nombre: true } },
-      },
-    }),
-    prisma.mantenimiento.count({ where }),
-  ]);
-
-  return NextResponse.json({
-    data,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  });
 }
 
 export async function POST(req: NextRequest) {

@@ -180,14 +180,18 @@ export function RepuestoForm({ repuesto, onSubmit, isLoading }: Props) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Proveedor</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value ?? ""} disabled={isLoading}>
+                <Select
+                  onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)}
+                  defaultValue={field.value || "__none__"}
+                  disabled={isLoading}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar proveedor" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Sin proveedor</SelectItem>
+                    <SelectItem value="__none__">Sin proveedor</SelectItem>
                     {proveedores.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.nombre}

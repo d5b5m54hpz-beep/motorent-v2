@@ -88,12 +88,12 @@ export function getColumns(actions: ColumnActions): ColumnDef<Repuesto>[] {
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => formatCurrency(row.getValue("precioCompra") as number),
+      cell: ({ row }) => formatCurrency(row.original.precioCompra ?? 0),
     },
     {
       accessorKey: "precioVenta",
       header: "P. Venta",
-      cell: ({ row }) => formatCurrency(row.getValue("precioVenta") as number),
+      cell: ({ row }) => formatCurrency(row.original.precioVenta ?? 0),
     },
     {
       accessorKey: "proveedor",

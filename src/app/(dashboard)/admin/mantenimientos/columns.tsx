@@ -102,7 +102,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Mantenimiento>[] {
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => formatCurrency(row.getValue("costoTotal") as number),
+      cell: ({ row }) => formatCurrency(row.original.costoTotal ?? 0),
     },
     {
       accessorKey: "proveedor",
