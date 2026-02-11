@@ -28,6 +28,8 @@ model User {
   auditLogs               AuditLog[]
   periodosCerrados        PeriodoContable[]
   diagnosticosEjecutados  DiagnosticoRun[]
+  historialEstadosMotos   HistorialEstadoMoto[]
+  notasCreditoCreadas     NotaCredito[]
 }
 
 enum Role {
@@ -67,6 +69,7 @@ model Cliente {
   updatedAt           DateTime   @updatedAt
   user                User       @relation(fields: [userId], references: [id])
   contratos           Contrato[]
+  notasCredito        NotaCredito[]
 }
 
 model Moto {
@@ -89,6 +92,51 @@ model Moto {
   mantenimientos Mantenimiento[]
   gastos         Gasto[]
   facturasCompra FacturaCompra[]
+
+  // ─── Identificación vehicular ───────────────────────────────────────────
+  vin               String?   // VIN 17 caracteres
+  numeroMotor       String?
+  numeroCuadro      String?
+  anioFabricacion   Int?
+  paisOrigen        String?   // CHINA, INDIA, BRASIL, JAPON, etc
+
+  // ─── Datos registrales DNRPA ────────────────────────────────────────────
+  dominio           String?   @unique // Patente formato AA000AA
+  fechaPatentamiento DateTime?
+  registroSeccional String?
+  titularRegistral  String?
+  cedulaVerde       String?
+  cedulaAzul        String?
+
+  // ─── Financiero / Amortización ──────────────────────────────────────────
+  valorCompra       Float?    // Costo adquisición (CIF si importada)
+  fechaCompra       DateTime?
+  valorResidual     Float?    // Valor residual estimado
+  vidaUtilAnios     Int?      @default(5) // AFIP: 5 años para vehículos
+  metodoAmortizacion String?  @default("LINEAL")
+
+  // ─── Importación ────────────────────────────────────────────────────────
+  esImportada       Boolean   @default(true)
+  numeroDespachImport String?
+  fechaImportacion  DateTime?
+  valorFOB          Float?
+  valorCIF          Float?
+  derechosImportacion Float?
+
+  // ─── Seguros ────────────────────────────────────────────────────────────
+  aseguradora       String?
+  numeroPoliza      String?
+  tipoCobertura     String?   // RESPONSABILIDAD_CIVIL, TERCEROS_COMPLETO, TODO_RIESGO
+  vencimientoPoliza DateTime?
+
+  // ─── Estado legal ───────────────────────────────────────────────────────
+  estadoLegal       String?   @default("REGULAR") // REGULAR, DENUNCIA_ROBO, SINIESTRO_TOTAL, BAJA_DEFINITIVA, EN_PROCESO_PATENTAMIENTO, PRENDA
+  estadoPatentamiento String? @default("NO_INICIADO") // NO_INICIADO, IMPORTADA, EN_VERIFICACION, DOCUMENTACION_LISTA, EN_RUNA, PATENTADA, LISTA_PARA_ALQUILER
+
+  // ─── Relaciones nuevas ──────────────────────────────────────────────────
+  amortizaciones     Amortizacion[]
+  documentos         DocumentoMoto[]
+  historialEstados   HistorialEstadoMoto[]
 }
 
 model Contrato {
@@ -104,7 +152,15 @@ model Contrato {
   descuentoAplicado Float    @default(0)
   notas             String?
   renovacionAuto    Boolean  @default(false)
-  estado            String   @default("pendiente") // pendiente | activo | finalizado | cancelado
+  estado            String   @default("pendiente") // pendiente | activo | finalizado | cancelado | finalizado_compra
+
+  // ─── Opción a Compra ────────────────────────────────────────────────────
+  esOpcionCompra    Boolean  @default(false)
+  mesesParaCompra   Int?     @default(24)
+  valorCompraFinal  Float?   // Precio al ejercer opción
+  opcionEjercida    Boolean  @default(false)
+  fechaEjercicio    DateTime?
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   cliente           Cliente  @relation(fields: [clienteId], references: [id])
@@ -785,4 +841,80 @@ model DiagnosticoRun {
 
   @@index([fecha])
   @@index([ejecutadoPor])
+}
+
+// ─── Gestión de Flota ───────────────────────────────────────────────────────
+
+model Amortizacion {
+  id                  String   @id @default(cuid())
+  motoId              String
+  moto                Moto     @relation(fields: [motoId], references: [id], onDelete: Cascade)
+  periodo             String   // "2026-01"
+  anioNumero          Int
+  valorInicio         Float
+  cuotaAmortizacion   Float
+  amortizacionAcum    Float
+  valorResidualActual Float
+  createdAt           DateTime @default(now())
+
+  @@unique([motoId, periodo])
+  @@index([motoId])
+  @@index([periodo])
+}
+
+model DocumentoMoto {
+  id               String    @id @default(cuid())
+  motoId           String
+  moto             Moto      @relation(fields: [motoId], references: [id], onDelete: Cascade)
+  tipo             String    // CEDULA_VERDE, CEDULA_AZUL, TITULO, POLIZA, VTV, DESPACHO_IMPORTACION, FACTURA_COMPRA, VERIFICACION_POLICIAL, FORMULARIO_01, FORMULARIO_12, CERTIFICADO_IMPORTACION
+  nombre           String
+  url              String?
+  fechaEmision     DateTime?
+  fechaVencimiento DateTime?
+  notas            String?
+  completado       Boolean   @default(false) // Para checklist patentamiento
+  createdAt        DateTime  @default(now())
+
+  @@index([motoId])
+  @@index([tipo])
+}
+
+model HistorialEstadoMoto {
+  id             String   @id @default(cuid())
+  motoId         String
+  moto           Moto     @relation(fields: [motoId], references: [id], onDelete: Cascade)
+  estadoAnterior String
+  estadoNuevo    String
+  motivo         String?
+  usuarioId      String?
+  usuario        User?    @relation(fields: [usuarioId], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([motoId])
+  @@index([createdAt])
+}
+
+model NotaCredito {
+  id                String   @id @default(cuid())
+  numero            String   @unique // Auto-generado NC-0001
+  tipo              String   // DEVOLUCION_TOTAL, DEVOLUCION_PARCIAL, DESCUENTO, AJUSTE_PRECIO
+  facturaOriginalId String?
+  clienteId         String
+  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  monto             Float
+  montoNeto         Float?
+  montoIva          Float?
+  motivo            String
+  estado            String   @default("EMITIDA") // EMITIDA, APLICADA, REEMBOLSADA, ANULADA
+  aplicadaAId       String?  // Factura/pago donde se aplicó
+  fechaEmision      DateTime @default(now())
+  fechaAplicacion   DateTime?
+  creadoPor         String?
+  creador           User?    @relation(fields: [creadoPor], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([estado])
+  @@index([numero])
 }

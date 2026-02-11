@@ -565,3 +565,23 @@ export const ausenciaSchema = z.object({
 export type EmpleadoInput = z.infer<typeof empleadoSchema>;
 export type ReciboSueldoInput = z.infer<typeof reciboSueldoSchema>;
 export type AusenciaInput = z.infer<typeof ausenciaSchema>;
+
+// ─── Notas de Crédito ───────────────────────────────────────────────────────
+
+export const tiposNotaCredito = ["DEVOLUCION_TOTAL", "DEVOLUCION_PARCIAL", "DESCUENTO", "AJUSTE_PRECIO"] as const;
+export const estadosNotaCredito = ["EMITIDA", "APLICADA", "REEMBOLSADA", "ANULADA"] as const;
+
+export const notaCreditoSchema = z.object({
+  tipo: z.enum(tiposNotaCredito),
+  facturaOriginalId: z.string().optional(),
+  clienteId: z.string().min(1, "Cliente es requerido"),
+  monto: z.coerce.number().min(0.01, "Monto debe ser mayor a 0"),
+  montoNeto: z.coerce.number().min(0).optional(),
+  montoIva: z.coerce.number().min(0).optional(),
+  motivo: z.string().min(1, "Motivo es requerido"),
+  estado: z.enum(estadosNotaCredito).default("EMITIDA"),
+  aplicadaAId: z.string().optional(),
+  fechaAplicacion: z.string().optional(),
+});
+
+export type NotaCreditoInput = z.infer<typeof notaCreditoSchema>;
