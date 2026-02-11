@@ -10,6 +10,8 @@ import {
   AlertTriangle,
   DollarSign,
   Clock,
+  Wrench,
+  Package,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -60,14 +62,28 @@ type DashboardData = {
   };
 };
 
+type MantenimientoStats = {
+  enProceso: number;
+  pendientes: number;
+  completadosMes: number;
+  gastoMes: number;
+  stockBajo: number;
+};
+
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [mantStats, setMantStats] = useState<MantenimientoStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((res) => res.json())
-      .then((json) => setData(json))
+    Promise.all([
+      fetch("/api/dashboard").then((res) => res.json()),
+      fetch("/api/mantenimientos/stats").then((res) => res.ok ? res.json() : null).catch(() => null),
+    ])
+      .then(([dashData, statsData]) => {
+        setData(dashData);
+        setMantStats(statsData);
+      })
       .catch((err) => console.error("Error loading dashboard:", err))
       .finally(() => setIsLoading(false));
   }, []);
@@ -174,6 +190,44 @@ export default function AdminDashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Mantenimiento KPIs */}
+      {mantStats && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">En Mantenimiento</p>
+              <Wrench className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight">{mantStats.enProceso}</p>
+            <p className="text-xs text-muted-foreground">{mantStats.pendientes} pendientes</p>
+          </div>
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Gasto Mensual Mant.</p>
+              <DollarSign className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight">{formatCurrency(mantStats.gastoMes)}</p>
+            <p className="text-xs text-muted-foreground">{mantStats.completadosMes} completados este mes</p>
+          </div>
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Motos en Taller</p>
+              <Bike className="h-5 w-5 text-red-600 dark:text-red-400" />
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight">{data?.kpis.motosMantenimiento ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Fuera de servicio</p>
+          </div>
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Stock Bajo</p>
+              <Package className="h-5 w-5 text-red-600 dark:text-red-400" />
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight">{mantStats.stockBajo}</p>
+            <p className="text-xs text-muted-foreground">Repuestos por debajo del mínimo</p>
+          </div>
+        </div>
+      )}
 
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-7">

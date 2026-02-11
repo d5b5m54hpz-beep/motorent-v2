@@ -15,6 +15,9 @@ import {
   DollarSign,
   ChevronLeft,
   X,
+  Wrench,
+  Truck,
+  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -26,6 +29,7 @@ type NavItem = {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  separator?: boolean;
 };
 
 type Props = {
@@ -44,7 +48,12 @@ export function AppSidebar({ user }: Props) {
     { title: "Pagos", href: "/admin/pagos", icon: CreditCard },
     { title: "Facturas", href: "/admin/facturas", icon: Receipt },
     { title: "Clientes", href: "/admin/clientes", icon: Users },
-    { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
+    // Operaciones
+    { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench, separator: true },
+    { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
+    { title: "Repuestos", href: "/admin/repuestos", icon: Package },
+    // Sistema
+    { title: "Usuarios", href: "/admin/usuarios", icon: UserCog, separator: true },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
     { title: "Pricing", href: "/admin/pricing", icon: DollarSign },
   ];
@@ -149,8 +158,11 @@ export function AppSidebar({ user }: Props) {
               (item.href !== "/admin" && pathname.startsWith(item.href));
 
             return (
+              <div key={item.href}>
+                {item.separator && (
+                  <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
+                )}
               <Link
-                key={item.href}
                 href={item.href}
                 className={cn(
                   "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
@@ -191,6 +203,7 @@ export function AppSidebar({ user }: Props) {
                   </div>
                 )}
               </Link>
+              </div>
             );
           })}
         </nav>
