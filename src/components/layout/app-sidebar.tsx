@@ -83,6 +83,8 @@ export function AppSidebar({ user }: Props) {
   const finanzas: NavItem[] = [
     { title: "Finanzas", href: "/admin/finanzas", icon: BarChart3 },
     { title: "Estado de Resultados", href: "/admin/finanzas/estado-resultados", icon: FileSpreadsheet },
+    { title: "Indicadores Económicos", href: "/admin/finanzas/indicadores", icon: Activity },
+    { title: "Flujo de Caja", href: "/admin/finanzas/flujo-caja", icon: Banknote },
     { title: "Gastos", href: "/admin/gastos", icon: Wallet },
     { title: "Rentabilidad", href: "/admin/finanzas/rentabilidad", icon: TrendingUp },
     { title: "Presupuestos", href: "/admin/presupuestos", icon: Calculator },
