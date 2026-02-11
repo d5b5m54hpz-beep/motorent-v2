@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { Sparkles, X, Send, RotateCcw, Loader2 } from "lucide-react";
+import { Sparkles, Send, RotateCcw, Loader2, Bike, DollarSign, Wrench, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -17,10 +17,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 const quickSuggestions = [
-  { emoji: "📊", text: "Estado de la flota" },
-  { emoji: "💰", text: "Resumen financiero" },
-  { emoji: "🔧", text: "Alertas de mantenimiento" },
-  { emoji: "📈", text: "Moto más rentable" },
+  { icon: Bike, text: "Estado de la flota" },
+  { icon: DollarSign, text: "Resumen financiero" },
+  { icon: Wrench, text: "Alertas de mantenimiento" },
+  { icon: TrendingUp, text: "Moto más rentable" },
 ];
 
 export function ChatAssistant() {
@@ -102,26 +102,15 @@ export function ChatAssistant() {
                 <p className="text-xs text-muted-foreground">Datos en tiempo real</p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-accent"
-                onClick={handleNewConversation}
-                title="Nueva conversación"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-accent"
-                onClick={() => setIsOpen(false)}
-                title="Cerrar"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-accent"
+              onClick={handleNewConversation}
+              title="Nueva conversación"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
           </SheetHeader>
 
           {/* Messages */}
@@ -143,18 +132,21 @@ export function ChatAssistant() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2.5 px-2">
-                    {quickSuggestions.map((s) => (
-                      <button
-                        key={s.text}
-                        onClick={() => handleSend(`¿${s.text}?`)}
-                        className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-all hover:bg-accent hover:border-cyan-500/40 hover:shadow-sm active:scale-95"
-                      >
-                        <span className="text-2xl">{s.emoji}</span>
-                        <span className="text-xs font-medium text-center leading-tight group-hover:text-foreground">
-                          {s.text}
-                        </span>
-                      </button>
-                    ))}
+                    {quickSuggestions.map((s) => {
+                      const Icon = s.icon;
+                      return (
+                        <button
+                          key={s.text}
+                          onClick={() => handleSend(`¿${s.text}?`)}
+                          className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-all hover:bg-accent hover:border-cyan-500/40 hover:shadow-sm active:scale-95"
+                        >
+                          <Icon className="h-5 w-5 text-muted-foreground group-hover:text-cyan-500 transition-colors" />
+                          <span className="text-xs font-medium text-center leading-tight group-hover:text-foreground">
+                            {s.text}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
