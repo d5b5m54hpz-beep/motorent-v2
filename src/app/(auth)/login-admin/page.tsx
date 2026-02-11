@@ -17,9 +17,12 @@ export default function LoginAdminPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [status, setStatus] = useState("");
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setStatus("Enviando credenciales...");
     setLoading(true);
 
     try {
@@ -29,20 +32,24 @@ export default function LoginAdminPage() {
         redirect: false,
       });
 
-      setLoading(false);
+      setStatus(`signIn respondió: ok=${res?.ok}, error=${res?.error}, status=${res?.status}`);
 
       if (res?.error) {
-        setError(`Error: ${res.error}. Status: ${res.status}`);
+        setLoading(false);
+        setError(`Credenciales inválidas. Verificá email y contraseña.`);
         return;
       }
 
       if (!res?.ok) {
+        setLoading(false);
         setError(`Login falló. OK: ${res?.ok}, Status: ${res?.status}`);
         return;
       }
 
-      router.push("/admin");
-      router.refresh();
+      setStatus("Login exitoso. Redirigiendo a /admin...");
+
+      // Use window.location for a full page navigation instead of client-side routing
+      window.location.href = "/admin";
     } catch (err: unknown) {
       setLoading(false);
       const message = err instanceof Error ? err.message : String(err);
@@ -124,6 +131,9 @@ export default function LoginAdminPage() {
                 className="h-11"
               />
             </div>
+            {status && (
+              <p className="text-sm text-blue-600 dark:text-blue-400">{status}</p>
+            )}
             {error && (
               <p className="text-sm text-destructive">{error}</p>
             )}

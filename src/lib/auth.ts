@@ -146,6 +146,7 @@ const config = {
     signIn: "/login",
   },
 
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   trustHost: true,
 } satisfies NextAuthConfig;
 
