@@ -29,6 +29,7 @@ import {
   Settings,
   FileSpreadsheet,
   BookOpen,
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -71,6 +72,7 @@ export function AppSidebar({ user }: Props) {
     { title: "Contratos", href: "/admin/contratos", icon: FileText },
     { title: "Pagos", href: "/admin/pagos", icon: CreditCard },
     { title: "Facturas", href: "/admin/facturas", icon: Receipt },
+    { title: "Precios", href: "/admin/precios", icon: Tag },
   ];
 
   const finanzas: NavItem[] = [
