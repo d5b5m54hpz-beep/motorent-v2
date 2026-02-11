@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash2, Copy, AlertTriangle } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Pencil, Trash2, Copy, AlertTriangle, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,6 +42,7 @@ const estadoLabels: Record<string, string> = {
 type ColumnActions = {
   onEdit: (factura: FacturaCompra) => void;
   onDelete: (factura: FacturaCompra) => void;
+  onGenerateAsiento: (factura: FacturaCompra) => void;
 };
 
 export function getColumns(actions: ColumnActions): ColumnDef<FacturaCompra>[] {
@@ -178,6 +179,12 @@ export function getColumns(actions: ColumnActions): ColumnDef<FacturaCompra>[] {
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
+              {!factura.asientoId && (
+                <DropdownMenuItem onClick={() => actions.onGenerateAsiento(factura)}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Generar Asiento
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => actions.onDelete(factura)} className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />

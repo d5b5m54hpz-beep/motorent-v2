@@ -132,9 +132,22 @@ export default function FacturasCompraPage() {
     }
   };
 
+  const handleGenerateAsiento = async (factura: FacturaCompra) => {
+    try {
+      const res = await fetch(`/api/facturas-compra/${factura.id}/generar-asiento`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error al generar asiento");
+      toast.success("Asiento contable generado correctamente");
+      fetchData();
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Error al generar asiento");
+    }
+  };
+
   const columns = useMemo(() => getColumns({
     onEdit: (factura) => { setSelectedItem(factura); setDialogOpen(true); },
     onDelete: (factura) => { setItemToDelete(factura); setDeleteDialogOpen(true); },
+    onGenerateAsiento: handleGenerateAsiento,
   }), []);
 
   const table = useReactTable({

@@ -85,6 +85,7 @@ export function AppSidebar({ user }: Props) {
     { title: "Facturas Compra", href: "/admin/facturas-compra", icon: FileSpreadsheet },
     { title: "Plan de Cuentas", href: "/admin/cuentas-contables", icon: BookOpen },
     { title: "Asientos Contables", href: "/admin/asientos-contables", icon: Calculator },
+    { title: "Reportes", href: "/admin/contabilidad/reportes", icon: BarChart3 },
   ];
 
   const sistema: NavItem[] = [

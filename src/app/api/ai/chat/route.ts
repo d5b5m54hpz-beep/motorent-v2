@@ -469,6 +469,170 @@ Si no tenés datos suficientes para responder, indicalo claramente.`,
           };
         },
       }),
+
+      getFacturasCompraPendientes: tool({
+        description: "Obtener facturas de compra sin pagar, vencidas y monto total adeudado",
+        inputSchema: z.object({}),
+        execute: async () => {
+          const now = new Date();
+          const [pendientes, vencidas, adeudadoTotal] = await Promise.all([
+            prisma.facturaCompra.count({
+              where: { estado: { in: ["PENDIENTE", "PAGADA_PARCIAL"] } },
+            }),
+            prisma.facturaCompra.count({
+              where: {
+                estado: { in: ["PENDIENTE", "PAGADA_PARCIAL"] },
+                vencimiento: { lt: now },
+              },
+            }),
+            prisma.facturaCompra.aggregate({
+              where: { estado: { in: ["PENDIENTE", "PAGADA_PARCIAL"] } },
+              _sum: { total: true },
+            }),
+          ]);
+
+          const detalle = await prisma.facturaCompra.findMany({
+            where: { estado: { in: ["PENDIENTE", "PAGADA_PARCIAL"] } },
+            select: {
+              razonSocial: true,
+              tipo: true,
+              numero: true,
+              total: true,
+              montoAbonado: true,
+              vencimiento: true,
+            },
+            orderBy: { vencimiento: "asc" },
+            take: 10,
+          });
+
+          return {
+            pendientes,
+            vencidas,
+            adeudadoTotal: Math.round(adeudadoTotal._sum.total ?? 0),
+            detalle: detalle.map((f) => ({
+              proveedor: f.razonSocial,
+              factura: `${f.tipo} ${f.numero}`,
+              total: Math.round(f.total),
+              adeudado: Math.round(f.total - f.montoAbonado),
+              vencimiento: f.vencimiento?.toLocaleDateString("es-AR") ?? "Sin vencimiento",
+              vencida: f.vencimiento ? f.vencimiento < now : false,
+            })),
+          };
+        },
+      }),
+
+      getPosicionIVA: tool({
+        description: "Obtener posición de IVA del período: crédito fiscal (compras) vs débito fiscal (ventas)",
+        inputSchema: z.object({
+          periodo: z.enum(["mes_actual", "ultimo_trimestre", "ultimo_anio"]).describe("Período a analizar"),
+        }),
+        execute: async ({ periodo }) => {
+          const now = new Date();
+          let desde: Date;
+          if (periodo === "mes_actual") {
+            desde = new Date(now.getFullYear(), now.getMonth(), 1);
+          } else if (periodo === "ultimo_trimestre") {
+            desde = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+          } else {
+            desde = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+          }
+
+          // IVA Crédito Fiscal (compras) - cuenta 1.1.04
+          const ivaCredito = await prisma.lineaAsiento.aggregate({
+            where: {
+              cuenta: { codigo: "1.1.04" },
+              asiento: { fecha: { gte: desde, lte: now } },
+            },
+            _sum: { debe: true, haber: true },
+          });
+
+          // IVA Débito Fiscal (ventas) - cuenta 2.1.02.001
+          const ivaDebito = await prisma.lineaAsiento.aggregate({
+            where: {
+              cuenta: { codigo: "2.1.02.001" },
+              asiento: { fecha: { gte: desde, lte: now } },
+            },
+            _sum: { debe: true, haber: true },
+          });
+
+          const credito = (ivaCredito._sum.debe ?? 0) - (ivaCredito._sum.haber ?? 0);
+          const debito = (ivaDebito._sum.haber ?? 0) - (ivaDebito._sum.debe ?? 0);
+          const saldo = debito - credito;
+
+          return {
+            periodo,
+            ivaCredito: Math.round(credito),
+            ivaDebito: Math.round(debito),
+            saldo: Math.round(saldo),
+            tipo: saldo > 0 ? "A PAGAR" : saldo < 0 ? "A FAVOR" : "NEUTRAL",
+          };
+        },
+      }),
+
+      getCostoOperativoMensual: tool({
+        description: "Obtener gastos operativos del mes agrupados por categoría",
+        inputSchema: z.object({}),
+        execute: async () => {
+          const now = new Date();
+          const primerDiaMes = new Date(now.getFullYear(), now.getMonth(), 1);
+
+          const gastosPorCategoria = await prisma.gasto.groupBy({
+            by: ["categoria"],
+            where: { fecha: { gte: primerDiaMes } },
+            _sum: { monto: true },
+            _count: { id: true },
+          });
+
+          const total = gastosPorCategoria.reduce((s, g) => s + (g._sum.monto ?? 0), 0);
+
+          return {
+            mes: now.toLocaleDateString("es-AR", { month: "long", year: "numeric" }),
+            total: Math.round(total),
+            porCategoria: gastosPorCategoria.map((g) => ({
+              categoria: g.categoria,
+              monto: Math.round(g._sum.monto ?? 0),
+              cantidad: g._count.id,
+            })).sort((a, b) => b.monto - a.monto),
+          };
+        },
+      }),
+
+      getTopProveedores: tool({
+        description: "Obtener ranking de proveedores por monto facturado en el período",
+        inputSchema: z.object({
+          periodo: z.enum(["mes_actual", "ultimo_trimestre", "ultimo_anio"]).describe("Período a analizar"),
+        }),
+        execute: async ({ periodo }) => {
+          const now = new Date();
+          let desde: Date;
+          if (periodo === "mes_actual") {
+            desde = new Date(now.getFullYear(), now.getMonth(), 1);
+          } else if (periodo === "ultimo_trimestre") {
+            desde = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+          } else {
+            desde = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+          }
+
+          const facturas = await prisma.facturaCompra.groupBy({
+            by: ["razonSocial"],
+            where: { fecha: { gte: desde, lte: now } },
+            _sum: { total: true },
+            _count: { id: true },
+          });
+
+          const sorted = facturas.sort((a, b) => (b._sum.total ?? 0) - (a._sum.total ?? 0)).slice(0, 10);
+
+          return {
+            periodo,
+            topProveedores: sorted.map((f, idx) => ({
+              ranking: idx + 1,
+              proveedor: f.razonSocial,
+              montoTotal: Math.round(f._sum.total ?? 0),
+              cantidadFacturas: f._count.id,
+            })),
+          };
+        },
+      }),
     },
   });
 
