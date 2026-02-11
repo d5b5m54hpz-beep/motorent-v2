@@ -103,6 +103,7 @@ export function AppSidebar({ user }: Props) {
     { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
     { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
+    { title: "Configuración Empresa", href: "/admin/configuracion/empresa", icon: Building2 },
     { title: "Asistente IA", href: "/admin/asistente", icon: Sparkles, badgeText: "IA" },
   ];
 

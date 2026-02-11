@@ -32,6 +32,10 @@ export type FacturaCompra = {
   ocrRawData: unknown | null;
   ocrConfianza: number | null;
   ocrRevisado: boolean;
+  cae: string | null;
+  caeVencimiento: Date | null;
+  caeVerificado: boolean | null;
+  caeVerificadoFecha: Date | null;
   gastoId: string | null;
   asientoId: string | null;
   notas: string | null;
@@ -65,6 +69,8 @@ export type FacturaCompraFormData = {
   montoAbonado: number;
   archivoUrl?: string;
   archivoNombre?: string;
+  cae?: string;
+  caeVencimiento?: string;
   notas?: string;
 };
 

@@ -196,6 +196,8 @@ model Proveedor {
   id             String          @id @default(cuid())
   visibleId      String          @unique @default(cuid())
   nombre         String
+  cuit           String?
+  condicionIva   CondicionIva?
   contacto       String?
   telefono       String?
   email          String?
@@ -327,6 +329,31 @@ model PricingConfig {
   updatedAt         DateTime @updatedAt
 }
 
+model ConfiguracionEmpresa {
+  id                   String        @id @unique @default("default")
+  razonSocial          String        @default("MotoLibre S.A.S")
+  cuit                 String?
+  condicionIva         CondicionIva  @default(RESPONSABLE_INSCRIPTO)
+  domicilioComercial   String?
+  domicilioFiscal      String?
+  inicioActividades    DateTime?
+  telefono             String?
+  email                String?
+  actividadPrincipal   String?
+  puntoVentaAfip       String?
+  certificadoAfipPath  String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
+
+enum CondicionIva {
+  RESPONSABLE_INSCRIPTO
+  MONOTRIBUTISTA
+  EXENTO
+  NO_RESPONSABLE
+  CONSUMIDOR_FINAL
+}
+
 // ─── Contabilidad ───────────────────────────────────────────────────────────
 
 model FacturaCompra {
@@ -375,6 +402,12 @@ model FacturaCompra {
   ocrRawData    Json?
   ocrConfianza  Float?
   ocrRevisado   Boolean @default(false)
+
+  // CAE (Código Autorización Electrónico)
+  cae                String?
+  caeVencimiento     DateTime?
+  caeVerificado      Boolean?
+  caeVerificadoFecha DateTime?
 
   // Relaciones
   gastoId   String?          @unique

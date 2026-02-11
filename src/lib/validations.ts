@@ -391,6 +391,10 @@ export const facturaCompraSchema = z.object({
   archivoUrl: z.string().optional(),
   archivoNombre: z.string().optional(),
 
+  // CAE (Código Autorización Electrónico)
+  cae: z.string().optional(),
+  caeVencimiento: z.string().optional(),
+
   // Notes
   notas: z.string().optional(),
 }).refine((data) => {
