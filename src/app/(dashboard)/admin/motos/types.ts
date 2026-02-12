@@ -10,6 +10,8 @@ export type Moto = {
   cilindrada: number | null;
   tipo: string | null;
   descripcion: string | null;
+  numeroMotor: string | null;
+  numeroCuadro: string | null;
   imagen: string | null;
   estado: string;
   createdAt: string;

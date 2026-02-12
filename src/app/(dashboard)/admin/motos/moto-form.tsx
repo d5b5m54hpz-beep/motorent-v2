@@ -59,6 +59,8 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
       cilindrada: moto?.cilindrada ?? undefined,
       tipo: moto?.tipo ?? undefined,
       descripcion: moto?.descripcion ?? "",
+      numeroMotor: moto?.numeroMotor ?? "",
+      numeroCuadro: moto?.numeroCuadro ?? "",
       imagen: moto?.imagen ?? "",
       estado: (moto?.estado as MotoInput["estado"]) ?? "disponible",
     },
@@ -215,19 +217,34 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
             <p className="text-xs text-muted-foreground">Estado y precio de alquiler</p>
           </div>
 
-          <FormField
-            control={form.control}
-            name="kilometraje"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kilometraje<span className="text-destructive ml-0.5">*</span></FormLabel>
-                <FormControl>
-                  <Input type="number" disabled={isLoading} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="kilometraje"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Kilometraje<span className="text-destructive ml-0.5">*</span></FormLabel>
+                  <FormControl>
+                    <Input type="number" disabled={isLoading} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="precioMensual"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Precio Mensual (ARS)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="50000" disabled={isLoading} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <FormField
@@ -273,6 +290,57 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
               )}
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="numeroMotor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número de Motor</FormLabel>
+                  <FormControl>
+                    <Input placeholder="ABC123456" disabled={isLoading} {...field} />
+                  </FormControl>
+                  <FormDescription className="text-xs">Opcional - identificación del motor</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="numeroCuadro"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número de Cuadro/Chasis</FormLabel>
+                  <FormControl>
+                    <Input placeholder="XYZ789012" disabled={isLoading} {...field} />
+                  </FormControl>
+                  <FormDescription className="text-xs">Opcional - identificación del chasis</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="descripcion"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Observaciones</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Detalles adicionales, estado general, accesorios..."
+                    className="min-h-[100px] resize-none"
+                    disabled={isLoading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription className="text-xs">Máximo 500 caracteres</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}

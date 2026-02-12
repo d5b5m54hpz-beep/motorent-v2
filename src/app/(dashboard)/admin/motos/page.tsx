@@ -38,12 +38,12 @@ import { getColumns } from "./columns";
 import { MotoForm } from "./moto-form";
 import { DeleteMotoDialog } from "./delete-moto-dialog";
 import { ViewMotoDialog } from "./view-moto-dialog";
-import { ExportButton } from "@/components/import-export/export-button";
 import { ImportDialog } from "@/components/import-export/import-dialog";
 import { StatsCards } from "./components/stats-cards";
 import { BulkActionsToolbar } from "./components/bulk-actions-toolbar";
 import { BulkStateDialog } from "./components/bulk-state-dialog";
 import { BulkDeleteConfirm } from "./components/bulk-delete-confirm";
+import { ExportAdvancedDropdown } from "./components/export-advanced-dropdown";
 import {
   MotosFiltersComponent,
   type MotosFilters,
@@ -400,7 +400,23 @@ export default function MotosPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportButton module="motos" />
+          <ExportAdvancedDropdown
+            allMotos={data}
+            filteredMotos={filteredData}
+            selectedMotos={data.filter((m) => selectedIds.has(m.id))}
+            hasFilters={
+              filters.estado.length > 0 ||
+              !!filters.marca ||
+              !!filters.modelo ||
+              !!filters.anioMin ||
+              !!filters.anioMax ||
+              !!filters.color ||
+              !!filters.tipo ||
+              !!filters.cilindradaMin ||
+              !!filters.cilindradaMax
+            }
+            hasSelection={selectedIds.size > 0}
+          />
           <ImportDialog module="motos" onSuccess={fetchMotos} />
           <Button
             onClick={() => {

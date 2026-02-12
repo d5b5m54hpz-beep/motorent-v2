@@ -18,6 +18,8 @@ export const motoSchema = z.object({
   cilindrada: z.coerce.number().min(0).optional(),
   tipo: z.string().optional(), // Dinámico - acepta cualquier valor
   descripcion: z.string().max(500, "Descripcion muy larga").optional(),
+  numeroMotor: z.string().max(50).optional(),
+  numeroCuadro: z.string().max(50).optional(),
   imagen: z.string().url("URL de imagen invalida").optional().or(z.literal("")),
   estado: z.enum(motoEstados).default("disponible"),
 });
