@@ -10,13 +10,25 @@ export async function GET(req: NextRequest) {
     const [ultimoDiagnostico, usuariosActivos] = await Promise.all([
       prisma.diagnosticoRun.findFirst({
         orderBy: { createdAt: "desc" },
-        select: { nota: true, createdAt: true },
+        select: { passed: true, warnings: true, errors: true, totalChecks: true, createdAt: true },
       }),
       prisma.user.count({ where: { role: { not: "CLIENTE" } } }),
     ]);
 
+    // Generar nota del diagnóstico basado en resultados
+    let notaDiagnostico = "N/A";
+    if (ultimoDiagnostico) {
+      if (ultimoDiagnostico.errors > 0) {
+        notaDiagnostico = `${ultimoDiagnostico.errors} error(es) detectado(s)`;
+      } else if (ultimoDiagnostico.warnings > 0) {
+        notaDiagnostico = `${ultimoDiagnostico.warnings} advertencia(s)`;
+      } else if (ultimoDiagnostico.passed === ultimoDiagnostico.totalChecks) {
+        notaDiagnostico = "Sistema OK";
+      }
+    }
+
     return NextResponse.json({
-      notaDiagnostico: ultimoDiagnostico?.nota || "N/A",
+      notaDiagnostico,
       usuariosActivos,
       ultimoDiagnostico: ultimoDiagnostico?.createdAt || null,
       toolsIA: 25, // Placeholder

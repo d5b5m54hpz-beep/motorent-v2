@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       prisma.factura.aggregate({
         where: {
           createdAt: { gte: fechaDesde, lte: fechaHasta },
-          estado: { in: ["emitida", "enviada"] },
+          emitida: true,
         },
         _sum: { montoTotal: true },
       }),

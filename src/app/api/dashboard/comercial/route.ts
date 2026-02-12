@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       const ingresos = await prisma.factura.aggregate({
         where: {
           createdAt: { gte: mesInicio, lte: mesFin },
-          estado: { in: ["emitida", "enviada"] },
+          emitida: true,
         },
         _sum: { montoTotal: true },
       });

@@ -39,12 +39,12 @@ export async function GET(req: NextRequest) {
     // Ingresos del período (facturas emitidas)
     const [ingresosPeriodo, ingresosAnterior] = await Promise.all([
       prisma.factura.aggregate({
-        where: { ...where, estado: { in: ["emitida", "enviada"] } },
+        where: { ...where, emitida: true },
         _sum: { montoTotal: true },
       }),
       whereAnterior
         ? prisma.factura.aggregate({
-            where: { ...whereAnterior, estado: { in: ["emitida", "enviada"] } },
+            where: { ...whereAnterior, emitida: true },
             _sum: { montoTotal: true },
           })
         : Promise.resolve(null),
