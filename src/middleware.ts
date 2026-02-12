@@ -14,6 +14,7 @@ export default auth((req) => {
     pathname === "/registro" ||
     pathname === "/login-admin" ||
     pathname.startsWith("/motos") ||
+    pathname.startsWith("/docs") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/public") ||
     pathname.startsWith("/api/debug")
@@ -27,14 +28,6 @@ export default auth((req) => {
       return NextResponse.redirect(new URL("/login-admin", req.url));
     }
     if (session.user.role !== "ADMIN" && session.user.role !== "OPERADOR") {
-      return NextResponse.redirect(new URL("/login-admin", req.url));
-    }
-    return NextResponse.next();
-  }
-
-  // Docs routes - require any authenticated user
-  if (pathname.startsWith("/docs")) {
-    if (!session) {
       return NextResponse.redirect(new URL("/login-admin", req.url));
     }
     return NextResponse.next();
