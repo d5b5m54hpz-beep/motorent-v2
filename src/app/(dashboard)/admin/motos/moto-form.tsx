@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, AlertCircle } from "lucide-react";
+import { ImageUpload } from "@/components/image-upload";
 import type { Moto } from "./types";
 
 type Props = {
@@ -192,34 +193,19 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
             <p className="text-xs text-muted-foreground">Estado y precio de alquiler</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="kilometraje"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Kilometraje<span className="text-destructive ml-0.5">*</span></FormLabel>
-                  <FormControl>
-                    <Input type="number" disabled={isLoading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="precioMensual"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Precio Mensual (ARS)<span className="text-destructive ml-0.5">*</span></FormLabel>
-                  <FormControl>
-                    <Input type="number" disabled={isLoading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="kilometraje"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kilometraje<span className="text-destructive ml-0.5">*</span></FormLabel>
+                <FormControl>
+                  <Input type="number" disabled={isLoading} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <FormField
@@ -286,20 +272,24 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
-            name="descripcion"
+            name="imagen"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Descripción</FormLabel>
+                <FormLabel>Imagen</FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Descripción opcional de la moto..."
-                    rows={3}
-                    disabled={isLoading}
-                    {...field}
+                  <ImageUpload
+                    value={field.value}
+                    onChange={field.onChange}
+                    onRemove={() => field.onChange("")}
+                    folder="motos"
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
                 </FormControl>
                 <FormMessage />
               </FormItem>

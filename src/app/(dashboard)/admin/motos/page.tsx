@@ -38,7 +38,6 @@ import { getColumns } from "./columns";
 import { MotoForm } from "./moto-form";
 import { DeleteMotoDialog } from "./delete-moto-dialog";
 import { ViewMotoDialog } from "./view-moto-dialog";
-import { BajaMotoDialog } from "./baja-moto-dialog";
 import { ExportButton } from "@/components/import-export/export-button";
 import { ImportDialog } from "@/components/import-export/import-dialog";
 import type { Moto, MotosApiResponse } from "./types";
@@ -72,10 +71,6 @@ export default function MotosPage() {
   // View dialog
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [motoToView, setMotoToView] = useState<Moto | null>(null);
-
-  // Baja dialog
-  const [bajaDialogOpen, setBajaDialogOpen] = useState(false);
-  const [motoToBaja, setMotoToBaja] = useState<Moto | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -185,10 +180,6 @@ export default function MotosPage() {
           setMotoToDelete(moto);
           setDeleteDialogOpen(true);
         },
-        onBaja: (moto) => {
-          setMotoToBaja(moto);
-          setBajaDialogOpen(true);
-        },
       }),
     []
   );
@@ -218,7 +209,7 @@ export default function MotosPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Motos</h1>
           <p className="text-muted-foreground">
-            Gestion del inventario de motos
+            Gestión del inventario de motos
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -405,21 +396,6 @@ export default function MotosPage() {
         onConfirm={handleDelete}
         isLoading={isDeleting}
       />
-
-      {/* Baja Dialog */}
-      {motoToBaja && (
-        <BajaMotoDialog
-          motoId={motoToBaja.id}
-          motoPatente={motoToBaja.patente}
-          motoMarca={motoToBaja.marca}
-          motoModelo={motoToBaja.modelo}
-          open={bajaDialogOpen}
-          onOpenChange={(open) => {
-            setBajaDialogOpen(open);
-            if (!open) setMotoToBaja(null);
-          }}
-        />
-      )}
     </div>
   );
 }

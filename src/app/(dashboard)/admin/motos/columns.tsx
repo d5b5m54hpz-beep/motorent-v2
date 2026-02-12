@@ -103,20 +103,14 @@ export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
       cell: ({ row }) => {
         const val = row.getValue("cilindrada") as number | null;
         return val ? `${val} cc` : "—";
-      },
     },
     {
-      accessorKey: "precioMensual",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Precio Mensual
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      ),
+      accessorKey: "color",
+      header: "Color",
+      cell: ({ row }) => {
+        const color = row.getValue("color") as string | null;
+        return color || "—";
+      },
       cell: ({ row }) => formatCurrency(row.getValue("precioMensual") as number),
     },
     {

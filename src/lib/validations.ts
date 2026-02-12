@@ -15,7 +15,7 @@ export const motoSchema = z.object({
   anio: z.coerce.number().min(1990).max(new Date().getFullYear() + 1),
   color: z.string().optional(),
   kilometraje: z.coerce.number().min(0, "Kilometraje no puede ser negativo").default(0),
-  precioMensual: z.coerce.number().min(0, "Precio no puede ser negativo").default(0),
+  precioMensual: z.coerce.number().min(0, "Precio no puede ser negativo").optional().default(0),
   cilindrada: z.coerce.number().min(0).optional(),
   tipo: z.enum(motoTipos).optional(),
   descripcion: z.string().max(500, "Descripcion muy larga").optional(),
