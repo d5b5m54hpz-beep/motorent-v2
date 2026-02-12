@@ -37,7 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getColumns } from "./columns";
 import { MotoForm } from "./moto-form";
 import { DeleteMotoDialog } from "./delete-moto-dialog";
-import { ViewMotoDialog } from "./view-moto-dialog";
+import { MotoDetailSheet } from "@/components/motos/moto-detail-sheet";
 import { ImportDialog } from "@/components/import-export/import-dialog";
 import { StatsCards } from "./components/stats-cards";
 import { BulkActionsToolbar } from "./components/bulk-actions-toolbar";
@@ -80,9 +80,9 @@ export default function MotosPage() {
   const [motoToDelete, setMotoToDelete] = useState<Moto | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // View dialog
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [motoToView, setMotoToView] = useState<Moto | null>(null);
+  // Detail sheet
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [selectedMotoId, setSelectedMotoId] = useState<string | null>(null);
 
   // Selection & bulk actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -308,8 +308,8 @@ export default function MotosPage() {
     () =>
       getColumns({
         onView: (moto) => {
-          setMotoToView(moto);
-          setViewDialogOpen(true);
+          setSelectedMotoId(moto.id);
+          setDetailSheetOpen(true);
         },
         onEdit: (moto) => {
           setSelectedMoto(moto);
@@ -590,7 +590,20 @@ export default function MotosPage() {
                   return (
                     <TableRow
                       key={row.id}
-                      className={isSelected ? "bg-cyan-500/5" : ""}
+                      className={isSelected ? "bg-cyan-500/5 cursor-pointer" : "cursor-pointer"}
+                      onClick={(e) => {
+                        // Don't open sheet if clicking on checkbox or actions menu
+                        const target = e.target as HTMLElement;
+                        if (
+                          target.closest('[role="checkbox"]') ||
+                          target.closest('button') ||
+                          target.closest('[role="button"]')
+                        ) {
+                          return;
+                        }
+                        setSelectedMotoId(row.original.id);
+                        setDetailSheetOpen(true);
+                      }}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
@@ -613,8 +626,8 @@ export default function MotosPage() {
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
           onView={(moto) => {
-            setMotoToView(moto);
-            setViewDialogOpen(true);
+            setSelectedMotoId(moto.id);
+            setDetailSheetOpen(true);
           }}
           onEdit={(moto) => {
             setSelectedMoto(moto);
@@ -702,13 +715,22 @@ export default function MotosPage() {
         </DialogContent>
       </Dialog>
 
-      {/* View Dialog */}
-      <ViewMotoDialog
-        moto={motoToView}
-        open={viewDialogOpen}
+      {/* Detail Sheet */}
+      <MotoDetailSheet
+        open={detailSheetOpen}
         onOpenChange={(open) => {
-          setViewDialogOpen(open);
-          if (!open) setMotoToView(null);
+          setDetailSheetOpen(open);
+          if (!open) setSelectedMotoId(null);
+        }}
+        motoId={selectedMotoId}
+        onDelete={() => {
+          if (selectedMotoId) {
+            const moto = data.find(m => m.id === selectedMotoId);
+            if (moto) {
+              setMotoToDelete(moto);
+              setDeleteDialogOpen(true);
+            }
+          }
         }}
       />
 

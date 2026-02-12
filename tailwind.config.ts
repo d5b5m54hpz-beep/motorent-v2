@@ -74,7 +74,6 @@ const config = {
   					dark: '#1A6B6A'
   				}
   			},
-  			// Alias para usar teal como success color
   			success: {
   				DEFAULT: '#38B2AC',
   				foreground: '#FFFFFF'

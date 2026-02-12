@@ -197,48 +197,6 @@ export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
       },
     },
     {
-      id: "docs",
-      header: "Docs",
-      cell: ({ row }) => {
-        const moto = row.original;
-        const estadoPatentamiento = moto.estadoPatentamiento || "SIN_PATENTAR";
-        const estadoSeguro = moto.estadoSeguro || "SIN_SEGURO";
-
-        // Helpers para badges
-        const patentamientoBadge = {
-          SIN_PATENTAR: { label: "Sin Pat.", className: "bg-red-100 text-red-700 border-red-300" },
-          EN_TRAMITE: { label: "Trámite", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-          PATENTADA: { label: "Patentada", className: "bg-green-100 text-green-700 border-green-300" },
-        }[estadoPatentamiento] ?? { label: "N/A", className: "" };
-
-        const seguroBadge = {
-          SIN_SEGURO: { label: "Sin Seg.", className: "bg-red-100 text-red-700 border-red-300" },
-          EN_TRAMITE: { label: "Trámite", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-          ASEGURADA: { label: "Asegurada", className: "bg-green-100 text-green-700 border-green-300" },
-        }[estadoSeguro] ?? { label: "N/A", className: "" };
-
-        // Calcular si el seguro está por vencer
-        const vencimientoSeguro = moto.fechaVencimientoSeguro ? new Date(moto.fechaVencimientoSeguro) : null;
-        const hoy = new Date();
-        const diasParaVencer = vencimientoSeguro ? Math.floor((vencimientoSeguro.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)) : null;
-        const seguroPorVencer = diasParaVencer !== null && diasParaVencer >= 0 && diasParaVencer <= 30;
-
-        return (
-          <div className="flex flex-col gap-1">
-            <Badge variant="outline" className={`text-[10px] ${patentamientoBadge.className}`}>
-              {patentamientoBadge.label}
-            </Badge>
-            <div className="flex items-center gap-1">
-              <Badge variant="outline" className={`text-[10px] ${seguroBadge.className}`}>
-                {seguroBadge.label}
-              </Badge>
-              {seguroPorVencer && <span className="text-yellow-600" title="Seguro vence en 30 días">⚠️</span>}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
       accessorKey: "kilometraje",
       header: ({ column }) => (
         <Button
