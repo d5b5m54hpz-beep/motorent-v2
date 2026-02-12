@@ -82,29 +82,36 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const moto = await prisma.moto.findUnique({
-      where: { id },
-      include: { _count: { select: { contratos: true } } },
+    // Verificar si tiene contratos asociados
+    const contratosCount = await prisma.contrato.count({
+      where: { motoId: id },
     });
 
-    if (!moto) {
-      return NextResponse.json({ error: "Moto no encontrada" }, { status: 404 });
-    }
-
-    if (moto._count.contratos > 0) {
+    if (contratosCount > 0) {
       return NextResponse.json(
         { error: "No se puede eliminar una moto con contratos asociados. Cambia su estado a 'baja' en su lugar." },
-        { status: 409 }
+        { status: 400 }
       );
     }
 
+    // Verificar si tiene mantenimientos y eliminarlos primero
+    const mantenimientosCount = await prisma.mantenimiento.count({
+      where: { motoId: id },
+    }).catch(() => 0); // Si la tabla no existe, ignorar
+
+    if (mantenimientosCount > 0) {
+      // Eliminar mantenimientos primero
+      await prisma.mantenimiento.deleteMany({ where: { motoId: id } });
+    }
+
+    // Eliminar la moto
     await prisma.moto.delete({ where: { id } });
 
-    return NextResponse.json({ message: "Moto eliminada" });
+    return NextResponse.json({ success: true, message: "Moto eliminada" });
   } catch (error: unknown) {
     console.error("Error deleting moto:", error);
     return NextResponse.json(
-      { error: "Error interno del servidor" },
+      { error: "Error interno del servidor", details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }
