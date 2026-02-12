@@ -68,6 +68,7 @@ export function AppSidebar({ user }: Props) {
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
     { title: "Patentamiento RUNA", href: "/admin/motos/patentamiento", icon: Calendar },
+    { title: "Amortización", href: "/admin/flota/amortizacion", icon: TrendingDown },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
     { title: "Repuestos", href: "/admin/repuestos", icon: Package },
   ];
