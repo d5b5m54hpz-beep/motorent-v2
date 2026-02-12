@@ -2,8 +2,10 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,10 +37,57 @@ type ColumnActions = {
   onView: (moto: Moto) => void;
   onEdit: (moto: Moto) => void;
   onDelete: (moto: Moto) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
 };
 
 export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
   return [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            actions.selectedIds.size > 0 &&
+            table.getRowModel().rows.every((row) => actions.selectedIds.has(row.original.id))
+          }
+          onCheckedChange={actions.onToggleSelectAll}
+          aria-label="Seleccionar todas"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={actions.selectedIds.has(row.original.id)}
+          onCheckedChange={() => actions.onToggleSelect(row.original.id)}
+          aria-label="Seleccionar fila"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "imagen",
+      header: "Imagen",
+      cell: ({ row }) => {
+        const imagen = row.getValue("imagen") as string | null;
+        return imagen ? (
+          <div className="relative h-10 w-10 overflow-hidden rounded-md">
+            <Image
+              src={imagen}
+              alt={`${row.original.marca} ${row.original.modelo}`}
+              width={40}
+              height={40}
+              className="object-cover"
+            />
+          </div>
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+            <span className="text-xs text-muted-foreground">Sin img</span>
+          </div>
+        );
+      },
+    },
     {
       accessorKey: "marca",
       header: ({ column }) => (
@@ -82,7 +131,9 @@ export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
       accessorKey: "patente",
       header: "Patente",
       cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.getValue("patente")}</span>
+        <Badge variant="outline" className="font-mono">
+          {row.getValue("patente")}
+        </Badge>
       ),
     },
     {
@@ -103,11 +154,33 @@ export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
       },
     },
     {
+      accessorKey: "tipo",
+      header: "Tipo",
+      cell: ({ row }) => {
+        const tipo = row.original.tipo as string | null;
+        return tipo ? (
+          <Badge variant="outline">{tipo}</Badge>
+        ) : (
+          "—"
+        );
+      },
+    },
+    {
       accessorKey: "color",
       header: "Color",
       cell: ({ row }) => {
         const color = row.getValue("color") as string | null;
-        return color || "—";
+        return color ? (
+          <div className="flex items-center gap-2">
+            <div
+              className="h-4 w-4 rounded-full border"
+              style={{ backgroundColor: color.toLowerCase() }}
+            />
+            <span className="capitalize">{color}</span>
+          </div>
+        ) : (
+          "—"
+        );
       },
     },
     {
@@ -121,6 +194,23 @@ export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
             {badge.label}
           </Badge>
         );
+      },
+    },
+    {
+      accessorKey: "kilometraje",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Km
+          <ArrowUpDown className="ml-1 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const km = row.getValue("kilometraje") as number | null;
+        return km ? km.toLocaleString("es-AR") : "0";
       },
     },
     {

@@ -40,6 +40,10 @@ import { DeleteMotoDialog } from "./delete-moto-dialog";
 import { ViewMotoDialog } from "./view-moto-dialog";
 import { ExportButton } from "@/components/import-export/export-button";
 import { ImportDialog } from "@/components/import-export/import-dialog";
+import { StatsCards } from "./components/stats-cards";
+import { BulkActionsToolbar } from "./components/bulk-actions-toolbar";
+import { BulkStateDialog } from "./components/bulk-state-dialog";
+import { BulkDeleteConfirm } from "./components/bulk-delete-confirm";
 import type { Moto, MotosApiResponse } from "./types";
 import type { MotoInput } from "@/lib/validations";
 
@@ -71,6 +75,12 @@ export default function MotosPage() {
   // View dialog
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [motoToView, setMotoToView] = useState<Moto | null>(null);
+
+  // Selection & bulk actions
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStateDialogOpen, setBulkStateDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -164,6 +174,86 @@ export default function MotosPage() {
     }
   };
 
+  // Bulk actions handlers
+  const handleBulkStateChange = async (newState: string) => {
+    setIsBulkActionLoading(true);
+    try {
+      const res = await fetch("/api/motos/bulk", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: Array.from(selectedIds),
+          updates: { estado: newState },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error al actualizar");
+
+      toast.success(`${selectedIds.size} moto(s) actualizada(s)`);
+      setBulkStateDialogOpen(false);
+      setSelectedIds(new Set());
+      fetchMotos();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Error al actualizar";
+      toast.error(message);
+    } finally {
+      setIsBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setIsBulkActionLoading(true);
+    try {
+      const res = await fetch("/api/motos/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error al eliminar");
+
+      const { deleted, skipped } = json;
+      if (deleted > 0) {
+        toast.success(`${deleted} moto(s) eliminada(s)`);
+      }
+      if (skipped > 0) {
+        toast.warning(`${skipped} moto(s) con contratos no fueron eliminadas`);
+      }
+      setBulkDeleteDialogOpen(false);
+      setSelectedIds(new Set());
+      fetchMotos();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Error al eliminar";
+      toast.error(message);
+    } finally {
+      setIsBulkActionLoading(false);
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedIds.size === data.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(data.map((m) => m.id)));
+    }
+  };
+
+  const handleExportSelected = () => {
+    toast.info("Exportación de seleccionadas - próximamente");
+  };
+
   // Column actions
   const columns = useMemo(
     () =>
@@ -180,9 +270,22 @@ export default function MotosPage() {
           setMotoToDelete(moto);
           setDeleteDialogOpen(true);
         },
+        selectedIds,
+        onToggleSelect: handleToggleSelect,
+        onToggleSelectAll: handleToggleSelectAll,
       }),
-    []
+    [selectedIds]
   );
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const disponibles = data.filter((m) => m.estado === "disponible").length;
+    const alquiladas = data.filter((m) => m.estado === "alquilada").length;
+    const mantenimiento = data.filter((m) => m.estado === "mantenimiento").length;
+    const baja = data.filter((m) => m.estado === "baja").length;
+
+    return { disponibles, alquiladas, mantenimiento, baja };
+  }, [data]);
 
   // TanStack Table (manual pagination + sorting)
   const table = useReactTable({
@@ -227,6 +330,15 @@ export default function MotosPage() {
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <StatsCards
+        total={total}
+        disponibles={stats.disponibles}
+        alquiladas={stats.alquiladas}
+        mantenimiento={stats.mantenimiento}
+        baja={stats.baja}
+      />
+
       {/* Search */}
       <div className="flex items-center gap-2">
         <div className="relative max-w-sm flex-1">
@@ -242,6 +354,18 @@ export default function MotosPage() {
           {total} moto{total !== 1 ? "s" : ""}
         </p>
       </div>
+
+      {/* Bulk Actions Toolbar */}
+      {selectedIds.size > 0 && (
+        <BulkActionsToolbar
+          selectedCount={selectedIds.size}
+          onChangeState={() => setBulkStateDialogOpen(true)}
+          onChangeImage={() => toast.info("Cambiar imagen - próximamente")}
+          onDelete={() => setBulkDeleteDialogOpen(true)}
+          onExport={handleExportSelected}
+          onDeselect={() => setSelectedIds(new Set())}
+        />
+      )}
 
       {/* Table */}
       <div className="rounded-md border">
@@ -283,18 +407,24 @@ export default function MotosPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const isSelected = selectedIds.has(row.original.id);
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={isSelected ? "bg-cyan-500/5" : ""}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -395,6 +525,24 @@ export default function MotosPage() {
         }}
         onConfirm={handleDelete}
         isLoading={isDeleting}
+      />
+
+      {/* Bulk State Dialog */}
+      <BulkStateDialog
+        open={bulkStateDialogOpen}
+        onOpenChange={setBulkStateDialogOpen}
+        selectedCount={selectedIds.size}
+        onConfirm={handleBulkStateChange}
+        isLoading={isBulkActionLoading}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <BulkDeleteConfirm
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+        selectedCount={selectedIds.size}
+        onConfirm={handleBulkDelete}
+        isLoading={isBulkActionLoading}
       />
     </div>
   );
