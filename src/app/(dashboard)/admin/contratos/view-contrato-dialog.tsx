@@ -19,6 +19,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OpcionCompraCard } from "./opcion-compra-card";
 import type { Contrato } from "./types";
 
 type ContratoDetalle = Contrato & {
@@ -162,6 +163,20 @@ export function ViewContratoDialog({ contrato, open, onOpenChange }: Props) {
               <span className="text-muted-foreground">Notas:</span>
               <p className="mt-1">{contrato.notas}</p>
             </div>
+          </>
+        )}
+
+        {contrato.esOpcionCompra && (
+          <>
+            <Separator />
+            <OpcionCompraCard
+              contratoId={contrato.id}
+              fechaInicio={contrato.fechaInicio}
+              mesesParaCompra={contrato.mesesParaCompra ?? 24}
+              valorCompraFinal={contrato.valorCompraFinal ?? 0}
+              opcionEjercida={contrato.opcionEjercida ?? false}
+              fechaEjercicio={contrato.fechaEjercicio ?? null}
+            />
           </>
         )}
 

@@ -66,6 +66,9 @@ export function ContratoForm({ contrato, onSubmit, isLoading }: Props) {
       deposito: contrato?.deposito ?? 0,
       notas: contrato?.notas ?? "",
       renovacionAuto: contrato?.renovacionAuto ?? false,
+      esOpcionCompra: contrato?.esOpcionCompra ?? false,
+      mesesParaCompra: contrato?.mesesParaCompra ?? 24,
+      valorCompraFinal: contrato?.valorCompraFinal ?? 0,
     },
   });
 
@@ -332,6 +335,68 @@ export function ContratoForm({ contrato, onSubmit, isLoading }: Props) {
             <h3 className="text-sm font-semibold tracking-tight">Opciones Adicionales</h3>
             <p className="text-xs text-muted-foreground">Configuración y notas del contrato</p>
           </div>
+
+          <FormField
+            control={form.control}
+            name="esOpcionCompra"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border bg-card p-4 shadow-sm">
+                <div className="space-y-0.5">
+                  <FormLabel className="font-medium">Opción a Compra</FormLabel>
+                  <FormDescription className="text-xs text-muted-foreground">
+                    El cliente podrá comprar la moto al finalizar el período acordado
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={field.onChange}
+                    disabled={isLoading}
+                    className="h-4 w-4 rounded border-input accent-primary disabled:opacity-50"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {form.watch("esOpcionCompra") && (
+            <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-primary/30">
+              <FormField
+                control={form.control}
+                name="mesesParaCompra"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meses para ejercer</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="24" disabled={isLoading} {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Tiempo mínimo antes de ejercer opción
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="valorCompraFinal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor de compra final</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="0.00" disabled={isLoading} {...field} />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Precio al ejercer la opción
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
 
           <FormField
             control={form.control}

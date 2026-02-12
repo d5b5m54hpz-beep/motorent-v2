@@ -63,6 +63,9 @@ export const contratoSchema = z.object({
   deposito: z.coerce.number().min(0, "Deposito no puede ser negativo").default(0),
   notas: z.string().max(1000, "Notas muy largas").optional(),
   renovacionAuto: z.boolean().default(false),
+  esOpcionCompra: z.boolean().default(false),
+  mesesParaCompra: z.coerce.number().min(1).max(60).optional(),
+  valorCompraFinal: z.coerce.number().min(0).optional(),
 }).refine((data) => {
   const inicio = new Date(data.fechaInicio);
   const fin = new Date(data.fechaFin);

@@ -11,6 +11,11 @@ export type Contrato = {
   descuentoAplicado: number;
   notas: string | null;
   renovacionAuto: boolean;
+  esOpcionCompra: boolean;
+  mesesParaCompra: number | null;
+  valorCompraFinal: number | null;
+  opcionEjercida: boolean;
+  fechaEjercicio: string | null;
   estado: string;
   createdAt: string;
   updatedAt: string;
