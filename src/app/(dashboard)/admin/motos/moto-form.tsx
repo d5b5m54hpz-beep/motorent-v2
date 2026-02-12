@@ -2,7 +2,8 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motoSchema, motoEstados, motoTipos, type MotoInput } from "@/lib/validations";
+import { useState, useEffect } from "react";
+import { motoSchema, motoEstados, type MotoInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +35,17 @@ type Props = {
 };
 
 export function MotoForm({ moto, onSubmit, isLoading }: Props) {
+  const [marcas, setMarcas] = useState<string[]>([]);
+  const [colores, setColores] = useState<string[]>([]);
+  const [tipos, setTipos] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Fetch unique marcas, colores, tipos from API
+    fetch('/api/motos/marcas').then(r => r.json()).then(data => setMarcas(data.marcas || [])).catch(() => {});
+    fetch('/api/motos/colores').then(r => r.json()).then(data => setColores(data.colores || [])).catch(() => {});
+    fetch('/api/motos/tipos').then(r => r.json()).then(data => setTipos(data.tipos || [])).catch(() => {});
+  }, []);
+
   const form = useForm<MotoInput>({
     resolver: zodResolver(motoSchema),
     defaultValues: {
@@ -45,7 +57,7 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
       kilometraje: moto?.kilometraje ?? 0,
       precioMensual: moto?.precioMensual ?? 0,
       cilindrada: moto?.cilindrada ?? undefined,
-      tipo: (moto?.tipo as MotoInput["tipo"]) ?? undefined,
+      tipo: moto?.tipo ?? undefined,
       descripcion: moto?.descripcion ?? "",
       imagen: moto?.imagen ?? "",
       estado: (moto?.estado as MotoInput["estado"]) ?? "disponible",
@@ -70,7 +82,12 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
                 <FormItem>
                   <FormLabel>Marca<span className="text-destructive ml-0.5">*</span></FormLabel>
                   <FormControl>
-                    <Input placeholder="Honda" disabled={isLoading} {...field} />
+                    <>
+                      <Input placeholder="Honda, Yamaha, etc." disabled={isLoading} {...field} list="marcas-list" />
+                      <datalist id="marcas-list">
+                        {marcas.map((m) => <option key={m} value={m} />)}
+                      </datalist>
+                    </>
                   </FormControl>
                   <FormMessage className="flex items-center gap-1.5">
                     {form.formState.errors.marca && (
@@ -162,7 +179,12 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
                 <FormItem>
                   <FormLabel>Color</FormLabel>
                   <FormControl>
-                    <Input placeholder="Negro" disabled={isLoading} {...field} />
+                    <>
+                      <Input placeholder="Negro, Rojo, Azul, etc." disabled={isLoading} {...field} list="colores-list" />
+                      <datalist id="colores-list">
+                        {colores.map((c) => <option key={c} value={c} />)}
+                      </datalist>
+                    </>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -214,20 +236,14 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar tipo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {motoTipos.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t.charAt(0).toUpperCase() + t.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <>
+                      <Input placeholder="Naked, Cub, Enduro, etc." disabled={isLoading} {...field} list="tipos-list" />
+                      <datalist id="tipos-list">
+                        {tipos.map((t) => <option key={t} value={t} />)}
+                      </datalist>
+                    </>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

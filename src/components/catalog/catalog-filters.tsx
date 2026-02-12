@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { X } from "lucide-react";
-import { motoTipos } from "@/lib/validations";
 
 type Filters = {
   tipo: string;
@@ -30,6 +29,16 @@ type Props = {
 };
 
 export function CatalogFilters({ filters, onFiltersChange }: Props) {
+  const [tipos, setTipos] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Fetch unique tipos from API
+    fetch('/api/motos/tipos')
+      .then(r => r.json())
+      .then(data => setTipos(data.tipos || []))
+      .catch(() => {});
+  }, []);
+
   const handleChange = (key: keyof Filters, value: string) => {
     onFiltersChange({ ...filters, [key]: value });
   };
@@ -71,7 +80,7 @@ export function CatalogFilters({ filters, onFiltersChange }: Props) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos los tipos</SelectItem>
-            {motoTipos.map((tipo) => (
+            {tipos.map((tipo) => (
               <SelectItem key={tipo} value={tipo}>
                 {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
               </SelectItem>
