@@ -105,7 +105,7 @@ export default function FlujoCajaPage() {
       label: "Total Ingresos",
       value: formatCurrency(data.resumen.totalIngresos),
       icon: TrendingUp,
-      iconClass: "text-green-500",
+      iconClass: "text-teal-500",
       subtitle: `${formatCurrency(data.resumen.promedioIngresosDiario)}/día`,
     },
     {
@@ -120,7 +120,7 @@ export default function FlujoCajaPage() {
       value: formatCurrency(data.resumen.flujoNetoTotal),
       icon: DollarSign,
       iconClass:
-        data.resumen.flujoNetoTotal >= 0 ? "text-green-500" : "text-red-500",
+        data.resumen.flujoNetoTotal >= 0 ? "text-teal-500" : "text-red-500",
       subtitle: data.resumen.flujoNetoTotal >= 0 ? "Positivo" : "Negativo",
     },
     {
@@ -279,7 +279,7 @@ export default function FlujoCajaPage() {
               {data.flujo.slice(-30).map((dia, i) => (
                 <tr key={i} className="hover:bg-muted/50">
                   <td className="px-4 py-3 text-sm">{dia.fecha}</td>
-                  <td className="px-4 py-3 text-sm text-right text-green-600 dark:text-green-400">
+                  <td className="px-4 py-3 text-sm text-right text-teal-600 dark:text-teal-400">
                     {formatCurrency(dia.ingresos)}
                   </td>
                   <td className="px-4 py-3 text-sm text-right text-red-600 dark:text-red-400">
@@ -288,7 +288,7 @@ export default function FlujoCajaPage() {
                   <td
                     className={`px-4 py-3 text-sm text-right font-medium ${
                       dia.flujoNeto >= 0
-                        ? "text-green-600 dark:text-green-400"
+                        ? "text-teal-600 dark:text-teal-400"
                         : "text-red-600 dark:text-red-400"
                     }`}
                   >
@@ -337,7 +337,7 @@ export default function FlujoCajaPage() {
                 {data.proyeccion.slice(0, 10).map((dia, i) => (
                   <tr key={i} className="hover:bg-muted/50 opacity-70">
                     <td className="px-4 py-3 text-sm">{dia.fecha}</td>
-                    <td className="px-4 py-3 text-sm text-right text-green-600 dark:text-green-400">
+                    <td className="px-4 py-3 text-sm text-right text-teal-600 dark:text-teal-400">
                       {formatCurrency(dia.ingresos)}
                     </td>
                     <td className="px-4 py-3 text-sm text-right text-red-600 dark:text-red-400">
@@ -346,7 +346,7 @@ export default function FlujoCajaPage() {
                     <td
                       className={`px-4 py-3 text-sm text-right font-medium ${
                         dia.flujoNeto >= 0
-                          ? "text-green-600 dark:text-green-400"
+                          ? "text-teal-600 dark:text-teal-400"
                           : "text-red-600 dark:text-red-400"
                       }`}
                     >

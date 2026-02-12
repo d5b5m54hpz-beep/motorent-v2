@@ -190,8 +190,8 @@ export function OCRUploadDialog({ open, onOpenChange, onDataExtracted }: Props) 
               {result && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="font-medium text-green-600">Datos extraídos correctamente</span>
+                    <CheckCircle2 className="h-5 w-5 text-teal-600" />
+                    <span className="font-medium text-teal-600">Datos extraídos correctamente</span>
                     <Badge variant="outline" className="ml-auto">
                       {result.confianza}% confianza
                     </Badge>

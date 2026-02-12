@@ -120,7 +120,7 @@ export default function AmortizacionPage() {
       label: "Valor en Libros",
       value: formatCurrency(data.resumen.totalValorLibros),
       icon: DollarSign,
-      iconClass: "text-green-500",
+      iconClass: "text-teal-500",
       subtitle: "Valor contable actual",
     },
     {
@@ -271,7 +271,7 @@ export default function AmortizacionPage() {
                   <td className="px-4 py-3 text-sm text-right text-red-600 dark:text-red-400">
                     -{formatCurrency(item.amortizacion.amortizacionAcumulada)}
                   </td>
-                  <td className="px-4 py-3 text-sm text-right font-semibold text-green-600 dark:text-green-400">
+                  <td className="px-4 py-3 text-sm text-right font-semibold text-teal-600 dark:text-teal-400">
                     {formatCurrency(item.financiero.valorLibros)}
                   </td>
                   <td className="px-4 py-3">

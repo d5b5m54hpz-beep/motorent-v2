@@ -19,7 +19,7 @@ const categoriaBadgeColors: Record<string, string> = {
   COMBUSTIBLE: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
   SEGURO: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   REPUESTOS: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-  SUELDOS: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  SUELDOS: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   IMPUESTOS: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 

@@ -278,7 +278,7 @@ export function ImportDialog({ module, label = "Importar", onSuccess }: Props) {
                 <AlertDescription className="mt-2 space-y-1">
                   <p>Total de filas: {preview.total}</p>
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-teal-600" />
                     <span>Filas válidas: {preview.valid}</span>
                   </div>
                   {preview.invalid > 0 && (

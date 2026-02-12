@@ -126,7 +126,7 @@ export default function PreciosPage() {
   };
 
   const estadoColors: Record<string, string> = {
-    disponible: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    disponible: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
     alquilada: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
     mantenimiento: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
     baja: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
@@ -263,7 +263,7 @@ export default function PreciosPage() {
                                 onClick={() => handleSave(moto.id)}
                                 disabled={saving}
                               >
-                                <Save className="h-4 w-4 text-green-600" />
+                                <Save className="h-4 w-4 text-teal-600" />
                               </Button>
                               <Button
                                 variant="ghost"

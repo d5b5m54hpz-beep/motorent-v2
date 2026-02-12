@@ -117,14 +117,14 @@ export default function FinanzasDashboardPage() {
       label: "Resultado Neto",
       value: formatCurrency(data.resultadoNeto),
       icon: DollarSign,
-      iconClass: data.resultadoNeto >= 0 ? "text-green-500" : "text-red-500",
+      iconClass: data.resultadoNeto >= 0 ? "text-teal-500" : "text-red-500",
       subtitle: data.resultadoNeto >= 0 ? "Ganancia" : "Pérdida",
     },
     {
       label: "Margen EBITDA",
       value: `${data.margenEbitda}%`,
       icon: Percent,
-      iconClass: data.margenEbitda >= 20 ? "text-green-500" : data.margenEbitda >= 10 ? "text-yellow-500" : "text-red-500",
+      iconClass: data.margenEbitda >= 20 ? "text-teal-500" : data.margenEbitda >= 10 ? "text-yellow-500" : "text-red-500",
       subtitle: `${data.ocupacionFlota}% ocupación`,
     },
   ];

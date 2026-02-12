@@ -71,7 +71,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Proveedor>[] {
             variant="outline"
             className={
               activo
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                ? "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300"
                 : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
             }
           >

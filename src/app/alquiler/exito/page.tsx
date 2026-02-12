@@ -30,8 +30,8 @@ export default function ExitoPage({
         <div className="text-center space-y-6">
           {/* Success Icon */}
           <div className="flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-              <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/20">
+              <CheckCircle className="h-12 w-12 text-teal-600 dark:text-teal-400" />
             </div>
           </div>
 

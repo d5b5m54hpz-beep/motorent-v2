@@ -56,15 +56,15 @@ function ResultadoPagoContent() {
       <div className="container max-w-2xl py-12">
         <Card>
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-              <CheckCircle className="h-10 w-10 text-green-600 dark:text-green-400" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/20">
+              <CheckCircle className="h-10 w-10 text-teal-600 dark:text-teal-400" />
             </div>
             <CardTitle className="text-2xl">¡Pago Aprobado!</CardTitle>
             <CardDescription>Tu pago se procesó correctamente</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+            <Alert className="border-teal-200 bg-teal-50 dark:border-teal-900 dark:bg-teal-900/20">
+              <CheckCircle className="h-4 w-4 text-teal-600" />
               <AlertTitle>Pago confirmado</AlertTitle>
               <AlertDescription>
                 Recibirás un comprobante por email con los detalles de tu pago.

@@ -116,7 +116,7 @@ export function BajaMotoDialog({
       case "SINIESTRO":
         return <AlertTriangle className="h-5 w-5 text-orange-600" />;
       case "VENTA":
-        return <DollarSign className="h-5 w-5 text-green-600" />;
+        return <DollarSign className="h-5 w-5 text-teal-600" />;
       default:
         return <FileText className="h-5 w-5" />;
     }
@@ -344,7 +344,7 @@ export function BajaMotoDialog({
             {/* VENTA Fields */}
             {tipoBaja === "VENTA" && (
               <div className="space-y-4">
-                <h3 className="font-semibold flex items-center gap-2 text-green-600">
+                <h3 className="font-semibold flex items-center gap-2 text-teal-600">
                   <DollarSign className="h-4 w-4" />
                   Datos de Venta
                 </h3>

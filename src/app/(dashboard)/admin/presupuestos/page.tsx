@@ -140,7 +140,7 @@ export default function PresupuestosPage() {
         </div>
         <div className="rounded-lg border bg-card p-4 shadow-sm">
           <p className="text-sm font-medium text-muted-foreground">Saldo</p>
-          <p className={`mt-2 text-2xl font-bold tracking-tight ${totalPresupuestado - totalGastado >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+          <p className={`mt-2 text-2xl font-bold tracking-tight ${totalPresupuestado - totalGastado >= 0 ? "text-teal-600 dark:text-teal-400" : "text-red-600 dark:text-red-400"}`}>
             {formatCurrency(totalPresupuestado - totalGastado)}
           </p>
         </div>

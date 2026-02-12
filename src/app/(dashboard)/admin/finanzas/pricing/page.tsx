@@ -39,7 +39,7 @@ const statusConfig = {
   },
   ok: {
     label: "OK",
-    className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
   sobrepreciada: {
     label: "Sobrepreciada",
@@ -181,7 +181,7 @@ export default function PricingPage() {
                     <TableCell className="font-medium">{formatCurrency(m.precioActual)}/mes</TableCell>
                     <TableCell className="text-[#23e0ff] font-medium">{formatCurrency(m.precioSugeridoMensual)}/mes</TableCell>
                     <TableCell>
-                      <span className={`font-medium ${m.diferencia >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                      <span className={`font-medium ${m.diferencia >= 0 ? "text-teal-600 dark:text-teal-400" : "text-red-600 dark:text-red-400"}`}>
                         {m.diferencia >= 0 ? "+" : ""}{formatCurrency(m.diferencia)}
                       </span>
                     </TableCell>

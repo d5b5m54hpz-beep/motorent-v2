@@ -54,7 +54,7 @@ const COLUMNAS = [
   { id: "NO_INICIADO", label: "No Iniciado", color: "bg-gray-500" },
   { id: "EN_PROCESO", label: "En Proceso", color: "bg-blue-500" },
   { id: "OBSERVADO", label: "Observado", color: "bg-yellow-500" },
-  { id: "COMPLETADO", label: "Completado", color: "bg-green-500" },
+  { id: "COMPLETADO", label: "Completado", color: "bg-teal-500" },
 ];
 
 // Documentos requeridos según DNRPA
@@ -239,7 +239,7 @@ export default function PatentamientoPage() {
         </div>
         <div className="rounded-lg border bg-card p-3 flex-1">
           <p className="text-sm text-muted-foreground">Completadas</p>
-          <p className="text-2xl font-bold text-green-500">{completadas}</p>
+          <p className="text-2xl font-bold text-teal-500">{completadas}</p>
         </div>
       </div>
 
@@ -452,7 +452,7 @@ export default function PatentamientoPage() {
                           )}
                         </div>
                         {docExistente?.completado ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          <CheckCircle2 className="h-5 w-5 text-teal-500" />
                         ) : (
                           <AlertCircle className="h-5 w-5 text-yellow-500" />
                         )}

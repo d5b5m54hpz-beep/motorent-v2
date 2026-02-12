@@ -84,7 +84,7 @@ export function OpcionCompraCard({
             <CardTitle className="text-lg">Opción a Compra</CardTitle>
           </div>
           {opcionEjercida ? (
-            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+            <Badge className="bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300">
               <CheckCircle className="mr-1 h-3 w-3" />
               Ejercida
             </Badge>
@@ -162,12 +162,12 @@ export function OpcionCompraCard({
         )}
 
         {opcionEjercida && (
-          <div className="rounded-lg bg-green-50 dark:bg-green-950/20 p-4 text-center">
-            <CheckCircle className="mx-auto h-8 w-8 text-green-600 dark:text-green-400" />
-            <p className="mt-2 text-sm font-medium text-green-900 dark:text-green-100">
+          <div className="rounded-lg bg-teal-50 dark:bg-teal-950/20 p-4 text-center">
+            <CheckCircle className="mx-auto h-8 w-8 text-teal-600 dark:text-teal-400" />
+            <p className="mt-2 text-sm font-medium text-teal-900 dark:text-teal-100">
               Opción de compra ejercida
             </p>
-            <p className="mt-1 text-xs text-green-700 dark:text-green-300">
+            <p className="mt-1 text-xs text-teal-700 dark:text-teal-300">
               Valor final: {formatCurrency(valorCompraFinal)}
             </p>
           </div>

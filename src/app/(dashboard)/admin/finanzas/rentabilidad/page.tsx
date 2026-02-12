@@ -126,7 +126,7 @@ export default function RentabilidadPage() {
                   <TableCell className="text-[#23e0ff] font-medium">{formatCurrency(m.ingresos)}</TableCell>
                   <TableCell className="text-red-500 font-medium">{formatCurrency(m.gastos)}</TableCell>
                   <TableCell>
-                    <span className={`font-bold ${m.rentabilidad >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                    <span className={`font-bold ${m.rentabilidad >= 0 ? "text-teal-600 dark:text-teal-400" : "text-red-600 dark:text-red-400"}`}>
                       {formatCurrency(m.rentabilidad)}
                     </span>
                   </TableCell>
@@ -136,7 +136,7 @@ export default function RentabilidadPage() {
                     <span className="text-muted-foreground text-xs ml-1">/ {m.diasParada}d parada</span>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={m.roi >= 0 ? "default" : "destructive"} className={m.roi >= 0 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : ""}>
+                    <Badge variant={m.roi >= 0 ? "default" : "destructive"} className={m.roi >= 0 ? "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300" : ""}>
                       {m.roi}%
                     </Badge>
                   </TableCell>

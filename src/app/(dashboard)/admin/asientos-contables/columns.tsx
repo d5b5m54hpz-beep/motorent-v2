@@ -18,7 +18,7 @@ import type { AsientoContable } from "./types";
 const tipoColors: Record<string, string> = {
   APERTURA: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   COMPRA: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-  VENTA: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  VENTA: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   PAGO: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   COBRO: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
   AJUSTE: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
@@ -139,7 +139,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<AsientoContable>[]
             <span className="text-xs">Cerrado</span>
           </div>
         ) : (
-          <Badge variant="outline" className="bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-300">
+          <Badge variant="outline" className="bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
             Abierto
           </Badge>
         )

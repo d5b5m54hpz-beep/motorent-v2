@@ -327,7 +327,7 @@ export default function ReportesContablesPage() {
                   <CardTitle className="text-base">IVA Crédito Fiscal (Compras)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  <p className="text-3xl font-bold text-teal-600 dark:text-teal-400">
                     {formatCurrency(posicionIVA.ivaCredito.total)}
                   </p>
                 </CardContent>
@@ -342,7 +342,7 @@ export default function ReportesContablesPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className={`text-4xl font-bold ${posicionIVA.tipo === "A PAGAR" ? "text-red-600" : "text-green-600"}`}>
+                  <p className={`text-4xl font-bold ${posicionIVA.tipo === "A PAGAR" ? "text-red-600" : "text-teal-600"}`}>
                     {formatCurrency(Math.abs(posicionIVA.saldo))}
                   </p>
                   <Badge className="mt-2" variant={posicionIVA.tipo === "A PAGAR" ? "destructive" : "default"}>
@@ -389,14 +389,14 @@ export default function ReportesContablesPage() {
                         <TableRow key={idx}>
                           <TableCell className="font-mono text-xs">{ing.codigo}</TableCell>
                           <TableCell>{ing.nombre}</TableCell>
-                          <TableCell className="text-right font-mono font-semibold text-green-600">
+                          <TableCell className="text-right font-mono font-semibold text-teal-600">
                             {formatCurrency(ing.monto)}
                           </TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted font-bold">
                         <TableCell colSpan={2}>TOTAL INGRESOS</TableCell>
-                        <TableCell className="text-right text-green-600">
+                        <TableCell className="text-right text-teal-600">
                           {formatCurrency(estadoResultados.totalIngresos)}
                         </TableCell>
                       </TableRow>
@@ -438,7 +438,7 @@ export default function ReportesContablesPage() {
                   <CardDescription>{estadoResultados.tipo}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className={`text-4xl font-bold ${estadoResultados.resultado >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  <p className={`text-4xl font-bold ${estadoResultados.resultado >= 0 ? "text-teal-600" : "text-red-600"}`}>
                     {formatCurrency(Math.abs(estadoResultados.resultado))}
                   </p>
                   <Badge className="mt-2" variant={estadoResultados.resultado >= 0 ? "default" : "destructive"}>

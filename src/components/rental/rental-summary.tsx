@@ -31,7 +31,7 @@ type Props = {
 export function RentalSummary({ moto, plan, pricing, showPaymentSchedule = false }: Props) {
   const tipoBadgeColors: Record<string, string> = {
     naked: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-    touring: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    touring: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
     sport: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
     scooter: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
     custom: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
@@ -127,7 +127,7 @@ export function RentalSummary({ moto, plan, pricing, showPaymentSchedule = false
           <>
             <Separator />
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+              <div className="flex items-center gap-2 text-sm text-teal-600 dark:text-teal-400">
                 <TrendingDown className="h-4 w-4" />
                 <span className="font-medium">Descuentos Aplicados</span>
               </div>
@@ -135,7 +135,7 @@ export function RentalSummary({ moto, plan, pricing, showPaymentSchedule = false
                 {pricing.descuentoDuracion > 0 && (
                   <div className="flex justify-between pl-6">
                     <span className="text-muted-foreground">Por duración ({pricing.meses} meses):</span>
-                    <span className="text-green-600 dark:text-green-400 font-medium">
+                    <span className="text-teal-600 dark:text-teal-400 font-medium">
                       -{pricing.descuentoDuracion}%
                     </span>
                   </div>
@@ -143,14 +143,14 @@ export function RentalSummary({ moto, plan, pricing, showPaymentSchedule = false
                 {pricing.descuentoFrecuencia > 0 && (
                   <div className="flex justify-between pl-6">
                     <span className="text-muted-foreground">Por frecuencia {plan.frecuencia}:</span>
-                    <span className="text-green-600 dark:text-green-400 font-medium">
+                    <span className="text-teal-600 dark:text-teal-400 font-medium">
                       -{pricing.descuentoFrecuencia}%
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between pl-6 pt-1 border-t">
                   <span className="text-muted-foreground">Descuento total:</span>
-                  <span className="text-green-600 dark:text-green-400 font-semibold">
+                  <span className="text-teal-600 dark:text-teal-400 font-semibold">
                     -{pricing.descuentoTotal}%
                   </span>
                 </div>

@@ -32,7 +32,7 @@ const tipoColors: Record<string, string> = {
   ACCIDENTE_LABORAL: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
   LICENCIA_MATERNIDAD: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300",
   LICENCIA_PATERNIDAD: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-  ESTUDIO: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  ESTUDIO: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   MATRIMONIO: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   FALLECIMIENTO_FAMILIAR: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
   MUDANZA: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
@@ -41,7 +41,7 @@ const tipoColors: Record<string, string> = {
 
 const estadoColors: Record<string, string> = {
   PENDIENTE: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  APROBADA: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  APROBADA: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   RECHAZADA: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
@@ -101,7 +101,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Ausencia>[] {
       header: "Justificada",
       cell: ({ row }) =>
         row.original.justificada ? (
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <CheckCircle2 className="h-4 w-4 text-teal-600" />
         ) : (
           <XCircle className="h-4 w-4 text-red-600" />
         ),

@@ -179,7 +179,7 @@ export default function EstadoResultadosPage() {
     const colorClass =
       nivel === 0
         ? valorDisplay >= 0
-          ? "text-green-600 dark:text-green-400"
+          ? "text-teal-600 dark:text-teal-400"
           : "text-red-600 dark:text-red-400"
         : "";
 
@@ -200,14 +200,14 @@ export default function EstadoResultadosPage() {
           {variacion !== undefined && (
             <div className="flex items-center gap-1 min-w-[80px] justify-end">
               {variacion > 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-500" />
+                <TrendingUp className="h-4 w-4 text-teal-500" />
               ) : variacion < 0 ? (
                 <TrendingDown className="h-4 w-4 text-red-500" />
               ) : null}
               <span
                 className={`text-sm font-medium ${
                   variacion > 0
-                    ? "text-green-600 dark:text-green-400"
+                    ? "text-teal-600 dark:text-teal-400"
                     : variacion < 0
                     ? "text-red-600 dark:text-red-400"
                     : "text-muted-foreground"
@@ -501,7 +501,7 @@ export default function EstadoResultadosPage() {
               <p className="text-sm text-muted-foreground">Ingresos</p>
               <div className="flex items-center gap-2">
                 {data.comparacion.ingresos.variacion > 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <TrendingUp className="h-4 w-4 text-teal-500" />
                 ) : (
                   <TrendingDown className="h-4 w-4 text-red-500" />
                 )}
@@ -522,7 +522,7 @@ export default function EstadoResultadosPage() {
               <p className="text-sm text-muted-foreground">Margen Bruto</p>
               <div className="flex items-center gap-2">
                 {data.comparacion.margenBruto.variacion > 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <TrendingUp className="h-4 w-4 text-teal-500" />
                 ) : (
                   <TrendingDown className="h-4 w-4 text-red-500" />
                 )}
@@ -543,7 +543,7 @@ export default function EstadoResultadosPage() {
               <p className="text-sm text-muted-foreground">EBITDA</p>
               <div className="flex items-center gap-2">
                 {data.comparacion.ebitda.variacion > 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <TrendingUp className="h-4 w-4 text-teal-500" />
                 ) : (
                   <TrendingDown className="h-4 w-4 text-red-500" />
                 )}
@@ -564,7 +564,7 @@ export default function EstadoResultadosPage() {
               <p className="text-sm text-muted-foreground">Resultado Neto</p>
               <div className="flex items-center gap-2">
                 {data.comparacion.resultadoNeto.variacion > 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <TrendingUp className="h-4 w-4 text-teal-500" />
                 ) : (
                   <TrendingDown className="h-4 w-4 text-red-500" />
                 )}

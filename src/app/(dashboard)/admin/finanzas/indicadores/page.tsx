@@ -57,11 +57,11 @@ function calcularNivelBenchmark(
 ): { nivel: "bajo" | "medio" | "alto"; color: string } {
   if (invertido) {
     // Para endeudamiento: menor es mejor
-    if (valor <= benchmark.bajo) return { nivel: "alto", color: "text-green-500" };
+    if (valor <= benchmark.bajo) return { nivel: "alto", color: "text-teal-500" };
     if (valor <= benchmark.medio) return { nivel: "medio", color: "text-yellow-500" };
     return { nivel: "bajo", color: "text-red-500" };
   } else {
-    if (valor >= benchmark.alto) return { nivel: "alto", color: "text-green-500" };
+    if (valor >= benchmark.alto) return { nivel: "alto", color: "text-teal-500" };
     if (valor >= benchmark.medio) return { nivel: "medio", color: "text-yellow-500" };
     return { nivel: "bajo", color: "text-red-500" };
   }
@@ -159,7 +159,7 @@ export default function IndicadoresPage() {
                       <span className="text-lg ml-1">{ratio.unidad}</span>
                     </p>
                     {tendencia ? (
-                      <TrendingUp className="h-4 w-4 text-green-500" />
+                      <TrendingUp className="h-4 w-4 text-teal-500" />
                     ) : (
                       <TrendingDown className="h-4 w-4 text-red-500" />
                     )}
@@ -296,7 +296,7 @@ export default function IndicadoresPage() {
                 <span
                   className={
                     data.balance.patrimonioNeto >= 0
-                      ? "text-green-500"
+                      ? "text-teal-500"
                       : "text-red-500"
                   }
                 >

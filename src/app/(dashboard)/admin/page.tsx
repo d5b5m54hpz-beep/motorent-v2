@@ -128,7 +128,7 @@ export default function AdminDashboardPage() {
       value: data.kpis.contratosActivos,
       subtitle: `${data.kpis.contratosPendientes} pendientes`,
       icon: FileText,
-      color: "text-green-600 dark:text-green-400",
+      color: "text-teal-600 dark:text-teal-400",
     },
     {
       title: "Ingresos del Mes",
@@ -244,9 +244,9 @@ export default function AdminDashboardPage() {
           <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-muted-foreground">Ingresos del Mes</p>
-              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <TrendingUp className="h-5 w-5 text-teal-600 dark:text-teal-400" />
             </div>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-green-600 dark:text-green-400">
+            <p className="mt-2 text-2xl font-bold tracking-tight text-teal-600 dark:text-teal-400">
               {formatCurrency(finanzas.ingresosMes)}
             </p>
           </div>
@@ -262,9 +262,9 @@ export default function AdminDashboardPage() {
           <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-muted-foreground">Resultado Neto</p>
-              <DollarSign className={`h-5 w-5 ${finanzas.resultadoNeto >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`} />
+              <DollarSign className={`h-5 w-5 ${finanzas.resultadoNeto >= 0 ? "text-teal-600 dark:text-teal-400" : "text-red-600 dark:text-red-400"}`} />
             </div>
-            <p className={`mt-2 text-2xl font-bold tracking-tight ${finanzas.resultadoNeto >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            <p className={`mt-2 text-2xl font-bold tracking-tight ${finanzas.resultadoNeto >= 0 ? "text-teal-600 dark:text-teal-400" : "text-red-600 dark:text-red-400"}`}>
               {formatCurrency(finanzas.resultadoNeto)}
             </p>
           </div>

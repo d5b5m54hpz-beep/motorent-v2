@@ -13,7 +13,7 @@ import {
 import type { CuentaContable } from "./types";
 
 const tipoColors: Record<string, string> = {
-  ACTIVO: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  ACTIVO: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   PASIVO: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   PATRIMONIO: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   INGRESO: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
@@ -81,7 +81,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<CuentaContable>[] 
       accessorKey: "imputable",
       header: "Imputable",
       cell: ({ row }) => (
-        <span className={row.original.imputable ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}>
+        <span className={row.original.imputable ? "text-teal-600 dark:text-teal-400" : "text-muted-foreground"}>
           {row.original.imputable ? "Sí" : "No"}
         </span>
       ),

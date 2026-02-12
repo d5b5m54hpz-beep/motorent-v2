@@ -59,6 +59,23 @@ const config = {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
+  			},
+  			brand: {
+  				cyan: {
+  					DEFAULT: '#5CE1E6',
+  					light: '#B2F5EA',
+  					dark: '#22D3EE'
+  				},
+  				teal: {
+  					DEFAULT: '#38B2AC',
+  					light: '#B2F5EA',
+  					dark: '#1A6B6A'
+  				}
+  			},
+  			// Alias para usar teal como success color
+  			success: {
+  				DEFAULT: '#38B2AC',
+  				foreground: '#FFFFFF'
   			}
   		},
   		borderRadius: {

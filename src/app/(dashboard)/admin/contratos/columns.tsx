@@ -20,7 +20,7 @@ const estadoBadgeMap: Record<string, { label: string; className: string }> = {
   },
   activo: {
     label: "Activo",
-    className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
   finalizado: {
     label: "Finalizado",

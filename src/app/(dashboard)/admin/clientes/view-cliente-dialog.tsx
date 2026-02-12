@@ -18,7 +18,7 @@ const estadoBadgeMap: Record<string, { label: string; className: string }> = {
   },
   aprobado: {
     label: "Aprobado",
-    className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
   rechazado: {
     label: "Rechazado",
@@ -42,7 +42,7 @@ function VerificationBadge({ has, verified, labelYes, labelNo, labelNone }: {
   }
   if (verified) {
     return (
-      <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+      <Badge variant="outline" className="bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300">
         {labelYes}
       </Badge>
     );

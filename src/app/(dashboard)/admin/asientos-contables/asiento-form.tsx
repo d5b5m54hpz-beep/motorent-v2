@@ -286,13 +286,13 @@ export function AsientoForm({ asiento, onSubmit, isLoading }: Props) {
           </div>
 
           {/* Balance summary */}
-          <div className={`p-4 rounded-lg border-2 ${isBalanced ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-orange-500 bg-orange-50 dark:bg-orange-950"}`}>
+          <div className={`p-4 rounded-lg border-2 ${isBalanced ? "border-teal-500 bg-teal-50 dark:bg-teal-950" : "border-orange-500 bg-orange-50 dark:bg-orange-950"}`}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 {isBalanced ? (
                   <>
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="font-semibold text-green-800 dark:text-green-200">Balance OK</span>
+                    <CheckCircle2 className="h-5 w-5 text-teal-600" />
+                    <span className="font-semibold text-teal-800 dark:text-teal-200">Balance OK</span>
                   </>
                 ) : (
                   <>

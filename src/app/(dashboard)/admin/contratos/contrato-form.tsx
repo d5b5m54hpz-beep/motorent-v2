@@ -313,7 +313,7 @@ export function ContratoForm({ contrato, onSubmit, isLoading }: Props) {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Descuento:</span>
-                  <span className="font-semibold text-green-600 dark:text-green-400">{preview.descuentoTotal}%</span>
+                  <span className="font-semibold text-teal-600 dark:text-teal-400">{preview.descuentoTotal}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Por período:</span>

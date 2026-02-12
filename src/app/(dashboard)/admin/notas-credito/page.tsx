@@ -34,7 +34,7 @@ const formatCurrency = (value: number) => {
 
 const estadoColors: Record<string, string> = {
   EMITIDA: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  APLICADA: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  APLICADA: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
   REEMBOLSADA: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   ANULADA: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
 };
@@ -165,9 +165,9 @@ export default function NotasCreditoPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Aplicadas</p>
-              <p className="text-2xl font-bold text-green-600">{stats.aplicadas}</p>
+              <p className="text-2xl font-bold text-teal-600">{stats.aplicadas}</p>
             </div>
-            <FileText className="h-8 w-8 text-green-500" />
+            <FileText className="h-8 w-8 text-teal-500" />
           </div>
         </Card>
 

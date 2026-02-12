@@ -177,10 +177,10 @@ function MiCuentaContent() {
 
   const estadoBadgeColors: Record<string, string> = {
     pendiente: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-    activo: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    activo: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
     finalizado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
     cancelado: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-    aprobado: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    aprobado: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
     rechazado: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   };
 
@@ -326,7 +326,7 @@ function MiCuentaContent() {
                               {pago.estado === "aprobado" && (
                                 <Badge
                                   variant="outline"
-                                  className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                  className="bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300"
                                 >
                                   <CheckCircle className="mr-1 h-3 w-3" />
                                   Aprobado

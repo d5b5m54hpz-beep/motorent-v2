@@ -258,7 +258,7 @@ export function VerificacionesPanel({ data, onValidationChange }: Props) {
   const getIcon = (estado: Verificacion["estado"]) => {
     switch (estado) {
       case "ok":
-        return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />;
+        return <CheckCircle2 className="h-4 w-4 text-teal-600 dark:text-teal-400" />;
       case "error":
         return <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />;
       case "warning":
@@ -286,7 +286,7 @@ export function VerificacionesPanel({ data, onValidationChange }: Props) {
           <Badge
             variant="outline"
             className={cn(
-              estadoGeneral === "ok" && "border-green-600 text-green-600",
+              estadoGeneral === "ok" && "border-teal-600 text-teal-600",
               estadoGeneral === "warning" && "border-yellow-600 text-yellow-600",
               estadoGeneral === "error" && "border-red-600 text-red-600",
               estadoGeneral === "validando" && "border-blue-600 text-blue-600"

@@ -17,7 +17,7 @@ import type { FacturaCompra } from "./types";
 
 const tipoColors: Record<string, string> = {
   A: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  B: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  B: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   C: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   TICKET: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
   RECIBO: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
@@ -25,7 +25,7 @@ const tipoColors: Record<string, string> = {
 
 const estadoColors: Record<string, string> = {
   PENDIENTE: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  PAGADA: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  PAGADA: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   PAGADA_PARCIAL: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
   VENCIDA: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   ANULADA: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
