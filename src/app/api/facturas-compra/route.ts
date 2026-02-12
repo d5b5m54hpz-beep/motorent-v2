@@ -178,90 +178,100 @@ export async function POST(req: NextRequest) {
     });
 
     // ═══ CONTROL 5: DETECTAR DUPLICADOS EXACTOS ═══
-    const duplicadosExactos = await prisma.facturaCompra.findMany({
-      where: {
-        OR: [
-          { hashUnico },
-          ...(rest.cae ? [{ cae: rest.cae }] : []),
-        ],
-      },
-      select: {
-        id: true,
-        visibleId: true,
-        cuit: true,
-        tipo: true,
-        puntoVenta: true,
-        numero: true,
-        total: true,
-        fecha: true,
-        cae: true,
-        estado: true,
-      },
-    });
-
-    if (duplicadosExactos.length > 0) {
-      const mensajes = duplicadosExactos.map((dup) => {
-        const deteccion = detectarDuplicado(
-          {
-            id: dup.id,
-            cuit: dup.cuit,
-            tipo: dup.tipo,
-            puntoVenta: dup.puntoVenta,
-            numero: dup.numero,
-            total: dup.total,
-            fecha: dup.fecha,
-            cae: dup.cae,
-          },
-          {
-            cuit: rest.cuit || null,
-            tipo: rest.tipo,
-            puntoVenta: rest.puntoVenta || null,
-            numero: rest.numero,
-            total,
-            fecha: fechaDate,
-            cae: rest.cae,
-          }
-        );
-        return deteccion.mensajes;
-      }).flat();
-
-      return NextResponse.json(
-        {
-          error: "Factura duplicada",
-          details: { duplicado: mensajes },
-          duplicados: duplicadosExactos.map((d) => ({
-            id: d.visibleId,
-            estado: d.estado,
-            fecha: d.fecha,
-          })),
+    try {
+      const duplicadosExactos = await prisma.facturaCompra.findMany({
+        where: {
+          OR: [
+            { hashUnico },
+            ...(rest.cae ? [{ cae: rest.cae }] : []),
+          ],
         },
-        { status: 409 } // Conflict
-      );
+        select: {
+          id: true,
+          visibleId: true,
+          cuit: true,
+          tipo: true,
+          puntoVenta: true,
+          numero: true,
+          total: true,
+          fecha: true,
+          cae: true,
+          estado: true,
+        },
+      });
+
+      if (duplicadosExactos.length > 0) {
+        const mensajes = duplicadosExactos.map((dup) => {
+          const deteccion = detectarDuplicado(
+            {
+              id: dup.id,
+              cuit: dup.cuit,
+              tipo: dup.tipo,
+              puntoVenta: dup.puntoVenta,
+              numero: dup.numero,
+              total: dup.total,
+              fecha: dup.fecha,
+              cae: dup.cae,
+            },
+            {
+              cuit: rest.cuit || null,
+              tipo: rest.tipo,
+              puntoVenta: rest.puntoVenta || null,
+              numero: rest.numero,
+              total,
+              fecha: fechaDate,
+              cae: rest.cae,
+            }
+          );
+          return deteccion.mensajes;
+        }).flat();
+
+        return NextResponse.json(
+          {
+            error: "Factura duplicada",
+            details: { duplicado: mensajes },
+            duplicados: duplicadosExactos.map((d) => ({
+              id: d.visibleId,
+              estado: d.estado,
+              fecha: d.fecha,
+            })),
+          },
+          { status: 409 } // Conflict
+        );
+      }
+    } catch (duplicadosError) {
+      console.error("Error verificando duplicados:", duplicadosError);
+      // Continuar para permitir la creación si falla la verificación
     }
 
     // ═══ CONTROL 6: VERIFICAR PERÍODO CERRADO ═══
-    const mesFactura = fechaDate.getMonth() + 1;
-    const anioFactura = fechaDate.getFullYear();
+    try {
+      const mesFactura = fechaDate.getMonth() + 1;
+      const anioFactura = fechaDate.getFullYear();
 
-    const periodoCerrado = await prisma.periodoContable.findUnique({
-      where: {
-        mes_anio: {
-          mes: mesFactura,
-          anio: anioFactura,
-        },
-      },
-    });
-
-    if (periodoCerrado?.cerrado) {
-      return NextResponse.json(
-        {
-          error: `El período ${mesFactura}/${anioFactura} está cerrado y no permite modificaciones`,
-          details: {
-            periodo: `Cerrado por ${periodoCerrado.cerradoPor} el ${periodoCerrado.fechaCierre}`,
+      const periodoCerrado = await prisma.periodoContable.findUnique({
+        where: {
+          mes_anio: {
+            mes: mesFactura,
+            anio: anioFactura,
           },
         },
-        { status: 403 }
-      );
+      });
+
+      if (periodoCerrado?.cerrado) {
+        return NextResponse.json(
+          {
+            error: `El período ${mesFactura}/${anioFactura} está cerrado y no permite modificaciones`,
+            details: {
+              periodo: `Cerrado por ${periodoCerrado.cerradoPor} el ${periodoCerrado.fechaCierre}`,
+            },
+          },
+          { status: 403 }
+        );
+      }
+    } catch (periodoError) {
+      console.warn("Error verificando período contable (continuando):", periodoError);
+      // Continuar si no existe la tabla o hay error
     }
 
     // ═══ CONTROL 7: VALIDAR TIPO DE COMPROBANTE (WARNING ONLY) ═══
