@@ -1,0 +1,72 @@
+---
+title: Primeros Pasos
+description: Setup inicial y configuración del sistema
+---
+
+# Primeros Pasos en MotoLibre
+
+## 1. Primer login
+
+Al ingresar por primera vez al sistema:
+
+1. Accedé a `/login-admin`
+2. Usá las credenciales de administrador proporcionadas
+3. Serás redirigido al dashboard principal
+
+## 2. Configurar datos de la empresa
+
+**Ruta:** `/admin/configuracion/empresa`
+
+Completá los datos de tu empresa:
+- **CUIT**: Necesario para facturación electrónica
+- **Razón Social**: Nombre fiscal de tu empresa
+- **Condición IVA**: RESPONSABLE_INSCRIPTO, MONOTRIBUTO, etc.
+- **Domicilio fiscal**
+- **Punto de venta AFIP**: Para facturación
+
+## 3. Crear usuarios
+
+**Ruta:** `/admin/usuarios`
+
+Agregá usuarios según los roles necesarios:
+- **ADMIN**: Acceso total al sistema
+- **OPERADOR**: CRUD en motos, contratos, pagos
+- **CONTADOR**: Módulos financieros y contables
+- **COMERCIAL**: Clientes, contratos, pagos
+- **RRHH_MANAGER**: Módulo RRHH completo
+- **VIEWER**: Solo lectura
+
+## 4. Cargar precios
+
+**Ruta:** `/admin/precios`
+
+Configurá las tarifas de alquiler:
+- Precio diario
+- Precio semanal
+- Precio mensual
+- Descuentos por volumen
+
+## 5. Registrar primera moto
+
+**Ruta:** `/admin/motos`
+
+Seguí la [guía de alta completa](/docs/guias/alta-moto-completa) para:
+1. Registrar datos básicos
+2. Datos de identificación (VIN, motor, cuadro)
+3. Datos registrales (dominio, cédulas)
+4. Datos financieros (valor compra, seguro)
+5. Subir documentos
+
+## 6. Ejecutar diagnóstico
+
+**Ruta:** `/admin/sistema/diagnostico`
+
+Ejecutá el diagnóstico para verificar que todo esté correctamente configurado. El sistema chequeará:
+- Conexión a base de datos
+- APIs disponibles
+- Configuración de empresa
+- Estructura de datos
+
+## ¿Necesitás ayuda?
+
+Usá el botón de ayuda flotante (🔵) en cada página o el Asistente IA para preguntas específicas.

@@ -32,7 +32,7 @@ export function ViewFacturaDialog({ factura, open, onOpenChange, onDownloadPDF, 
 
   const tipoBadgeColors: Record<string, string> = {
     A: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-    B: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
+    B: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
     C: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
   };
 
@@ -47,7 +47,7 @@ export function ViewFacturaDialog({ factura, open, onOpenChange, onDownloadPDF, 
                 Tipo {factura.tipo}
               </Badge>
               {factura.emitida ? (
-                <Badge className="bg-teal-600 dark:bg-teal-700">Emitida</Badge>
+                <Badge className="bg-green-600 dark:bg-green-700">Emitida</Badge>
               ) : (
                 <Badge variant="secondary">Pendiente</Badge>
               )}
@@ -174,11 +174,11 @@ export function ViewFacturaDialog({ factura, open, onOpenChange, onDownloadPDF, 
 
           {/* Email Status */}
           {factura.emailEnviado && factura.emailEnviadoAt && (
-            <div className="rounded-lg bg-teal-50 dark:bg-teal-950 p-3 text-sm">
-              <p className="text-teal-700 dark:text-teal-300 font-medium">
+            <div className="rounded-lg bg-green-50 dark:bg-green-950 p-3 text-sm">
+              <p className="text-green-700 dark:text-green-300 font-medium">
                 ✓ Factura enviada por email
               </p>
-              <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                 Enviado el {formatDate(new Date(factura.emailEnviadoAt))} a {cliente.user.email}
               </p>
             </div>

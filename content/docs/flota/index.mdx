@@ -1,0 +1,61 @@
+---
+title: Módulo Flota
+description: Gestión completa de la flota de motos
+---
+
+# Módulo Flota
+
+El módulo de Flota es el corazón del sistema MotoLibre. Desde acá gestion
+
+ás todas las motos, su ciclo de vida completo desde la importación hasta la baja.
+
+## Secciones del módulo
+
+### 🏍️ Motos
+Registro completo de cada moto: datos básicos, identificación (VIN/motor/cuadro), registrales (dominio/cédulas), financieros (valor compra/seguro/vida útil), importación, y documentos.
+
+[Ver detalles →](/docs/flota/motos)
+
+### 📋 Patentamiento
+Flujo completo de patentamiento RUNA con checklist DNRPA paso a paso, Kanban de estados, cálculo automático de costos.
+
+[Ver detalles →](/docs/flota/patentamiento)
+
+### 📊 Amortización
+Cálculo de amortización según AFIP (5 años vida útil para motos), amortización mensual/acumulada, reportes.
+
+[Ver detalles →](/docs/flota/amortizacion)
+
+### 🔧 Mantenimientos
+Programar mantenimientos preventivos (service cada X km), registrar reparaciones, control de costos, alertas automáticas.
+
+[Ver detalles →](/docs/flota/mantenimientos)
+
+### ⚙️ Repuestos
+Inventario de repuestos, stock mínimo con alertas, vinculación a mantenimientos, proveedores.
+
+[Ver detalles →](/docs/flota/repuestos)
+
+### ❌ Baja de Motos
+Proceso de baja por robo, siniestro o venta. Genera asientos contables automáticos.
+
+[Ver detalles →](/docs/flota/baja-motos)
+
+## Flujo de vida de una moto
+
+1. **Importación** → Registro inicial con datos de importación
+2. **Patentamiento** → Checklist RUNA hasta obtener dominio
+3. **Disponible** → Lista para alquiler
+4. **Alquilada** → Vinculada a contrato activo
+5. **Mantenimiento** → Service preventivo o reparación
+6. **Baja** → Robo, siniestro o venta
+
+## Estados de una moto
+
+| Estado | Color | Significado |
+|--------|-------|-------------|
+| DISPONIBLE | 🟢 Verde | Lista para alquilar |
+| ALQUILADA | 🔵 Azul | Tiene contrato activo |
+| EN_MANTENIMIENTO | 🟡 Amarillo | En service/reparación |
+| FUERA_DE_SERVICIO | 🔴 Rojo | No disponible |
+| RESERVADA | 🟣 Violeta | Reservada para cliente |

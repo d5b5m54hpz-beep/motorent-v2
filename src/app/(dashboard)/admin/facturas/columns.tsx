@@ -31,7 +31,7 @@ export function getColumns({ onView, onDownloadPDF, onSendEmail }: Props): Colum
         const tipo = row.original.tipo;
         const colors: Record<string, string> = {
           A: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-          B: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
+          B: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
           C: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
         };
         return (
@@ -96,7 +96,7 @@ export function getColumns({ onView, onDownloadPDF, onSendEmail }: Props): Colum
       cell: ({ row }) => {
         const cae = row.original.cae;
         return cae ? (
-          <Badge variant="outline" className="bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+          <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
             Con CAE
           </Badge>
         ) : (
@@ -112,7 +112,7 @@ export function getColumns({ onView, onDownloadPDF, onSendEmail }: Props): Colum
       cell: ({ row }) => {
         const emitida = row.original.emitida;
         return emitida ? (
-          <Badge className="bg-teal-600 dark:bg-teal-700">Emitida</Badge>
+          <Badge className="bg-green-600 dark:bg-green-700">Emitida</Badge>
         ) : (
           <Badge variant="secondary">Pendiente</Badge>
         );
@@ -146,7 +146,7 @@ export function getColumns({ onView, onDownloadPDF, onSendEmail }: Props): Colum
               size="sm"
               onClick={() => onSendEmail(factura.id)}
               title={factura.emailEnviado ? "Reenviar por email" : "Enviar por email"}
-              className={factura.emailEnviado ? "text-teal-600 dark:text-teal-400" : ""}
+              className={factura.emailEnviado ? "text-green-600 dark:text-green-400" : ""}
             >
               <Mail className="h-4 w-4" />
             </Button>

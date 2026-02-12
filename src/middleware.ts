@@ -32,6 +32,14 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
+  // Docs routes - require any authenticated user
+  if (pathname.startsWith("/docs")) {
+    if (!session) {
+      return NextResponse.redirect(new URL("/login-admin", req.url));
+    }
+    return NextResponse.next();
+  }
+
   // Protected client routes
   if (
     pathname.startsWith("/perfil") ||

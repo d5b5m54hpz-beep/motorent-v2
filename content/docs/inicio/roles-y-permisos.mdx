@@ -1,0 +1,131 @@
+---
+title: Roles y Permisos
+description: Entender los roles del sistema y sus permisos
+---
+
+# Roles y Permisos
+
+MotoLibre usa un sistema de roles para controlar qué puede hacer cada usuario.
+
+## Roles disponibles
+
+### 👑 ADMIN
+**Acceso total al sistema**
+
+Puede:
+- Ver y editar TODO
+- Crear/editar/eliminar usuarios
+- Configurar empresa
+- Ejecutar diagnóstico
+- Acceder a todos los módulos
+
+Usar solo para propietarios/gerentes generales.
+
+### 🔧 OPERADOR
+**Operaciones diarias**
+
+Puede:
+- CRUD de motos
+- CRUD de contratos
+- Registrar pagos
+- CRUD de mantenimientos
+- CRUD de repuestos
+- Ver dashboard comercial
+
+No puede:
+- Ver finanzas
+- Ver contabilidad
+- Gestionar usuarios
+
+Ideal para personal operativo de mostrador.
+
+### 💼 CONTADOR
+**Finanzas y contabilidad**
+
+Puede:
+- Ver/editar facturas compra
+- Ver/editar plan de cuentas
+- Ver/editar asientos contables
+- Ver todos los reportes contables
+- Ver dashboard financiero
+- Ver estado de resultados
+
+No puede:
+- Gestionar motos/contratos (solo vista)
+- Gestionar usuarios
+
+Ideal para contador externo o interno.
+
+### 📊 COMERCIAL
+**Ventas y cobranzas**
+
+Puede:
+- CRUD de clientes
+- CRUD de contratos
+- Registrar pagos
+- Emitir facturas
+- Emitir notas de crédito
+- Ver dashboard comercial
+
+No puede:
+- Gestionar motos (solo vista)
+- Ver finanzas/contabilidad
+- Gestionar usuarios
+
+Ideal para vendedores/administrativos comerciales.
+
+### 👥 RRHH_MANAGER
+**Recursos Humanos**
+
+Puede:
+- CRUD de empleados
+- Gestionar ausencias
+- Liquidar sueldos
+- Generar recibos de sueldo
+- Ver costos laborales
+
+No puede acceder a otros módulos.
+
+Ideal para responsable de RRHH.
+
+### 👁️ VIEWER
+**Solo lectura**
+
+Puede:
+- Ver dashboards
+- Ver reportes
+- Ver datos en todos los módulos
+
+No puede:
+- Crear/editar/eliminar nada
+
+Ideal para inversores, auditores, consultores.
+
+### 👤 CLIENTE
+**Portal del cliente**
+
+Puede:
+- Ver sus contratos
+- Ver sus pagos
+- Ver sus facturas
+- Pagar online
+
+No puede acceder al admin.
+
+Asignado automáticamente a clientes registrados.
+
+## Cómo asignar roles
+
+1. Ir a `/admin/usuarios`
+2. Crear nuevo usuario o editar existente
+3. Seleccionar rol del dropdown
+4. Guardar
+
+El usuario tendrá acceso inmediato según su rol.
+
+## Mejores prácticas
+
+- No dar ADMIN a todos, solo a propietarios
+- Usar OPERADOR para personal de mostrador
+- Usar VIEWER para gente que solo necesita ver reportes
+- Cambiar rol si las responsabilidades cambian

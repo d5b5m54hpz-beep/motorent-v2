@@ -48,14 +48,6 @@ const config = {
   ],
 
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      // If the url is relative, prefix it with baseUrl
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      // If same origin, allow it
-      if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
-    },
-
     async jwt({ token, user, account, profile }) {
       // OAuth sign-in: upsert user
       if (account && profile) {
@@ -103,22 +95,6 @@ const config = {
       if (user) {
         token.role = (user as { role: Role }).role;
         token.userId = (user as { id: string }).id;
-
-        // Auto-create Cliente for credentials users too
-        if ((user as { role: Role }).role === Role.CLIENTE) {
-          const existingCliente = await prisma.cliente.findUnique({
-            where: { userId: (user as { id: string }).id },
-          });
-          if (!existingCliente) {
-            await prisma.cliente.create({
-              data: {
-                userId: (user as { id: string }).id,
-                nombre: (user as { name: string }).name || "",
-                email: (user as { email: string }).email || "",
-              },
-            });
-          }
-        }
       }
 
       return token;
@@ -136,9 +112,6 @@ const config = {
   pages: {
     signIn: "/login",
   },
-
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
-  trustHost: true,
 } satisfies NextAuthConfig;
 
 export const { handlers, auth, signIn, signOut } = NextAuth(config);

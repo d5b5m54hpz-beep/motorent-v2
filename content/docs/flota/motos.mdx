@@ -1,0 +1,84 @@
+---
+title: Gestión de Motos
+description: Cómo registrar, editar y administrar las motos de tu flota
+---
+
+# Gestión de Motos
+
+La sección de Motos es donde registrás y gestionás cada moto de tu flota.
+
+## Registrar una moto nueva
+
+**Ruta:** `/admin/motos` → "+ Nueva Moto"
+
+### Tab Datos Básicos
+- **Marca y Modelo**: Seleccionar o agregar
+- **Año**: Año de fabricación
+- **Color**: Color de la moto
+- **Cilindrada**: En cc (ej: 190cc)
+- **Tipo**: naked, sport, touring, scooter, custom
+- **Estado**: DISPONIBLE, ALQUILADA, EN_MANTENIMIENTO, FUERA_DE_SERVICIO
+- **Kilometraje actual**
+
+### Tab Identificación
+- **VIN**: Número de identificación vehicular (17 caracteres alfanuméricos)
+- **Número de Motor**: Grabado en el motor
+- **Número de Cuadro**: Grabado en el chasis
+- **País de Origen**: CHINA, INDIA, BRASIL, JAPÓN, OTRO
+
+### Tab Registral
+- **Dominio (Patente)**: Formato AA000AA o AAA000
+- **Fecha Patentamiento**: Cuándo se inscribió en DNRPA
+- **Registro Seccional**: Donde está radicada
+- **Cédula Verde**: Número de cédula verde
+- **Cédula Azul**: Número de cédula azul (si tiene)
+
+### Tab Financiero
+- **Valor de Compra**: Costo total de adquisición
+- **Valor Residual**: Estimado al fin de vida útil (default 10% del valor compra)
+- **Vida Útil**: 5 años (AFIP) por defecto
+- **Depreciación Acumulada**: Calculada automáticamente
+- **Aseguradora**: Nombre de la compañía
+- **Número de Póliza**
+- **Tipo de Cobertura**: TODO_RIESGO, TERCEROS_COMPLETO, RESPONSABILIDAD_CIVIL
+- **Vencimiento Póliza**: Fecha de vencimiento
+
+### Tab Importación
+Solo para motos importadas:
+- **Despacho de Importación**: Número del despacho
+- **Valor FOB USD**: Free On Board en dólares
+- **Valor CIF USD**: Cost Insurance Freight en dólares
+- **Derechos de Importación**: Monto pagado en derechos
+
+### Tab Documentos
+Subir archivos:
+- Cédula Verde (PDF/imagen)
+- Póliza de Seguro
+- VTV
+- Factura de Compra
+- Despacho de Importación
+- Otros documentos
+
+Cada documento tiene:
+- Tipo
+- Archivo
+- Fecha de emisión
+- Fecha de vencimiento (si aplica)
+
+## Editar una moto
+
+1. Ir a `/admin/motos`
+2. Click en la moto en la tabla
+3. Editar los tabs necesarios
+4. Guardar cambios
+
+## Dar de baja una moto
+
+Ver [Baja de Motos](/docs/flota/baja-motos) para el proceso completo.
+
+## Tips
+
+- El VIN siempre tiene 17 caracteres
+- El dominio viejo (AA000AA) tiene 6 caracteres, el nuevo (AAA000) tiene 6 también
+- Si una moto está ALQUILADA, no podés cambiarle el estado manualmente (el sistema lo gestiona desde los contratos)
+- Actualizá el kilometraje periódicamente para que las alertas de mantenimiento funcionen

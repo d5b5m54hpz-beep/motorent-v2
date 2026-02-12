@@ -6,6 +6,8 @@ const config = {
     "./src/pages/**/*.{ts,tsx}",
     "./src/components/**/*.{ts,tsx}",
     "./src/app/**/*.{ts,tsx}",
+    "./content/**/*.{md,mdx}",
+    "./node_modules/fumadocs-ui/**/*.{ts,tsx,js,jsx}",
   ],
   theme: {
   	container: {

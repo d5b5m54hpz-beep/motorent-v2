@@ -56,10 +56,9 @@ export default async function HomePage() {
   const [featured, pricing] = await Promise.all([getFeaturedMotos(), getPricing()]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
       <PublicHeader />
 
-      <main className="flex-1">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-background">
         <div className="container px-4 py-24 md:py-32">
@@ -346,8 +345,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      </main>
       <PublicFooter />
-    </div>
+    </>
   );
 }

@@ -6,6 +6,6 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
-    // Opciones MDX si se necesitan
+    // Opciones MDX si necesitás
   },
 });
