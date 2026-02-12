@@ -290,11 +290,6 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
               </FormItem>
             )}
           />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
         <Separator className="my-6" />
