@@ -17,7 +17,10 @@ export default auth((req) => {
     pathname.startsWith("/docs") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/public") ||
-    pathname.startsWith("/api/debug")
+    pathname.startsWith("/api/debug") ||
+    pathname === "/api/motos/tipos" ||
+    pathname === "/api/motos/marcas" ||
+    pathname === "/api/motos/colores"
   ) {
     return NextResponse.next();
   }
