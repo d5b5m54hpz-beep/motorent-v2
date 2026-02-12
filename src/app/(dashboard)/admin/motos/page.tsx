@@ -43,6 +43,7 @@ import { StatsCards } from "./components/stats-cards";
 import { BulkActionsToolbar } from "./components/bulk-actions-toolbar";
 import { BulkStateDialog } from "./components/bulk-state-dialog";
 import { BulkDeleteConfirm } from "./components/bulk-delete-confirm";
+import { BulkImageDialog } from "./components/bulk-image-dialog";
 import { ExportAdvancedDropdown } from "./components/export-advanced-dropdown";
 import {
   MotosFiltersComponent,
@@ -86,6 +87,7 @@ export default function MotosPage() {
   // Selection & bulk actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkStateDialogOpen, setBulkStateDialogOpen] = useState(false);
+  const [bulkImageDialogOpen, setBulkImageDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
 
@@ -248,6 +250,29 @@ export default function MotosPage() {
       toast.error(message);
     } finally {
       setIsBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkImageChange = async (imageUrl: string) => {
+    try {
+      const res = await fetch("/api/motos/bulk", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: Array.from(selectedIds),
+          updates: { imagen: imageUrl },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Error al actualizar");
+
+      toast.success(`Imagen aplicada a ${selectedIds.size} moto(s)`);
+      setSelectedIds(new Set());
+      fetchMotos();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Error al cambiar imagen";
+      toast.error(message);
+      throw error; // Re-throw para que el dialog maneje el error
     }
   };
 
@@ -481,7 +506,7 @@ export default function MotosPage() {
         <BulkActionsToolbar
           selectedCount={selectedIds.size}
           onChangeState={() => setBulkStateDialogOpen(true)}
-          onChangeImage={() => toast.info("Cambiar imagen - próximamente")}
+          onChangeImage={() => setBulkImageDialogOpen(true)}
           onDelete={() => setBulkDeleteDialogOpen(true)}
           onExport={handleExportSelected}
           onDeselect={() => setSelectedIds(new Set())}
@@ -675,6 +700,14 @@ export default function MotosPage() {
         selectedCount={selectedIds.size}
         onConfirm={handleBulkStateChange}
         isLoading={isBulkActionLoading}
+      />
+
+      {/* Bulk Image Dialog */}
+      <BulkImageDialog
+        open={bulkImageDialogOpen}
+        onOpenChange={setBulkImageDialogOpen}
+        selectedCount={selectedIds.size}
+        onConfirm={handleBulkImageChange}
       />
 
       {/* Bulk Delete Dialog */}
