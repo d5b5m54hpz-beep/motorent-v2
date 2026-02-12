@@ -341,11 +341,11 @@ export default function MotosPage() {
         return false;
       }
       // Marca filter
-      if (filters.marca && moto.marca !== filters.marca) {
+      if (filters.marca && filters.marca !== "__all__" && moto.marca !== filters.marca) {
         return false;
       }
       // Modelo filter
-      if (filters.modelo && moto.modelo !== filters.modelo) {
+      if (filters.modelo && filters.modelo !== "__all__" && moto.modelo !== filters.modelo) {
         return false;
       }
       // Año filter
@@ -356,11 +356,11 @@ export default function MotosPage() {
         return false;
       }
       // Color filter
-      if (filters.color && moto.color !== filters.color) {
+      if (filters.color && filters.color !== "__all__" && moto.color !== filters.color) {
         return false;
       }
       // Tipo filter
-      if (filters.tipo && moto.tipo !== filters.tipo) {
+      if (filters.tipo && filters.tipo !== "__all__" && moto.tipo !== filters.tipo) {
         return false;
       }
       // Cilindrada filter

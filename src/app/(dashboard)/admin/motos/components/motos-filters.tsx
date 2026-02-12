@@ -190,9 +190,9 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Marca</Label>
                   <Select
-                    value={filters.marca}
+                    value={filters.marca || undefined}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, marca: value, modelo: "" })
+                      onFiltersChange({ ...filters, marca: value || "", modelo: "" })
                     }
                     disabled={isLoading}
                   >
@@ -200,12 +200,12 @@ export function MotosFiltersComponent({
                       <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas</SelectItem>
-                      {filterOptions.marcas.map((marca) => (
+                      <SelectItem value="__all__">Todas</SelectItem>
+                      {filterOptions.marcas?.map((marca) => (
                         <SelectItem key={marca} value={marca}>
                           {marca}
                         </SelectItem>
-                      ))}
+                      )) || []}
                     </SelectContent>
                   </Select>
                 </div>
@@ -213,9 +213,9 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Modelo</Label>
                   <Select
-                    value={filters.modelo}
+                    value={filters.modelo || undefined}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, modelo: value })
+                      onFiltersChange({ ...filters, modelo: value || "" })
                     }
                     disabled={!filters.marca || isLoading}
                   >
@@ -223,12 +223,12 @@ export function MotosFiltersComponent({
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
-                      {filterOptions.modelos.map((modelo) => (
+                      <SelectItem value="__all__">Todos</SelectItem>
+                      {filterOptions.modelos?.map((modelo) => (
                         <SelectItem key={modelo} value={modelo}>
                           {modelo}
                         </SelectItem>
-                      ))}
+                      )) || []}
                     </SelectContent>
                   </Select>
                 </div>
@@ -239,9 +239,9 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Tipo</Label>
                   <Select
-                    value={filters.tipo}
+                    value={filters.tipo || undefined}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, tipo: value })
+                      onFiltersChange({ ...filters, tipo: value || "" })
                     }
                     disabled={isLoading}
                   >
@@ -249,12 +249,12 @@ export function MotosFiltersComponent({
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
-                      {filterOptions.tipos.map((tipo) => (
+                      <SelectItem value="__all__">Todos</SelectItem>
+                      {filterOptions.tipos?.map((tipo) => (
                         <SelectItem key={tipo} value={tipo}>
                           {tipo}
                         </SelectItem>
-                      ))}
+                      )) || []}
                     </SelectContent>
                   </Select>
                 </div>
@@ -262,9 +262,9 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Color</Label>
                   <Select
-                    value={filters.color}
+                    value={filters.color || undefined}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, color: value })
+                      onFiltersChange({ ...filters, color: value || "" })
                     }
                     disabled={isLoading}
                   >
@@ -272,12 +272,12 @@ export function MotosFiltersComponent({
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
-                      {filterOptions.colores.map((color) => (
+                      <SelectItem value="__all__">Todos</SelectItem>
+                      {filterOptions.colores?.map((color) => (
                         <SelectItem key={color} value={color}>
                           {color}
                         </SelectItem>
-                      ))}
+                      )) || []}
                     </SelectContent>
                   </Select>
                 </div>
