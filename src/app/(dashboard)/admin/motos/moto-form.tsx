@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect } from "react";
-import { motoSchema, motoEstados, type MotoInput } from "@/lib/validations";
+import { motoSchema, motoEstados, estadosPatentamiento, estadosSeguro, type MotoInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,8 +63,26 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
       numeroCuadro: moto?.numeroCuadro ?? "",
       imagen: moto?.imagen ?? "",
       estado: (moto?.estado as MotoInput["estado"]) ?? "disponible",
+
+      // Patentamiento
+      estadoPatentamiento: (moto?.estadoPatentamiento as MotoInput["estadoPatentamiento"]) ?? undefined,
+      fechaInicioTramitePatente: moto?.fechaInicioTramitePatente ?? "",
+      fechaPatentamiento: moto?.fechaPatentamiento ?? "",
+      notasPatentamiento: moto?.notasPatentamiento ?? "",
+
+      // Seguro
+      estadoSeguro: (moto?.estadoSeguro as MotoInput["estadoSeguro"]) ?? undefined,
+      aseguradora: moto?.aseguradora ?? "",
+      numeroPoliza: moto?.numeroPoliza ?? "",
+      fechaInicioSeguro: moto?.fechaInicioSeguro ?? "",
+      fechaVencimientoSeguro: moto?.fechaVencimientoSeguro ?? "",
+      notasSeguro: moto?.notasSeguro ?? "",
     },
   });
+
+  // Watch para campos condicionales
+  const estadoPatentamientoActual = form.watch("estadoPatentamiento");
+  const estadoSeguroActual = form.watch("estadoSeguro");
 
   return (
     <Form {...form}>
@@ -217,34 +235,19 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
             <p className="text-xs text-muted-foreground">Estado y precio de alquiler</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="kilometraje"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Kilometraje<span className="text-destructive ml-0.5">*</span></FormLabel>
-                  <FormControl>
-                    <Input type="number" disabled={isLoading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="precioMensual"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Precio Mensual (ARS)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="50000" disabled={isLoading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="kilometraje"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kilometraje<span className="text-destructive ml-0.5">*</span></FormLabel>
+                <FormControl>
+                  <Input type="number" disabled={isLoading} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <FormField
@@ -374,6 +377,224 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
               </FormItem>
             )}
           />
+        </div>
+
+        <Separator className="my-6" />
+
+        {/* Documentación y Trámites */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold tracking-tight">Documentación y Trámites</h3>
+            <p className="text-xs text-muted-foreground">Gestión de patentamiento y seguro</p>
+          </div>
+
+          {/* Patentamiento */}
+          <div className="rounded-lg border p-4 space-y-4">
+            <h4 className="text-sm font-medium">Patentamiento</h4>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="estadoPatentamiento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado Patentamiento</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {estadosPatentamiento.map((estado) => (
+                          <SelectItem key={estado} value={estado}>
+                            {estado === "SIN_PATENTAR" && "Sin Patentar"}
+                            {estado === "EN_TRAMITE" && "En Trámite"}
+                            {estado === "PATENTADA" && "Patentada"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {(estadoPatentamientoActual === "EN_TRAMITE" || estadoPatentamientoActual === "PATENTADA") && (
+                <FormField
+                  control={form.control}
+                  name="fechaInicioTramitePatente"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha Inicio Trámite</FormLabel>
+                      <FormControl>
+                        <Input type="date" disabled={isLoading} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {estadoPatentamientoActual === "PATENTADA" && (
+                <FormField
+                  control={form.control}
+                  name="fechaPatentamiento"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha Patentamiento</FormLabel>
+                      <FormControl>
+                        <Input type="date" disabled={isLoading} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <FormField
+              control={form.control}
+              name="notasPatentamiento"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notas Patentamiento</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Observaciones sobre el trámite de patentamiento..."
+                      className="min-h-[80px] resize-none"
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">Máximo 500 caracteres</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Seguro */}
+          <div className="rounded-lg border p-4 space-y-4">
+            <h4 className="text-sm font-medium">Seguro</h4>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="estadoSeguro"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado Seguro</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {estadosSeguro.map((estado) => (
+                          <SelectItem key={estado} value={estado}>
+                            {estado === "SIN_SEGURO" && "Sin Seguro"}
+                            {estado === "EN_TRAMITE" && "En Trámite"}
+                            {estado === "ASEGURADA" && "Asegurada"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {(estadoSeguroActual === "EN_TRAMITE" || estadoSeguroActual === "ASEGURADA") && (
+                <FormField
+                  control={form.control}
+                  name="aseguradora"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Aseguradora</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre de la aseguradora" disabled={isLoading} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {estadoSeguroActual === "ASEGURADA" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="numeroPoliza"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número de Póliza</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123456789" disabled={isLoading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="fechaInicioSeguro"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha Inicio Seguro</FormLabel>
+                        <FormControl>
+                          <Input type="date" disabled={isLoading} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="fechaVencimientoSeguro"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha Vencimiento Seguro</FormLabel>
+                        <FormControl>
+                          <Input type="date" disabled={isLoading} {...field} />
+                        </FormControl>
+                        <FormDescription className="text-xs text-yellow-600">
+                          {field.value && new Date(field.value) < new Date() && "⚠️ Seguro vencido"}
+                          {field.value && new Date(field.value) >= new Date() &&
+                           new Date(field.value) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
+                           "⚠️ Vence en los próximos 30 días"}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+            </div>
+
+            <FormField
+              control={form.control}
+              name="notasSeguro"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notas Seguro</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Observaciones sobre el seguro..."
+                      className="min-h-[80px] resize-none"
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">Máximo 500 caracteres</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         <Separator className="my-6" />

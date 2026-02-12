@@ -20,7 +20,6 @@ import {
   Package,
   BarChart3,
   TrendingUp,
-  TrendingDown,
   Calculator,
   Wallet,
   Sparkles,
@@ -68,10 +67,9 @@ export function AppSidebar({ user }: Props) {
   // Categories with subitems
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
-    { title: "Patentamiento RUNA", href: "/admin/motos/patentamiento", icon: Calendar },
-    { title: "Amortización", href: "/admin/flota/amortizacion", icon: TrendingDown },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
     { title: "Repuestos", href: "/admin/repuestos", icon: Package },
+    { title: "Precios", href: "/admin/precios", icon: Tag },
   ];
 
   const comercial: NavItem[] = [
@@ -80,7 +78,6 @@ export function AppSidebar({ user }: Props) {
     { title: "Pagos", href: "/admin/pagos", icon: CreditCard },
     { title: "Facturas", href: "/admin/facturas", icon: Receipt },
     { title: "Notas de Crédito", href: "/admin/notas-credito", icon: FileCheck },
-    { title: "Precios", href: "/admin/precios", icon: Tag },
   ];
 
   const finanzas: NavItem[] = [

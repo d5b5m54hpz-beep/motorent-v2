@@ -16,6 +16,20 @@ export type Moto = {
   estado: string;
   createdAt: string;
   updatedAt: string;
+
+  // Patentamiento
+  estadoPatentamiento: string | null;
+  fechaInicioTramitePatente: string | null;
+  fechaPatentamiento: string | null;
+  notasPatentamiento: string | null;
+
+  // Seguro
+  estadoSeguro: string | null;
+  aseguradora: string | null;
+  numeroPoliza: string | null;
+  fechaInicioSeguro: string | null;
+  fechaVencimientoSeguro: string | null;
+  notasSeguro: string | null;
 };
 
 export type MotosApiResponse = {

@@ -31,6 +31,9 @@ export type MotosFilters = {
   tipo: string;
   cilindradaMin: string;
   cilindradaMax: string;
+  estadoPatentamiento: string;
+  estadoSeguro: string;
+  seguroPorVencer: boolean;
 };
 
 type FilterOptions = {
@@ -124,7 +127,10 @@ export function MotosFiltersComponent({
     (filters.color ? 1 : 0) +
     (filters.tipo ? 1 : 0) +
     (filters.cilindradaMin ? 1 : 0) +
-    (filters.cilindradaMax ? 1 : 0);
+    (filters.cilindradaMax ? 1 : 0) +
+    (filters.estadoPatentamiento ? 1 : 0) +
+    (filters.estadoSeguro ? 1 : 0) +
+    (filters.seguroPorVencer ? 1 : 0);
 
   return (
     <div className="space-y-3">
@@ -348,6 +354,70 @@ export function MotosFiltersComponent({
                   </div>
                 </div>
               </div>
+
+              <Separator />
+
+              {/* Documentación */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Estado Patentamiento</Label>
+                  <Select
+                    value={filters.estadoPatentamiento || undefined}
+                    onValueChange={(value) =>
+                      onFiltersChange({ ...filters, estadoPatentamiento: value || "" })
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos</SelectItem>
+                      <SelectItem value="SIN_PATENTAR">Sin Patentar</SelectItem>
+                      <SelectItem value="EN_TRAMITE">En Trámite</SelectItem>
+                      <SelectItem value="PATENTADA">Patentada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Estado Seguro</Label>
+                  <Select
+                    value={filters.estadoSeguro || undefined}
+                    onValueChange={(value) =>
+                      onFiltersChange({ ...filters, estadoSeguro: value || "" })
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos</SelectItem>
+                      <SelectItem value="SIN_SEGURO">Sin Seguro</SelectItem>
+                      <SelectItem value="EN_TRAMITE">En Trámite</SelectItem>
+                      <SelectItem value="ASEGURADA">Asegurada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Checkbox Seguro por Vencer */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="seguro-vencer"
+                  checked={filters.seguroPorVencer}
+                  onCheckedChange={(checked) =>
+                    onFiltersChange({ ...filters, seguroPorVencer: !!checked })
+                  }
+                />
+                <Label
+                  htmlFor="seguro-vencer"
+                  className="cursor-pointer font-normal text-sm"
+                >
+                  Seguro vence en 30 días
+                </Label>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
@@ -452,6 +522,39 @@ export function MotosFiltersComponent({
                 onClick={() =>
                   onFiltersChange({ ...filters, cilindradaMax: "" })
                 }
+              />
+            </Badge>
+          )}
+          {filters.estadoPatentamiento && (
+            <Badge variant="secondary" className="gap-1">
+              Patentamiento: {
+                filters.estadoPatentamiento === "SIN_PATENTAR" ? "Sin Patentar" :
+                filters.estadoPatentamiento === "EN_TRAMITE" ? "En Trámite" : "Patentada"
+              }
+              <X
+                className="h-3 w-3 cursor-pointer"
+                onClick={() => onFiltersChange({ ...filters, estadoPatentamiento: "" })}
+              />
+            </Badge>
+          )}
+          {filters.estadoSeguro && (
+            <Badge variant="secondary" className="gap-1">
+              Seguro: {
+                filters.estadoSeguro === "SIN_SEGURO" ? "Sin Seguro" :
+                filters.estadoSeguro === "EN_TRAMITE" ? "En Trámite" : "Asegurada"
+              }
+              <X
+                className="h-3 w-3 cursor-pointer"
+                onClick={() => onFiltersChange({ ...filters, estadoSeguro: "" })}
+              />
+            </Badge>
+          )}
+          {filters.seguroPorVencer && (
+            <Badge variant="secondary" className="gap-1">
+              ⚠️ Seguro por vencer (30 días)
+              <X
+                className="h-3 w-3 cursor-pointer"
+                onClick={() => onFiltersChange({ ...filters, seguroPorVencer: false })}
               />
             </Badge>
           )}

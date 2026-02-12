@@ -102,6 +102,9 @@ export default function MotosPage() {
     tipo: "",
     cilindradaMin: "",
     cilindradaMax: "",
+    estadoPatentamiento: "",
+    estadoSeguro: "",
+    seguroPorVencer: false,
   });
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
@@ -378,6 +381,28 @@ export default function MotosPage() {
       ) {
         return false;
       }
+      // Patentamiento filter
+      if (filters.estadoPatentamiento && filters.estadoPatentamiento !== "__all__") {
+        const estadoPat = moto.estadoPatentamiento || "SIN_PATENTAR";
+        if (estadoPat !== filters.estadoPatentamiento) {
+          return false;
+        }
+      }
+      // Seguro filter
+      if (filters.estadoSeguro && filters.estadoSeguro !== "__all__") {
+        const estadoSeg = moto.estadoSeguro || "SIN_SEGURO";
+        if (estadoSeg !== filters.estadoSeguro) {
+          return false;
+        }
+      }
+      // Seguro por vencer filter
+      if (filters.seguroPorVencer) {
+        if (!moto.fechaVencimientoSeguro) return false;
+        const vencimiento = new Date(moto.fechaVencimientoSeguro);
+        const hoy = new Date();
+        const diasParaVencer = Math.floor((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        if (diasParaVencer < 0 || diasParaVencer > 30) return false;
+      }
       return true;
     });
   }, [data, filters]);
@@ -393,6 +418,9 @@ export default function MotosPage() {
       tipo: "",
       cilindradaMin: "",
       cilindradaMax: "",
+      estadoPatentamiento: "",
+      estadoSeguro: "",
+      seguroPorVencer: false,
     });
   };
 
@@ -438,7 +466,10 @@ export default function MotosPage() {
               !!filters.color ||
               !!filters.tipo ||
               !!filters.cilindradaMin ||
-              !!filters.cilindradaMax
+              !!filters.cilindradaMax ||
+              !!filters.estadoPatentamiento ||
+              !!filters.estadoSeguro ||
+              filters.seguroPorVencer
             }
             hasSelection={selectedIds.size > 0}
           />

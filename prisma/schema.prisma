@@ -123,15 +123,23 @@ model Moto {
   valorCIF          Float?
   derechosImportacion Float?
 
-  // ─── Seguros ────────────────────────────────────────────────────────────
-  aseguradora       String?
-  numeroPoliza      String?
-  tipoCobertura     String?   // RESPONSABILIDAD_CIVIL, TERCEROS_COMPLETO, TODO_RIESGO
-  vencimientoPoliza DateTime?
-
   // ─── Estado legal ───────────────────────────────────────────────────────
   estadoLegal       String?   @default("REGULAR") // REGULAR, DENUNCIA_ROBO, SINIESTRO_TOTAL, BAJA_DEFINITIVA, EN_PROCESO_PATENTAMIENTO, PRENDA
-  estadoPatentamiento String? @default("NO_INICIADO") // NO_INICIADO, IMPORTADA, EN_VERIFICACION, DOCUMENTACION_LISTA, EN_RUNA, PATENTADA, LISTA_PARA_ALQUILER
+
+  // === PATENTAMIENTO ===
+  estadoPatentamiento    String?   @default("SIN_PATENTAR") // SIN_PATENTAR | EN_TRAMITE | PATENTADA
+  fechaInicioTramitePatente DateTime?
+  notasPatentamiento     String?
+
+  // === SEGURO ===
+  estadoSeguro           String?   @default("SIN_SEGURO") // SIN_SEGURO | EN_TRAMITE | ASEGURADA
+  aseguradora            String?
+  numeroPoliza           String?
+  tipoCobertura          String?   // RESPONSABILIDAD_CIVIL, TERCEROS_COMPLETO, TODO_RIESGO (legacy)
+  fechaInicioSeguro      DateTime?
+  fechaVencimientoSeguro DateTime?
+  vencimientoPoliza      DateTime? // LEGACY - usar fechaVencimientoSeguro
+  notasSeguro            String?
 
   // ─── Relaciones nuevas ──────────────────────────────────────────────────
   amortizaciones     Amortizacion[]

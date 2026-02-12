@@ -3,6 +3,8 @@ import { z } from "zod";
 // ─── Motos ───────────────────────────────────────────────────────────────────
 
 export const motoEstados = ["disponible", "alquilada", "mantenimiento", "baja"] as const;
+export const estadosPatentamiento = ["SIN_PATENTAR", "EN_TRAMITE", "PATENTADA"] as const;
+export const estadosSeguro = ["SIN_SEGURO", "EN_TRAMITE", "ASEGURADA"] as const;
 
 export const motoSchema = z.object({
   marca: z.string().min(1, "Marca es requerida"),
@@ -22,6 +24,20 @@ export const motoSchema = z.object({
   numeroCuadro: z.string().max(50).optional(),
   imagen: z.string().url("URL de imagen invalida").optional().or(z.literal("")),
   estado: z.enum(motoEstados).default("disponible"),
+
+  // Patentamiento
+  estadoPatentamiento: z.enum(estadosPatentamiento).optional(),
+  fechaInicioTramitePatente: z.string().optional(),
+  fechaPatentamiento: z.string().optional(),
+  notasPatentamiento: z.string().max(500).optional(),
+
+  // Seguro
+  estadoSeguro: z.enum(estadosSeguro).optional(),
+  aseguradora: z.string().max(100).optional(),
+  numeroPoliza: z.string().max(100).optional(),
+  fechaInicioSeguro: z.string().optional(),
+  fechaVencimientoSeguro: z.string().optional(),
+  notasSeguro: z.string().max(500).optional(),
 });
 
 export type MotoInput = z.infer<typeof motoSchema>;
