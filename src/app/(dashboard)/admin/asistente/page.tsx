@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import Image from "next/image";
 import { Sparkles, Send, RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -59,13 +60,13 @@ export default function AsistentePage() {
       <div className="flex items-center justify-between pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">Asistente IA</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Eve</h1>
             <span className="rounded-md bg-cyan-500/20 px-2 py-0.5 text-xs font-medium text-cyan-500">
               IA
             </span>
           </div>
           <p className="text-muted-foreground">
-            Consultá datos del negocio en tiempo real con inteligencia artificial
+            Tu asistente virtual de MotoLibre con IA
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => { setMessages([]); setInput(""); }}>
@@ -78,14 +79,19 @@ export default function AsistentePage() {
       <div className="flex-1 overflow-y-auto rounded-lg border bg-card p-6 space-y-4">
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center space-y-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500/10">
-              <Sparkles className="h-8 w-8 text-cyan-500" />
+            <div className="relative h-20 w-20">
+              <Image
+                src="https://pub-13258a416f1a434696a942c5c3812e7f.r2.dev/system/eve-avatar.png"
+                alt="Eve"
+                width={80}
+                height={80}
+                className="rounded-full"
+              />
             </div>
             <div className="text-center">
-              <p className="text-lg font-medium">¡Hola! Soy tu asistente IA</p>
+              <p className="text-lg font-medium">¡Hola! Soy Eve, tu asistente virtual de MotoLibre.</p>
               <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                Tengo acceso a todos los datos de MotoLibre en tiempo real.
-                Preguntame lo que necesites sobre tu flota, finanzas, clientes o contratos.
+                Puedo ayudarte con información sobre motos, contratos, pagos, finanzas y más. ¿En qué te puedo ayudar?
               </p>
             </div>
             <div className="flex flex-wrap gap-2 justify-center max-w-lg">
@@ -148,7 +154,7 @@ export default function AsistentePage() {
         {error && (
           <div className="flex justify-center">
             <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg px-4 py-2">
-              Error: {error.message || "No se pudo conectar con el asistente"}
+              Error: {error.message || "No se pudo conectar con Eve"}
             </p>
           </div>
         )}
@@ -165,7 +171,7 @@ export default function AsistentePage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Preguntale algo al asistente..."
+            placeholder="Preguntale algo a Eve..."
             className="flex-1 rounded-lg border bg-card px-4 py-3 text-sm outline-none transition-colors focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 placeholder:text-muted-foreground"
             disabled={isLoading}
           />
