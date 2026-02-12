@@ -21,32 +21,21 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    try {
-      const res = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+    const res = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
-      setLoading(false);
+    setLoading(false);
 
-      if (res?.error) {
-        setError(`Error: ${res.error}. Status: ${res.status}`);
-        return;
-      }
-
-      if (!res?.ok) {
-        setError(`Login falló. OK: ${res?.ok}, Status: ${res?.status}`);
-        return;
-      }
-
-      router.push("/");
-      router.refresh();
-    } catch (err: unknown) {
-      setLoading(false);
-      const message = err instanceof Error ? err.message : String(err);
-      setError(`Excepción: ${message}`);
+    if (res?.error) {
+      setError("Email o contraseña incorrectos");
+      return;
     }
+
+    router.push("/");
+    router.refresh();
   }
 
   function handleGoogle() {
@@ -184,7 +173,7 @@ export default function LoginPage() {
             {isDev && (
               <div className="mt-6 p-3 bg-muted/50 rounded-lg border border-dashed">
                 <p className="text-xs text-muted-foreground text-center">
-                  <strong>Admin:</strong> admin@motorent.com / admin123
+                  <strong>Admin:</strong> admin@motolibre.com.ar / admin123
                 </p>
               </div>
             )}

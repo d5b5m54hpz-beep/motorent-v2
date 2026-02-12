@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Resumen general de motolibre</p>
+          <p className="text-muted-foreground">Resumen general de MotoLibre</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -101,7 +101,7 @@ export default function AdminDashboardPage() {
     {
       title: "Contratos Activos",
       value: data.kpis.contratosActivos,
-      subtitle: `${data.kpis.contratosPendientes} pendientes`,
+      subtitle: `${data.kpis.contratosActivos + data.kpis.contratosPendientes} contratos totales`,
       icon: FileText,
       color: "text-green-600 dark:text-green-400",
     },

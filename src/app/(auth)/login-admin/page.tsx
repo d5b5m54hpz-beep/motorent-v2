@@ -4,12 +4,14 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shield } from "lucide-react";
 
 export default function LoginAdminPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,25 +22,21 @@ export default function LoginAdminPage() {
     setError("");
     setLoading(true);
 
-    try {
-      const res = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+    const res = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
-      if (res?.error || !res?.ok) {
-        setLoading(false);
-        setError("Credenciales inválidas. Verificá email y contraseña.");
-        return;
-      }
+    setLoading(false);
 
-      window.location.href = "/admin";
-    } catch (err: unknown) {
-      setLoading(false);
-      const message = err instanceof Error ? err.message : String(err);
-      setError(`Error: ${message}`);
+    if (res?.error) {
+      setError("Email o contraseña incorrectos");
+      return;
     }
+
+    router.push("/admin");
+    router.refresh();
   }
 
   const isDev = process.env.NODE_ENV === "development";
@@ -138,7 +136,7 @@ export default function LoginAdminPage() {
           {isDev && (
             <div className="mt-6 p-3 bg-muted/50 rounded-lg border border-dashed">
               <p className="text-xs text-muted-foreground text-center">
-                <strong>Admin:</strong> admin@motorent.com / admin123
+                <strong>Admin:</strong> admin@motolibre.com.ar / admin123
               </p>
             </div>
           )}

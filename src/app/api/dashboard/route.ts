@@ -145,11 +145,10 @@ export async function GET(req: NextRequest) {
       metodo: pago.metodo,
     }));
 
-    // Próximos vencimientos (próximos 5 pagos pendientes)
-    const proximosVencimientosBd = await prisma.pago.findMany({
+    // Próximos vencimientos (un pago por contrato, solo el más próximo)
+    const todosPagosPendientes = await prisma.pago.findMany({
       where: { estado: "pendiente" },
       orderBy: { vencimientoAt: "asc" },
-      take: 5,
       include: {
         contrato: {
           include: {
@@ -165,6 +164,16 @@ export async function GET(req: NextRequest) {
         },
       },
     });
+
+    // Agrupar por contratoId y tomar solo el primer pago de cada contrato
+    const contratosVistos = new Set<string>();
+    const proximosVencimientosBd = todosPagosPendientes.filter((pago) => {
+      if (contratosVistos.has(pago.contratoId)) {
+        return false;
+      }
+      contratosVistos.add(pago.contratoId);
+      return true;
+    }).slice(0, 5);
 
     const proximosVencimientos = proximosVencimientosBd.map((pago) => {
       const diasRestantes = pago.vencimientoAt

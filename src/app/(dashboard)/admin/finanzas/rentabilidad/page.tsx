@@ -17,7 +17,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-type MotoRent = {
+type MotoRentabilidad = {
   id: string;
   marca: string;
   modelo: string;
@@ -35,7 +35,7 @@ type MotoRent = {
 };
 
 export default function RentabilidadPage() {
-  const [data, setData] = useState<MotoRent[]>([]);
+  const [data, setData] = useState<MotoRentabilidad[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortKey, setSortKey] = useState<"rentabilidad" | "ingresos" | "gastos" | "roi">("rentabilidad");
 

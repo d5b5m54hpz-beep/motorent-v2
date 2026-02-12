@@ -22,16 +22,15 @@ export default function ExitoPage({
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
       <PublicHeader />
 
-      <main className="flex-1">
       <div className="container max-w-2xl px-4 py-16">
         <div className="text-center space-y-6">
           {/* Success Icon */}
           <div className="flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-teal-50 dark:bg-teal-900/20">
-              <CheckCircle className="h-12 w-12 text-teal-600 dark:text-teal-400" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
+              <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
             </div>
           </div>
 
@@ -112,16 +111,15 @@ export default function ExitoPage({
             <p>
               ¿Tenés alguna pregunta? Escribinos a{" "}
               <a
-                href="mailto:contacto@motorent.com"
+                href="mailto:contacto@motolibre.com.ar"
                 className="text-primary hover:underline"
               >
-                contacto@motorent.com
+                contacto@motolibre.com.ar
               </a>
             </p>
           </div>
         </div>
       </div>
-      </main>
-    </div>
+    </>
   );
 }
