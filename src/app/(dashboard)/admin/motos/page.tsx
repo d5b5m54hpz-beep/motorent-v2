@@ -44,6 +44,13 @@ import { StatsCards } from "./components/stats-cards";
 import { BulkActionsToolbar } from "./components/bulk-actions-toolbar";
 import { BulkStateDialog } from "./components/bulk-state-dialog";
 import { BulkDeleteConfirm } from "./components/bulk-delete-confirm";
+import {
+  MotosFiltersComponent,
+  type MotosFilters,
+} from "./components/motos-filters";
+import { GridView } from "./components/grid-view";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LayoutGrid, TableIcon } from "lucide-react";
 import type { Moto, MotosApiResponse } from "./types";
 import type { MotoInput } from "@/lib/validations";
 
@@ -81,6 +88,20 @@ export default function MotosPage() {
   const [bulkStateDialogOpen, setBulkStateDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+
+  // Filters & view mode
+  const [filters, setFilters] = useState<MotosFilters>({
+    estado: [],
+    marca: "",
+    modelo: "",
+    anioMin: "",
+    anioMax: "",
+    color: "",
+    tipo: "",
+    cilindradaMin: "",
+    cilindradaMax: "",
+  });
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
   // Debounce search
   useEffect(() => {
@@ -287,9 +308,72 @@ export default function MotosPage() {
     return { disponibles, alquiladas, mantenimiento, baja };
   }, [data]);
 
+  // Apply client-side filters
+  const filteredData = useMemo(() => {
+    return data.filter((moto) => {
+      // Estado filter
+      if (filters.estado.length > 0 && !filters.estado.includes(moto.estado)) {
+        return false;
+      }
+      // Marca filter
+      if (filters.marca && moto.marca !== filters.marca) {
+        return false;
+      }
+      // Modelo filter
+      if (filters.modelo && moto.modelo !== filters.modelo) {
+        return false;
+      }
+      // Año filter
+      if (filters.anioMin && moto.anio < parseInt(filters.anioMin)) {
+        return false;
+      }
+      if (filters.anioMax && moto.anio > parseInt(filters.anioMax)) {
+        return false;
+      }
+      // Color filter
+      if (filters.color && moto.color !== filters.color) {
+        return false;
+      }
+      // Tipo filter
+      if (filters.tipo && moto.tipo !== filters.tipo) {
+        return false;
+      }
+      // Cilindrada filter
+      if (
+        filters.cilindradaMin &&
+        moto.cilindrada &&
+        moto.cilindrada < parseInt(filters.cilindradaMin)
+      ) {
+        return false;
+      }
+      if (
+        filters.cilindradaMax &&
+        moto.cilindrada &&
+        moto.cilindrada > parseInt(filters.cilindradaMax)
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [data, filters]);
+
+  const handleClearFilters = () => {
+    setFilters({
+      estado: [],
+      marca: "",
+      modelo: "",
+      anioMin: "",
+      anioMax: "",
+      color: "",
+      tipo: "",
+      cilindradaMin: "",
+      cilindradaMax: "",
+    });
+  };
+
   // TanStack Table (manual pagination + sorting)
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
@@ -339,7 +423,7 @@ export default function MotosPage() {
         baja={stats.baja}
       />
 
-      {/* Search */}
+      {/* Search & View Toggle */}
       <div className="flex items-center gap-2">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -350,10 +434,31 @@ export default function MotosPage() {
             className="pl-9"
           />
         </div>
+        <ToggleGroup
+          type="single"
+          value={viewMode}
+          onValueChange={(value) => {
+            if (value) setViewMode(value as "table" | "grid");
+          }}
+        >
+          <ToggleGroupItem value="table" aria-label="Vista tabla">
+            <TableIcon className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="grid" aria-label="Vista grilla">
+            <LayoutGrid className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
         <p className="text-sm text-muted-foreground">
-          {total} moto{total !== 1 ? "s" : ""}
+          {filteredData.length} de {total} moto{total !== 1 ? "s" : ""}
         </p>
       </div>
+
+      {/* Filters */}
+      <MotosFiltersComponent
+        filters={filters}
+        onFiltersChange={setFilters}
+        onClearFilters={handleClearFilters}
+      />
 
       {/* Bulk Actions Toolbar */}
       {selectedIds.size > 0 && (
@@ -367,68 +472,88 @@ export default function MotosPage() {
         />
       )}
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {columns.map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-5 w-full" />
-                    </TableCell>
+      {/* Table / Grid View */}
+      {viewMode === "table" ? (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  No hay motos registradas.
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => {
-                const isSelected = selectedIds.has(row.original.id);
-                return (
-                  <TableRow
-                    key={row.id}
-                    className={isSelected ? "bg-cyan-500/5" : ""}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {columns.map((_, j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-5 w-full" />
                       </TableCell>
                     ))}
                   </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                ))
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    No hay motos registradas.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => {
+                  const isSelected = selectedIds.has(row.original.id);
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className={isSelected ? "bg-cyan-500/5" : ""}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <GridView
+          motos={filteredData}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
+          onView={(moto) => {
+            setMotoToView(moto);
+            setViewDialogOpen(true);
+          }}
+          onEdit={(moto) => {
+            setSelectedMoto(moto);
+            setDialogOpen(true);
+          }}
+          onDelete={(moto) => {
+            setMotoToDelete(moto);
+            setDeleteDialogOpen(true);
+          }}
+        />
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
