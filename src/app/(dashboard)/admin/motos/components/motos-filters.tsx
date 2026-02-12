@@ -196,9 +196,13 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Marca</Label>
                   <Select
-                    value={filters.marca || undefined}
+                    value={filters.marca || "__all__"}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, marca: value || "", modelo: "" })
+                      onFiltersChange({
+                        ...filters,
+                        marca: value === "__all__" ? "" : value,
+                        modelo: ""
+                      })
                     }
                     disabled={isLoading}
                   >
@@ -219,9 +223,12 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Modelo</Label>
                   <Select
-                    value={filters.modelo || undefined}
+                    value={filters.modelo || "__all__"}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, modelo: value || "" })
+                      onFiltersChange({
+                        ...filters,
+                        modelo: value === "__all__" ? "" : value
+                      })
                     }
                     disabled={!filters.marca || isLoading}
                   >
@@ -245,9 +252,12 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Tipo</Label>
                   <Select
-                    value={filters.tipo || undefined}
+                    value={filters.tipo || "__all__"}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, tipo: value || "" })
+                      onFiltersChange({
+                        ...filters,
+                        tipo: value === "__all__" ? "" : value
+                      })
                     }
                     disabled={isLoading}
                   >
@@ -268,9 +278,12 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Color</Label>
                   <Select
-                    value={filters.color || undefined}
+                    value={filters.color || "__all__"}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, color: value || "" })
+                      onFiltersChange({
+                        ...filters,
+                        color: value === "__all__" ? "" : value
+                      })
                     }
                     disabled={isLoading}
                   >
@@ -362,9 +375,12 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Estado Patentamiento</Label>
                   <Select
-                    value={filters.estadoPatentamiento || undefined}
+                    value={filters.estadoPatentamiento || "__all__"}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, estadoPatentamiento: value || "" })
+                      onFiltersChange({
+                        ...filters,
+                        estadoPatentamiento: value === "__all__" ? "" : value
+                      })
                     }
                     disabled={isLoading}
                   >
@@ -383,9 +399,12 @@ export function MotosFiltersComponent({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Estado Seguro</Label>
                   <Select
-                    value={filters.estadoSeguro || undefined}
+                    value={filters.estadoSeguro || "__all__"}
                     onValueChange={(value) =>
-                      onFiltersChange({ ...filters, estadoSeguro: value || "" })
+                      onFiltersChange({
+                        ...filters,
+                        estadoSeguro: value === "__all__" ? "" : value
+                      })
                     }
                     disabled={isLoading}
                   >
