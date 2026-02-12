@@ -585,3 +585,39 @@ export const notaCreditoSchema = z.object({
 });
 
 export type NotaCreditoInput = z.infer<typeof notaCreditoSchema>;
+
+// ─── Baja Motos ──────────────────────────────────────────────────────────────
+
+export const tiposBaja = ["ROBO", "SINIESTRO", "VENTA"] as const;
+export const formasPagoBaja = ["EFECTIVO", "TRANSFERENCIA", "CHEQUE"] as const;
+
+export const bajaMotoSchema = z.object({
+  motoId: z.string().min(1, "Moto es requerida"),
+  tipoBaja: z.enum(tiposBaja),
+  fechaBaja: z.string().min(1, "Fecha de baja es requerida"),
+  motivo: z.string().optional(),
+
+  // ROBO
+  numeroDenuncia: z.string().optional(),
+  comisaria: z.string().optional(),
+  fechaDenuncia: z.string().optional(),
+
+  // SINIESTRO
+  numeroSiniestro: z.string().optional(),
+  aseguradora: z.string().optional(),
+  montoIndemnizacion: z.coerce.number().min(0).optional(),
+  fechaSiniestro: z.string().optional(),
+
+  // VENTA
+  compradorNombre: z.string().optional(),
+  compradorDNI: z.string().optional(),
+  compradorTelefono: z.string().optional(),
+  precioVenta: z.coerce.number().min(0).optional(),
+  formaPago: z.enum(formasPagoBaja).optional(),
+
+  // General
+  archivoUrl: z.string().optional(),
+  notas: z.string().max(1000).optional(),
+});
+
+export type BajaMotoInput = z.infer<typeof bajaMotoSchema>;

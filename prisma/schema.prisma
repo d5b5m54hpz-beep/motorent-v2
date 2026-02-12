@@ -137,6 +137,7 @@ model Moto {
   amortizaciones     Amortizacion[]
   documentos         DocumentoMoto[]
   historialEstados   HistorialEstadoMoto[]
+  bajaMoto           BajaMoto?
 }
 
 model Contrato {
@@ -892,6 +893,45 @@ model HistorialEstadoMoto {
 
   @@index([motoId])
   @@index([createdAt])
+}
+
+model BajaMoto {
+  id              String   @id @default(cuid())
+  motoId          String   @unique
+  moto            Moto     @relation(fields: [motoId], references: [id], onDelete: Cascade)
+  tipoBaja        String   // ROBO, SINIESTRO, VENTA
+  fechaBaja       DateTime
+  motivo          String?
+
+  // ─── ROBO ───────────────────────────────────────────────────────────────
+  numeroDenuncia  String?
+  comisaria       String?
+  fechaDenuncia   DateTime?
+
+  // ─── SINIESTRO ──────────────────────────────────────────────────────────
+  numeroSiniestro String?
+  aseguradora     String?
+  montoIndemnizacion Float?
+  fechaSiniestro  DateTime?
+
+  // ─── VENTA ──────────────────────────────────────────────────────────────
+  compradorNombre String?
+  compradorDNI    String?
+  compradorTelefono String?
+  precioVenta     Float?
+  formaPago       String? // EFECTIVO, TRANSFERENCIA, CHEQUE
+
+  // ─── Documentación ──────────────────────────────────────────────────────
+  archivoUrl      String?
+  notas           String?
+
+  registradoPor   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([motoId])
+  @@index([tipoBaja])
+  @@index([fechaBaja])
 }
 
 model NotaCredito {

@@ -1,13 +1,14 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Eye, Pencil, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency } from "@/lib/utils";
@@ -36,6 +37,7 @@ type ColumnActions = {
   onView: (moto: Moto) => void;
   onEdit: (moto: Moto) => void;
   onDelete: (moto: Moto) => void;
+  onBaja: (moto: Moto) => void;
 };
 
 export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
@@ -151,6 +153,16 @@ export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {moto.estado !== "baja" && (
+                <DropdownMenuItem
+                  onClick={() => actions.onBaja(moto)}
+                  className="text-orange-600 focus:text-orange-600"
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Dar de Baja
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={() => actions.onDelete(moto)}
                 className="text-destructive focus:text-destructive"

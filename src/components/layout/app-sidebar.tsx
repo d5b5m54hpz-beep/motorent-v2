@@ -20,6 +20,7 @@ import {
   Package,
   BarChart3,
   TrendingUp,
+  TrendingDown,
   Calculator,
   Wallet,
   Sparkles,
