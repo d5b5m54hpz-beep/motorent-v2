@@ -1,431 +1,260 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  type SortingState,
-} from "@tanstack/react-table";
-import {
-  Plus,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Calendar, Wrench, QrCode, FileText, Activity, Clock, DollarSign, Bike } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getColumns } from "./columns";
-import { MantenimientoForm } from "./mantenimiento-form";
-import { DeleteMantenimientoDialog } from "./delete-mantenimiento-dialog";
-import type { Mantenimiento, MantenimientosApiResponse } from "./types";
-import type { MantenimientoInput } from "@/lib/validations";
+import { toast } from "sonner";
 
-const PAGE_SIZE = 15;
-
-const estadoOptions = [
-  { value: "all", label: "Todos los estados" },
-  { value: "PENDIENTE", label: "Pendiente" },
-  { value: "PROGRAMADO", label: "Programado" },
-  { value: "EN_PROCESO", label: "En Proceso" },
-  { value: "ESPERANDO_REPUESTO", label: "Esperando Repuesto" },
-  { value: "COMPLETADO", label: "Completado" },
-  { value: "CANCELADO", label: "Cancelado" },
-];
-
-const tipoOptions = [
-  { value: "all", label: "Todos los tipos" },
-  { value: "SERVICE_PREVENTIVO", label: "Service Preventivo" },
-  { value: "REPARACION", label: "Reparación" },
-  { value: "CAMBIO_ACEITE", label: "Cambio de Aceite" },
-  { value: "CAMBIO_NEUMATICOS", label: "Cambio Neumáticos" },
-  { value: "FRENOS", label: "Frenos" },
-  { value: "ELECTRICA", label: "Eléctrica" },
-  { value: "CHAPA_PINTURA", label: "Chapa y Pintura" },
-  { value: "OTRO", label: "Otro" },
-];
+type DashboardStats = {
+  citasProgramadas: number;
+  ordenesEnEjecucion: number;
+  motosEnMantenimiento: number;
+  costoPromedioOT: number;
+};
 
 export default function MantenimientosPage() {
-  const [data, setData] = useState<Mantenimiento[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [estadoFilter, setEstadoFilter] = useState("all");
-  const [tipoFilter, setTipoFilter] = useState("all");
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Mantenimiento | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<Mantenimiento | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [itemToView, setItemToView] = useState<Mantenimiento | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+    const fetchStats = async () => {
+      try {
+        setIsLoadingStats(true);
 
-  const fetchData = useCallback(async (signal?: AbortSignal) => {
-    setIsLoading(true);
-    try {
-      const sortBy = sorting[0]?.id ?? "createdAt";
-      const sortOrder = sorting[0]?.desc === false ? "asc" : "desc";
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(PAGE_SIZE),
-        search: debouncedSearch,
-        sortBy,
-        sortOrder,
-      });
-      if (estadoFilter !== "all") params.set("estado", estadoFilter);
-      if (tipoFilter !== "all") params.set("tipo", tipoFilter);
+        // Fetch citas programadas
+        const citasRes = await fetch("/api/mantenimientos/citas?estado=PROGRAMADA");
+        const citasData = await citasRes.json();
 
-      const res = await fetch(`/api/mantenimientos?${params}`, { signal });
-      if (!res.ok) throw new Error("Error fetching mantenimientos");
-      const json: MantenimientosApiResponse = await res.json();
-      setData(json.data);
-      setTotal(json.total);
-      setTotalPages(json.totalPages);
-    } catch (err: unknown) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      toast.error("Error al cargar mantenimientos");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, debouncedSearch, sorting, estadoFilter, tipoFilter]);
+        // Fetch órdenes en ejecución
+        const ordenesRes = await fetch("/api/mantenimientos/ordenes?estado=EN_EJECUCION");
+        const ordenesData = await ordenesRes.json();
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchData(controller.signal);
-    return () => controller.abort();
-  }, [fetchData]);
+        // Fetch motos en mantenimiento
+        const motosRes = await fetch("/api/motos?estado=mantenimiento&limit=1");
+        const motosData = await motosRes.json();
 
-  const handleSubmit = async (formData: MantenimientoInput) => {
-    setIsSubmitting(true);
-    try {
-      const url = selectedItem
-        ? `/api/mantenimientos/${selectedItem.id}`
-        : "/api/mantenimientos";
-      const method = selectedItem ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Error al guardar");
+        // Calculate average cost from recent completed OTs
+        const completadasRes = await fetch("/api/mantenimientos/ordenes?estado=COMPLETADA&limit=50");
+        const completadasData = await completadasRes.json();
+        const avgCosto = completadasData.data?.length > 0
+          ? completadasData.data.reduce((sum: number, ot: any) => sum + (ot.costoTotal || 0), 0) / completadasData.data.length
+          : 0;
 
-      toast.success(selectedItem ? "Mantenimiento actualizado" : "Mantenimiento creado");
-      setDialogOpen(false);
-      setSelectedItem(null);
-      fetchData();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al guardar";
-      toast.error(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+        setStats({
+          citasProgramadas: citasData.total || 0,
+          ordenesEnEjecucion: ordenesData.total || 0,
+          motosEnMantenimiento: motosData.total || 0,
+          costoPromedioOT: avgCosto,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        toast.error("Error al cargar estadísticas");
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
 
-  const handleDelete = async () => {
-    if (!itemToDelete) return;
-    setIsDeleting(true);
-    try {
-      const res = await fetch(`/api/mantenimientos/${itemToDelete.id}`, {
-        method: "DELETE",
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Error al eliminar");
-
-      toast.success("Mantenimiento eliminado");
-      setDeleteDialogOpen(false);
-      setItemToDelete(null);
-      fetchData();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al eliminar";
-      toast.error(message);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const columns = useMemo(
-    () =>
-      getColumns({
-        onView: (m) => {
-          setItemToView(m);
-          setViewDialogOpen(true);
-        },
-        onEdit: (m) => {
-          setSelectedItem(m);
-          setDialogOpen(true);
-        },
-        onDelete: (m) => {
-          setItemToDelete(m);
-          setDeleteDialogOpen(true);
-        },
-      }),
-    []
-  );
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    manualSorting: true,
-    pageCount: totalPages,
-    onSortingChange: (updater) => {
-      setSorting(updater);
-      setPage(1);
-    },
-    state: {
-      sorting,
-      pagination: { pageIndex: page - 1, pageSize: PAGE_SIZE },
-    },
-  });
+    fetchStats();
+  }, []);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mantenimientos</h1>
-          <p className="text-muted-foreground">
-            Gestión de mantenimientos y reparaciones
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setSelectedItem(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Mantenimiento
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por patente, marca, modelo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={estadoFilter} onValueChange={(v) => { setEstadoFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {estadoOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={tipoFilter} onValueChange={(v) => { setTipoFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {tipoOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-sm text-muted-foreground">
-          {total} registro{total !== 1 ? "s" : ""}
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Mantenimientos</h1>
+        <p className="text-muted-foreground">
+          Sistema de gestión de mantenimientos preventivos y correctivos
         </p>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {columns.map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-5 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  No hay mantenimientos registrados.
-                </TableCell>
-              </TableRow>
+      {/* Dashboard KPIs */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Citas Programadas</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingStats ? (
+              <Skeleton className="h-8 w-20" />
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              <>
+                <div className="text-2xl font-bold">{stats?.citasProgramadas || 0}</div>
+                <p className="text-xs text-muted-foreground">Próximos 30 días</p>
+              </>
             )}
-          </TableBody>
-        </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Órdenes en Ejecución</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingStats ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.ordenesEnEjecucion || 0}</div>
+                <p className="text-xs text-muted-foreground">OTs activas</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Motos en Taller</CardTitle>
+            <Bike className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingStats ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.motosEnMantenimiento || 0}</div>
+                <p className="text-xs text-muted-foreground">Fuera de servicio</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Costo Promedio OT</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoadingStats ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  ${Math.round(stats?.costoPromedioOT || 0).toLocaleString('es-AR')}
+                </div>
+                <p className="text-xs text-muted-foreground">Últimas 50 OTs</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Página {page} de {totalPages}
-          </p>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(1)} disabled={page <= 1}>
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((p) => p - 1)} disabled={page <= 1}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(totalPages)} disabled={page >= totalPages}>
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Tabs Interface */}
+      <Tabs defaultValue="calendario" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="calendario" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">Calendario</span>
+          </TabsTrigger>
+          <TabsTrigger value="ordenes" className="flex items-center gap-2">
+            <Wrench className="h-4 w-4" />
+            <span className="hidden sm:inline">Órdenes</span>
+          </TabsTrigger>
+          <TabsTrigger value="checkin" className="flex items-center gap-2">
+            <QrCode className="h-4 w-4" />
+            <span className="hidden sm:inline">Check-in/out</span>
+          </TabsTrigger>
+          <TabsTrigger value="planes" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Planes</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Create/Edit Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setSelectedItem(null);
-        }}
-      >
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedItem ? "Editar mantenimiento" : "Nuevo mantenimiento"}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedItem
-                ? "Modificá los datos del mantenimiento"
-                : "Completá los datos para registrar un nuevo mantenimiento"}
-            </DialogDescription>
-          </DialogHeader>
-          <MantenimientoForm
-            key={selectedItem?.id ?? "new"}
-            mantenimiento={selectedItem}
-            onSubmit={handleSubmit}
-            isLoading={isSubmitting}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* View Dialog */}
-      <Dialog
-        open={viewDialogOpen}
-        onOpenChange={(open) => {
-          setViewDialogOpen(open);
-          if (!open) setItemToView(null);
-        }}
-      >
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalle del Mantenimiento</DialogTitle>
-            <DialogDescription>
-              {itemToView?.moto.marca} {itemToView?.moto.modelo} ({itemToView?.moto.patente})
-            </DialogDescription>
-          </DialogHeader>
-          {itemToView && (
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-2">
-                <div><span className="font-medium">Tipo:</span> {itemToView.tipo}</div>
-                <div><span className="font-medium">Estado:</span> {itemToView.estado}</div>
-                <div><span className="font-medium">Costo Total:</span> ${itemToView.costoTotal.toLocaleString()}</div>
-                <div><span className="font-medium">Proveedor:</span> {itemToView.proveedor?.nombre ?? "—"}</div>
+        {/* Tab 1: Calendario de Citas */}
+        <TabsContent value="calendario" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Calendario de Citas</CardTitle>
+              <CardDescription>
+                Visualiza y gestiona las citas de mantenimiento programadas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <Calendar className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-sm font-medium">Calendario de Citas</p>
+                  <p className="text-xs text-muted-foreground">
+                    Vista de calendario en desarrollo
+                  </p>
+                </div>
               </div>
-              {itemToView.descripcion && (
-                <div><span className="font-medium">Descripción:</span> {itemToView.descripcion}</div>
-              )}
-              {itemToView.diagnostico && (
-                <div><span className="font-medium">Diagnóstico:</span> {itemToView.diagnostico}</div>
-              )}
-              {itemToView.solucion && (
-                <div><span className="font-medium">Solución:</span> {itemToView.solucion}</div>
-              )}
-              {itemToView.notas && (
-                <div><span className="font-medium">Notas:</span> {itemToView.notas}</div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Delete Dialog */}
-      <DeleteMantenimientoDialog
-        mantenimiento={itemToDelete}
-        open={deleteDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteDialogOpen(open);
-          if (!open) setItemToDelete(null);
-        }}
-        onConfirm={handleDelete}
-        isLoading={isDeleting}
-      />
+        {/* Tab 2: Órdenes de Trabajo */}
+        <TabsContent value="ordenes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Órdenes de Trabajo</CardTitle>
+              <CardDescription>
+                Listado completo de órdenes de trabajo (OTs) con filtros y búsqueda
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <Wrench className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-sm font-medium">Tabla de Órdenes de Trabajo</p>
+                  <p className="text-xs text-muted-foreground">
+                    DataTable con filtros en desarrollo
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 3: Check-in/Check-out */}
+        <TabsContent value="checkin" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Check-in / Check-out</CardTitle>
+              <CardDescription>
+                Escanea el código QR para iniciar o finalizar una orden de trabajo
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <QrCode className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-sm font-medium">Escáner QR</p>
+                  <p className="text-xs text-muted-foreground">
+                    Interfaz de check-in/out en desarrollo
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 4: Planes de Mantenimiento */}
+        <TabsContent value="planes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Planes de Mantenimiento</CardTitle>
+              <CardDescription>
+                Visualiza los planes predefinidos (Básico, Intermedio, Mayor) y sus tareas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <FileText className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-sm font-medium">Planes de Mantenimiento</p>
+                  <p className="text-xs text-muted-foreground">
+                    Visualización de planes en desarrollo
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

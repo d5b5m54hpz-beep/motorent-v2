@@ -68,6 +68,7 @@ export function AppSidebar({ user }: Props) {
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
+    { title: "Talleres", href: "/admin/talleres", icon: Factory },
     { title: "Repuestos", href: "/admin/repuestos", icon: Package },
     { title: "Precios", href: "/admin/precios", icon: Tag },
   ];
