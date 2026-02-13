@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { CrearEstanteDialog } from "./crear-estante-dialog";
 
 type UbicacionMapa = {
   estante: string;
@@ -30,6 +31,7 @@ type UbicacionMapa = {
 export function UbicacionesTab() {
   const [mapa, setMapa] = useState<UbicacionMapa[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchMapa();
@@ -77,7 +79,7 @@ export function UbicacionesTab() {
         <CardContent className="flex flex-col items-center justify-center py-10">
           <MapPin className="h-16 w-16 text-muted-foreground mb-4" />
           <p className="text-muted-foreground mb-4">No hay ubicaciones configuradas</p>
-          <Button onClick={() => toast.info("Crear estante - Por implementar")}>
+          <Button onClick={() => setDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Crear primer Estante
           </Button>
@@ -94,11 +96,11 @@ export function UbicacionesTab() {
           <p className="text-muted-foreground">Mapa visual del depósito</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.info("Imprimir etiquetas - Por implementar")}>
+          <Button variant="outline" onClick={() => toast.info("Imprimir etiquetas - Por implementar (usar Seleccionar estante + QR masivo)")}>
             <QrCode className="mr-2 h-4 w-4" />
             Imprimir Etiquetas
           </Button>
-          <Button onClick={() => toast.info("Crear estante - Por implementar")}>
+          <Button onClick={() => setDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Crear Estante
           </Button>
@@ -188,6 +190,12 @@ export function UbicacionesTab() {
           </CardContent>
         </Card>
       ))}
+
+      <CrearEstanteDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={fetchMapa}
+      />
     </div>
   );
 }

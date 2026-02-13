@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { RegistrarRecepcionDialog } from "./registrar-recepcion-dialog";
 
 type Recepcion = {
   id: string;
@@ -29,6 +30,7 @@ type Recepcion = {
 export function RecepcionesTab() {
   const [recepciones, setRecepciones] = useState<Recepcion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchRecepciones();
@@ -76,7 +78,7 @@ export function RecepcionesTab() {
         <CardContent className="flex flex-col items-center justify-center py-10">
           <PackageCheck className="h-16 w-16 text-muted-foreground mb-4" />
           <p className="text-muted-foreground mb-4">No hay recepciones registradas</p>
-          <Button onClick={() => toast.info("Registrar recepción - Por implementar")}>
+          <Button onClick={() => setDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Registrar primera Recepción
           </Button>
@@ -92,7 +94,7 @@ export function RecepcionesTab() {
           <h2 className="text-2xl font-bold">Recepciones de Mercadería</h2>
           <p className="text-muted-foreground">Historial de recepciones de repuestos</p>
         </div>
-        <Button onClick={() => toast.info("Registrar recepción - Por implementar")}>
+        <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nueva Recepción
         </Button>
@@ -134,6 +136,12 @@ export function RecepcionesTab() {
           </Table>
         </CardContent>
       </Card>
+
+      <RegistrarRecepcionDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={fetchRecepciones}
+      />
     </div>
   );
 }

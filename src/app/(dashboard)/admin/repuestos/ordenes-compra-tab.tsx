@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatCurrency } from "@/lib/utils";
+import { CrearOCDialog } from "./crear-oc-dialog";
+import { DetalleOCSheet } from "./detalle-oc-sheet";
 
 type OrdenCompra = {
   id: string;
@@ -48,6 +50,9 @@ const ESTADO_BADGES: Record<string, { label: string; className: string }> = {
 export function OrdenesCompraTab() {
   const [ordenes, setOrdenes] = useState<OrdenCompra[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [crearDialogOpen, setCrearDialogOpen] = useState(false);
+  const [detalleSheetOpen, setDetalleSheetOpen] = useState(false);
+  const [selectedOrdenId, setSelectedOrdenId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrdenes();
@@ -131,7 +136,7 @@ export function OrdenesCompraTab() {
         <CardContent className="flex flex-col items-center justify-center py-10">
           <PackageCheck className="h-16 w-16 text-muted-foreground mb-4" />
           <p className="text-muted-foreground mb-4">No hay órdenes de compra registradas</p>
-          <Button onClick={() => toast.info("Crear OC - Por implementar")}>
+          <Button onClick={() => setCrearDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Crear primera Orden de Compra
           </Button>
@@ -147,7 +152,7 @@ export function OrdenesCompraTab() {
           <h2 className="text-2xl font-bold">Órdenes de Compra</h2>
           <p className="text-muted-foreground">Gestiona las órdenes de compra a proveedores</p>
         </div>
-        <Button onClick={() => toast.info("Crear OC - Por implementar")}>
+        <Button onClick={() => setCrearDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nueva Orden de Compra
         </Button>
@@ -192,7 +197,12 @@ export function OrdenesCompraTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => toast.info("Ver detalle - Por implementar")}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedOrdenId(oc.id);
+                              setDetalleSheetOpen(true);
+                            }}
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             Ver detalle
                           </DropdownMenuItem>
@@ -246,6 +256,19 @@ export function OrdenesCompraTab() {
           </Table>
         </CardContent>
       </Card>
+
+      <CrearOCDialog
+        open={crearDialogOpen}
+        onOpenChange={setCrearDialogOpen}
+        onSuccess={fetchOrdenes}
+      />
+
+      <DetalleOCSheet
+        open={detalleSheetOpen}
+        onOpenChange={setDetalleSheetOpen}
+        ordenId={selectedOrdenId}
+        onRefresh={fetchOrdenes}
+      />
     </div>
   );
 }

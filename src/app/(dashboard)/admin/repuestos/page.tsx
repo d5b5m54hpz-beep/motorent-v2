@@ -27,6 +27,13 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -94,6 +101,13 @@ export default function RepuestosPage() {
   const [movimientosSheetOpen, setMovimientosSheetOpen] = useState(false);
   const [itemMovimientos, setItemMovimientos] = useState<Repuesto | null>(null);
 
+  // Filters
+  const [filterCategoria, setFilterCategoria] = useState("");
+  const [filterEstadoStock, setFilterEstadoStock] = useState("");
+  const [filterProveedor, setFilterProveedor] = useState("");
+  const [categorias, setCategorias] = useState<string[]>([]);
+  const [proveedores, setProveedores] = useState<Array<{ id: string; nombre: string }>>([]);
+
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -116,6 +130,10 @@ export default function RepuestosPage() {
         sortBy,
         sortOrder,
       });
+      if (filterCategoria) params.append("categoria", filterCategoria);
+      if (filterEstadoStock === "bajo") params.append("stockBajo", "true");
+      if (filterEstadoStock === "sin") params.append("sinStock", "true");
+      if (filterProveedor) params.append("proveedorId", filterProveedor);
       const res = await fetch(`/api/repuestos?${params}`, { signal });
       if (!res.ok) throw new Error("Error fetching repuestos");
       const json: RepuestosApiResponse = await res.json();
@@ -128,7 +146,7 @@ export default function RepuestosPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, debouncedSearch, sorting]);
+  }, [page, debouncedSearch, sorting, filterCategoria, filterEstadoStock, filterProveedor]);
 
   useEffect(() => {
     if (activeTab === "inventario") {
@@ -137,6 +155,30 @@ export default function RepuestosPage() {
       return () => controller.abort();
     }
   }, [fetchData, activeTab]);
+
+  // URL params support
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const scan = params.get("scan");
+
+    if (tab) setActiveTab(tab);
+    if (scan) {
+      setActiveTab("inventario");
+      setSearch(scan);
+    }
+  }, []);
+
+  // Load filters data
+  useEffect(() => {
+    fetch("/api/repuestos?limit=1000").then(res => res.json()).then(json => {
+      const cats = Array.from(new Set(json.data.map((r: Repuesto) => r.categoria).filter(Boolean)));
+      setCategorias(cats as string[]);
+    });
+    fetch("/api/proveedores?limit=100").then(res => res.json()).then(json => {
+      setProveedores(json.data);
+    });
+  }, []);
 
   const handleSubmit = async (formData: RepuestoInput) => {
     setIsSubmitting(true);
@@ -275,6 +317,39 @@ export default function RepuestosPage() {
                   className="pl-8"
                 />
               </div>
+              {/* Filters */}
+              <Select value={filterCategoria} onValueChange={setFilterCategoria}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas</SelectItem>
+                  {categorias.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterEstadoStock} onValueChange={setFilterEstadoStock}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="bajo">Stock Bajo</SelectItem>
+                  <SelectItem value="sin">Sin Stock</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterProveedor} onValueChange={setFilterProveedor}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Proveedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  {proveedores.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
