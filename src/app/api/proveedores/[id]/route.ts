@@ -15,7 +15,7 @@ export async function GET(
   const proveedor = await prisma.proveedor.findUnique({
     where: { id },
     include: {
-      _count: { select: { mantenimientos: true, repuestos: true } },
+      _count: { select: { repuestos: true } },
     },
   });
 
@@ -83,7 +83,7 @@ export async function DELETE(
 
   const existing = await prisma.proveedor.findUnique({
     where: { id },
-    include: { _count: { select: { mantenimientos: true, repuestos: true } } },
+    include: { _count: { select: { repuestos: true } } },
   });
 
   if (!existing) {
@@ -93,11 +93,11 @@ export async function DELETE(
     );
   }
 
-  if (existing._count.mantenimientos > 0 || existing._count.repuestos > 0) {
+  if (existing._count.repuestos > 0) {
     return NextResponse.json(
       {
         error:
-          "No se puede eliminar: tiene mantenimientos o repuestos asociados. Desactívelo en su lugar.",
+          "No se puede eliminar: tiene repuestos asociados. Desactívelo en su lugar.",
       },
       { status: 400 }
     );

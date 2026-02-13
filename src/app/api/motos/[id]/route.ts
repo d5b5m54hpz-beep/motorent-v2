@@ -94,14 +94,14 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       );
     }
 
-    // Verificar si tiene mantenimientos y eliminarlos primero
-    const mantenimientosCount = await prisma.mantenimiento.count({
+    // Verificar si tiene órdenes de trabajo y eliminarlas primero
+    const ordenesCount = await prisma.ordenTrabajo.count({
       where: { motoId: id },
     }).catch(() => 0); // Si la tabla no existe, ignorar
 
-    if (mantenimientosCount > 0) {
-      // Eliminar mantenimientos primero
-      await prisma.mantenimiento.deleteMany({ where: { motoId: id } });
+    if (ordenesCount > 0) {
+      // Eliminar órdenes de trabajo primero
+      await prisma.ordenTrabajo.deleteMany({ where: { motoId: id } });
     }
 
     // Eliminar la moto

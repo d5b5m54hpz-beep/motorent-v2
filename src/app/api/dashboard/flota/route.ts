@@ -26,9 +26,9 @@ export async function GET(req: NextRequest) {
     const deprecMensual = ((valorFlota._sum.valorCompra || 0) - (valorFlota._sum.valorResidual || 0)) / 60; // 5 años = 60 meses
 
     // Mantenimientos próximos
-    const mantenimientosProximos = await prisma.mantenimiento.findMany({
+    const mantenimientosProximos = await prisma.ordenTrabajo.findMany({
       where: {
-        estado: { in: ["PENDIENTE", "PROGRAMADO"] },
+        estado: { in: ["SOLICITADA", "APROBADA", "PROGRAMADA"] },
       },
       take: 5,
       include: {
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       depreciacionMensual: Math.round(deprecMensual),
       mantenimientosProximos: mantenimientosProximos.map((m) => ({
         moto: `${m.moto.marca} ${m.moto.modelo} (${m.moto.patente})`,
-        tipo: m.tipo,
+        tipo: m.tipoOT,
         estado: m.estado,
       })),
       motosPatentamiento: motasPatentamiento,

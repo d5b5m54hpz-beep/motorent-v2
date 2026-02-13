@@ -52,7 +52,7 @@ export async function PUT(
       return NextResponse.json({ error: "Gasto no encontrado" }, { status: 404 });
     }
 
-    const { motoId, proveedorId, mantenimientoId, fecha, ...rest } = parsed.data;
+    const { motoId, proveedorId, fecha, ...rest } = parsed.data;
 
     const gasto = await prisma.gasto.update({
       where: { id },
@@ -60,7 +60,6 @@ export async function PUT(
         ...rest,
         motoId: motoId || null,
         proveedorId: proveedorId || null,
-        mantenimientoId: mantenimientoId || null,
         fecha: fecha ? new Date(fecha) : undefined,
       },
       include: {

@@ -83,14 +83,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { motoId, proveedorId, mantenimientoId, fecha, ...rest } = parsed.data;
+    const { motoId, proveedorId, fecha, ...rest } = parsed.data;
 
     const gasto = await prisma.gasto.create({
       data: {
         ...rest,
         motoId: motoId || null,
         proveedorId: proveedorId || null,
-        mantenimientoId: mantenimientoId || null,
         fecha: fecha ? new Date(fecha) : new Date(),
       },
       include: {

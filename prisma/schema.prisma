@@ -65,11 +65,21 @@ model Cliente {
   preRegistro         Json?
   aprobadoPor         String?
   aprobadoAt          DateTime?
+
+  // ─── Puntaje de rider (nuevo módulo mantenimientos) ──────────────────────
+  puntajePromedio        Float     @default(100) // Promedio histórico
+  totalServices          Int       @default(0)
+  servicesAsistidos      Int       @default(0)
+  servicesNoAsistidos    Int       @default(0)
+
   createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  updatedAt           DateTime   @default(now()) @updatedAt
   user                User       @relation(fields: [userId], references: [id])
   contratos           Contrato[]
   notasCredito        NotaCredito[]
+  citasMantenimiento  CitaMantenimiento[]
+  ordenesTrabajoRider OrdenTrabajo[] @relation("OrdenTrabajoRider")
+  puntajes            PuntajeRider[]
 }
 
 model Moto {
@@ -89,7 +99,6 @@ model Moto {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   contratos      Contrato[]
-  mantenimientos Mantenimiento[]
   gastos         Gasto[]
   facturasCompra FacturaCompra[]
 
@@ -141,11 +150,22 @@ model Moto {
   vencimientoPoliza      DateTime? // LEGACY - usar fechaVencimientoSeguro
   notasSeguro            String?
 
+  // ─── Mantenimientos (nuevo módulo) ──────────────────────────────────────
+  fechaInicioOperaciones DateTime? // Fecha en que la moto empezó a operar (define ciclo mensual)
+  kmActual               Int       @default(0) // Última lectura de km (actualizado por IoT)
+  kmUltimoService        Int       @default(0) // Km en el último service completado
+  fechaUltimoService     DateTime? // Fecha del último service completado
+  proximoServiceFecha    DateTime? // Fecha calculada del próximo service
+  proximoServiceTipo     TipoService? // Tipo de service que le toca según km
+
   // ─── Relaciones nuevas ──────────────────────────────────────────────────
   amortizaciones     Amortizacion[]
   documentos         DocumentoMoto[]
   historialEstados   HistorialEstadoMoto[]
   bajaMoto           BajaMoto?
+  citasMantenimiento CitaMantenimiento[]
+  ordenesTrabajoMoto OrdenTrabajo[]
+  lecturasKm         LecturaKm[]
 }
 
 model Contrato {
@@ -232,35 +252,7 @@ model Alerta {
   pago            Pago?     @relation(fields: [pagoId], references: [id])
 }
 
-// ─── Mantenimiento ──────────────────────────────────────────────────────────
-
-model Mantenimiento {
-  id                  String              @id @default(cuid())
-  visibleId           String              @unique @default(cuid())
-  motoId              String
-  moto                Moto                @relation(fields: [motoId], references: [id])
-  tipo                TipoMantenimiento
-  estado              EstadoMantenimiento @default(PENDIENTE)
-  descripcion         String
-  diagnostico         String?
-  solucion            String?
-  costoRepuestos      Float               @default(0)
-  costoManoObra       Float               @default(0)
-  costoTotal          Float               @default(0)
-  proveedorId         String?
-  proveedor           Proveedor?          @relation(fields: [proveedorId], references: [id])
-  kmAlMomento         Int?
-  fechaProgramada     DateTime?
-  fechaInicio         DateTime?
-  fechaFin            DateTime?
-  proximoServiceKm    Int?
-  proximoServiceFecha DateTime?
-  notas               String?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  repuestos           RepuestoUsado[]
-  gastos              Gasto[]
-}
+// ─── Proveedores y Repuestos (mantienen compatibilidad) ────────────────────
 
 model Proveedor {
   id             String          @id @default(cuid())
@@ -277,7 +269,6 @@ model Proveedor {
   activo         Boolean         @default(true)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  mantenimientos Mantenimiento[]
   repuestos      Repuesto[]
   gastos         Gasto[]
   facturasCompra FacturaCompra[]
@@ -297,39 +288,8 @@ model Repuesto {
   proveedor    Proveedor?      @relation(fields: [proveedorId], references: [id])
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
-  usos         RepuestoUsado[]
-}
-
-model RepuestoUsado {
-  id              String        @id @default(cuid())
-  mantenimientoId String
-  mantenimiento   Mantenimiento @relation(fields: [mantenimientoId], references: [id], onDelete: Cascade)
-  repuestoId      String
-  repuesto        Repuesto      @relation(fields: [repuestoId], references: [id])
-  cantidad        Int           @default(1)
-  precioUnitario  Float
-  subtotal        Float
-  createdAt       DateTime      @default(now())
-}
-
-enum TipoMantenimiento {
-  SERVICE_PREVENTIVO
-  REPARACION
-  CAMBIO_ACEITE
-  CAMBIO_NEUMATICOS
-  FRENOS
-  ELECTRICA
-  CHAPA_PINTURA
-  OTRO
-}
-
-enum EstadoMantenimiento {
-  PENDIENTE
-  PROGRAMADO
-  EN_PROCESO
-  ESPERANDO_REPUESTO
-  COMPLETADO
-  CANCELADO
+  tareasPlan   TareaPlan[]
+  repuestosOT  RepuestoOrdenTrabajo[]
 }
 
 // ─── Finanzas ───────────────────────────────────────────────────────────────
@@ -346,8 +306,6 @@ model Gasto {
   moto            Moto?          @relation(fields: [motoId], references: [id])
   proveedorId     String?
   proveedor       Proveedor?     @relation(fields: [proveedorId], references: [id])
-  mantenimientoId String?
-  mantenimiento   Mantenimiento? @relation(fields: [mantenimientoId], references: [id])
   metodoPago      String?
   comprobante     String?
   fecha           DateTime       @default(now())
@@ -965,4 +923,460 @@ model NotaCredito {
   @@index([clienteId])
   @@index([estado])
   @@index([numero])
+}
+
+// ==========================================
+// SISTEMA DE MANTENIMIENTOS - MÓDULO COMPLETO
+// ==========================================
+
+// ─── PLANES DE MANTENIMIENTO (Templates) ──────────────────────────────────
+
+model PlanMantenimiento {
+  id              String   @id @default(cuid())
+  nombre          String   // "Service Básico", "Service Intermedio", "Service Mayor"
+  tipo            TipoService  // BASICO, INTERMEDIO, MAYOR
+  descripcion     String?
+  kmDesde         Int      // Rango de km donde aplica este plan (ej: 0)
+  kmHasta         Int      // (ej: 4999 para básico)
+  activo          Boolean  @default(true)
+
+  tareas          TareaPlan[]
+  ordenesTrabajo  OrdenTrabajo[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum TipoService {
+  BASICO
+  INTERMEDIO
+  MAYOR
+}
+
+model TareaPlan {
+  id              String   @id @default(cuid())
+  planId          String
+  plan            PlanMantenimiento @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  nombre          String   // "Cambio de aceite motor"
+  descripcion     String?  // Instrucciones detalladas
+  categoria       CategoriaTarea  // MOTOR, FRENOS, TRANSMISION, ELECTRICO, NEUMATICOS, GENERAL
+  orden           Int      // Orden de ejecución dentro del plan
+  obligatoria     Boolean  @default(true)
+  tiempoEstimado  Int?     // Minutos estimados
+
+  // Repuesto sugerido para esta tarea
+  repuestoSugeridoId String?
+  repuestoSugerido   Repuesto? @relation(fields: [repuestoSugeridoId], references: [id])
+  cantidadRepuesto   Float?    // Cantidad del repuesto (ej: 0.8 litros de aceite)
+
+  tareasOT        TareaOrdenTrabajo[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum CategoriaTarea {
+  MOTOR
+  FRENOS
+  TRANSMISION
+  ELECTRICO
+  NEUMATICOS
+  SUSPENSION
+  CARROCERIA
+  GENERAL
+}
+
+// ─── CITAS DE MANTENIMIENTO ──────────────────────────────────────
+
+model CitaMantenimiento {
+  id              String   @id @default(cuid())
+  motoId          String
+  moto            Moto     @relation(fields: [motoId], references: [id])
+  riderId         String?  // Cliente/rider asignado a la moto
+  rider           Cliente? @relation(fields: [riderId], references: [id])
+
+  // Programación
+  fechaProgramada DateTime // Fecha y hora programada
+  fechaOriginal   DateTime // Fecha original (antes de reprogramaciones)
+  lugarId         String?  // Taller asignado
+  lugar           Taller?  @relation(fields: [lugarId], references: [id])
+
+  // Estado
+  estado          EstadoCita @default(PROGRAMADA)
+  motivoReprogramacion String? // Si el rider pidió cambio
+  motivoInasistencia   String? // Si no se presentó
+  vecesReprogramada    Int     @default(0)
+  maxReprogramaciones  Int     @default(2) // Máximo de veces que puede reprogramar
+
+  // QR
+  codigoQR        String   @unique @default(cuid()) // Código único para generar QR
+  qrEscaneado     Boolean  @default(false)
+  qrEscaneadoAt   DateTime?
+  qrEscaneadoPor  String?  // Usuario que escaneó
+
+  // Vinculación con la OT que se genera
+  ordenTrabajoId  String?  @unique
+  ordenTrabajo    OrdenTrabajo? @relation(fields: [ordenTrabajoId], references: [id])
+
+  // Notificaciones
+  notificacion7dias  Boolean @default(false) // Se envió notif 7 días antes
+  notificacion3dias  Boolean @default(false) // Se envió notif 3 días antes
+  notificacion1dia   Boolean @default(false) // Se envió notif 1 día antes
+  notificacionDia    Boolean @default(false) // Se envió notif el mismo día
+
+  notificaciones  NotificacionMantenimiento[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([motoId, estado])
+  @@index([fechaProgramada])
+  @@index([estado])
+}
+
+enum EstadoCita {
+  PROGRAMADA           // Sistema la creó automáticamente
+  NOTIFICADA           // Se envió notificación al rider
+  CONFIRMADA           // Rider confirmó asistencia
+  REPROGRAMADA         // Rider solicitó cambio (nueva fecha asignada)
+  EN_PROCESO           // Rider hizo check-in, moto en taller
+  COMPLETADA           // Service terminado, check-out hecho
+  NO_ASISTIO           // Rider no se presentó
+  CANCELADA            // Cancelada por admin
+}
+
+// ─── ORDENES DE TRABAJO ──────────────────────────────────────
+
+model OrdenTrabajo {
+  id              String   @id @default(cuid())
+  numero          String   @unique // Auto-generado: OT-2026-00001
+
+  motoId          String
+  moto            Moto     @relation(fields: [motoId], references: [id])
+  riderId         String?
+  rider           Cliente? @relation("OrdenTrabajoRider", fields: [riderId], references: [id])
+
+  // Tipo y plan
+  tipoOT          TipoOT // PREVENTIVO, CORRECTIVO, EMERGENCIA
+  prioridad       PrioridadOT       @default(MEDIA)
+  planId          String?
+  plan            PlanMantenimiento? @relation(fields: [planId], references: [id])
+  tipoService     TipoService?      // BASICO, INTERMEDIO, MAYOR (determinado por km)
+
+  // Estado
+  estado          EstadoOT @default(SOLICITADA)
+
+  // Kilometraje
+  kmAlIngreso     Int      // Km de la moto al momento del check-in
+  kmAlEgreso      Int?     // Km al salir (debería ser igual o muy similar)
+
+  // Taller y mecánico
+  tallerId        String?
+  taller          Taller?  @relation(fields: [tallerId], references: [id])
+  mecanicoId      String?
+  mecanico        Mecanico? @relation(fields: [mecanicoId], references: [id])
+  esExterno       Boolean  @default(false) // Taller externo o interno
+
+  // Tiempos
+  fechaProgramada DateTime?
+  fechaIngreso    DateTime? // Check-in real
+  fechaInicioTrabajo DateTime?
+  fechaFinTrabajo DateTime?
+  fechaEgreso     DateTime? // Check-out real
+  tiempoInactividadHoras Float? // Calculado: fechaEgreso - fechaIngreso
+
+  // Descripción
+  descripcion     String?  // Descripción del problema (para correctivos)
+  observacionesMecanico String? // Notas del mecánico al cerrar
+  observacionesRecepcion String? // Notas de recepción
+
+  // Costos
+  costoRepuestos  Float    @default(0)
+  costoManoObra   Float    @default(0)
+  costoOtros      Float    @default(0) // Flete, grúa, etc.
+  costoTotal      Float    @default(0) // Calculado
+  costoACargoDel  ResponsableCosto @default(EMPRESA)
+
+  // Detección de problema mayor
+  problemaDetectado Boolean @default(false)
+  descripcionProblema String?
+  requiereReparacion  Boolean @default(false)
+  ordenReparacionId   String? // Si genera una OT de reparación aparte
+
+  // Puntaje del rider
+  puntajeEstadoMoto    Float?  // 0-100 basado en fotos de check-in
+  detallesPuntaje      Json?   // Detalle del análisis de Claude Vision
+
+  // Relaciones
+  cita            CitaMantenimiento?
+  tareas          TareaOrdenTrabajo[]
+  repuestosUsados RepuestoOrdenTrabajo[]
+  fotosCheckIn    FotoInspeccion[]  @relation("FotosCheckIn")
+  fotosCheckOut   FotoInspeccion[]  @relation("FotosCheckOut")
+  historial       HistorialOT[]
+  puntajes        PuntajeRider[]
+
+  // Firma/aceptación del rider
+  riderAceptoEntrega Boolean @default(false)
+  riderAceptoAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([motoId])
+  @@index([estado])
+  @@index([tipoOT])
+  @@index([fechaIngreso])
+}
+
+enum TipoOT {
+  PREVENTIVO
+  CORRECTIVO
+  EMERGENCIA
+}
+
+enum PrioridadOT {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum EstadoOT {
+  SOLICITADA          // Creada, pendiente de evaluación
+  APROBADA            // Validada, lista para planificación
+  PROGRAMADA          // Con fecha y recursos confirmados
+  EN_ESPERA_REPUESTOS // Bloqueada por falta de stock
+  EN_EJECUCION        // Trabajo en curso
+  EN_REVISION         // Pendiente control de calidad
+  COMPLETADA          // Verificada y cerrada
+  CANCELADA           // Cancelada
+}
+
+enum ResponsableCosto {
+  EMPRESA  // Costo a cargo de MotoLibre (desgaste normal, preventivo)
+  RIDER    // Costo a cargo del rider (accidente, mal uso)
+  COMPARTIDO // Costo compartido
+}
+
+// ─── TAREAS DENTRO DE UNA OT ──────────────────────────────────────
+
+model TareaOrdenTrabajo {
+  id              String   @id @default(cuid())
+  ordenTrabajoId  String
+  ordenTrabajo    OrdenTrabajo @relation(fields: [ordenTrabajoId], references: [id], onDelete: Cascade)
+
+  tareaPlanId     String?  // Referencia a la tarea del plan (si es preventivo)
+  tareaPlan       TareaPlan? @relation(fields: [tareaPlanId], references: [id])
+
+  nombre          String
+  descripcion     String?
+  categoria       CategoriaTarea
+  orden           Int
+  obligatoria     Boolean  @default(true)
+
+  // Ejecución
+  completada      Boolean  @default(false)
+  completadaAt    DateTime?
+  completadaPor   String?  // Mecánico que la ejecutó
+  observaciones   String?
+  resultado       ResultadoTarea? // APROBADO, REQUIERE_ATENCION, REPROBADO
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum ResultadoTarea {
+  APROBADO
+  REQUIERE_ATENCION
+  REPROBADO
+}
+
+// ─── REPUESTOS USADOS EN UNA OT ──────────────────────────────────────
+
+model RepuestoOrdenTrabajo {
+  id              String   @id @default(cuid())
+  ordenTrabajoId  String
+  ordenTrabajo    OrdenTrabajo @relation(fields: [ordenTrabajoId], references: [id], onDelete: Cascade)
+
+  repuestoId      String
+  repuesto        Repuesto @relation(fields: [repuestoId], references: [id])
+
+  cantidadPlanificada Float  // Lo que se esperaba usar
+  cantidadUsada       Float  @default(0) // Lo que realmente se usó
+  costoUnitario       Float  @default(0)
+  costoTotal          Float  @default(0) // cantidadUsada * costoUnitario
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([ordenTrabajoId, repuestoId])
+}
+
+// ─── FOTOS DE INSPECCIÓN ──────────────────────────────────────
+
+model FotoInspeccion {
+  id              String   @id @default(cuid())
+
+  // Vinculación (check-in o check-out)
+  ordenTrabajoCheckInId  String?
+  ordenTrabajoCheckIn    OrdenTrabajo? @relation("FotosCheckIn", fields: [ordenTrabajoCheckInId], references: [id])
+  ordenTrabajoCheckOutId String?
+  ordenTrabajoCheckOut   OrdenTrabajo? @relation("FotosCheckOut", fields: [ordenTrabajoCheckOutId], references: [id])
+
+  tipo            TipoFoto // FRENTE, LATERAL_IZQ, LATERAL_DER, TRASERA, TABLERO, NEUMATICO_DEL, NEUMATICO_TRAS
+  url             String   // URL en Cloudflare R2
+
+  // Análisis de Claude Vision
+  analizado       Boolean  @default(false)
+  analisisResultado Json?  // Resultado completo del análisis
+  kmDetectado     Int?     // Km leído del tablero (solo para tipo TABLERO)
+  nivelDesgasteNeumatico Float? // 0-100% (solo para NEUMATICO_DEL y NEUMATICO_TRAS)
+  danoDetectado   Boolean? // Si se detectó golpe/accidente
+  descripcionDano String?  // Descripción del daño detectado
+
+  subidoPor       String?  // Usuario que subió la foto
+  subidoAt        DateTime @default(now())
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([ordenTrabajoCheckInId])
+  @@index([ordenTrabajoCheckOutId])
+}
+
+enum TipoFoto {
+  FRENTE
+  LATERAL_IZQ
+  LATERAL_DER
+  TRASERA
+  TABLERO
+  NEUMATICO_DEL
+  NEUMATICO_TRAS
+}
+
+// ─── TALLERES Y MECÁNICOS ──────────────────────────────────────
+
+model Taller {
+  id              String   @id @default(cuid())
+  nombre          String
+  direccion       String?
+  telefono        String?
+  email           String?
+  tipo            TipoTaller // INTERNO, EXTERNO
+  activo          Boolean  @default(true)
+
+  // Capacidad
+  capacidadDiaria Int      @default(10) // Cantidad de motos que puede atender por día
+  horarioApertura String?  // "08:00"
+  horarioCierre   String?  // "18:00"
+  diasOperacion   String[] // ["LUN","MAR","MIE","JUE","VIE","SAB"]
+
+  mecanicos       Mecanico[]
+  citas           CitaMantenimiento[]
+  ordenesTrabajo  OrdenTrabajo[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum TipoTaller {
+  INTERNO
+  EXTERNO
+}
+
+model Mecanico {
+  id              String   @id @default(cuid())
+  nombre          String
+  telefono        String?
+  email           String?
+  especialidad    String?  // "Motor", "Electricidad", "General"
+  tallerId        String
+  taller          Taller   @relation(fields: [tallerId], references: [id])
+  activo          Boolean  @default(true)
+  tarifaHora      Float?   // Tarifa por hora (para talleres internos)
+
+  ordenesTrabajo  OrdenTrabajo[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─── HISTORIAL DE CAMBIOS EN OT ──────────────────────────────────────
+
+model HistorialOT {
+  id              String   @id @default(cuid())
+  ordenTrabajoId  String
+  ordenTrabajo    OrdenTrabajo @relation(fields: [ordenTrabajoId], references: [id], onDelete: Cascade)
+
+  estadoAnterior  String?
+  estadoNuevo     String
+  accion          String   // "Creación", "Check-in", "Inicio trabajo", "Check-out", etc.
+  detalle         String?
+  realizadoPor    String?  // Usuario que realizó la acción
+
+  createdAt       DateTime @default(now())
+}
+
+// ─── PUNTAJE DEL RIDER ──────────────────────────────────────
+
+model PuntajeRider {
+  id              String   @id @default(cuid())
+  riderId         String
+  rider           Cliente  @relation(fields: [riderId], references: [id])
+
+  ordenTrabajoId  String
+  ordenTrabajo    OrdenTrabajo @relation(fields: [ordenTrabajoId], references: [id])
+
+  // Componentes del puntaje (0-100 cada uno)
+  puntajeEstadoGeneral   Float  // Basado en análisis de fotos (carrocería)
+  puntajeNeumaticos      Float  // Basado en análisis de desgaste
+  puntajeAsistencia      Float  // 100 si asistió a tiempo, 50 si reprogramó, 0 si no asistió
+  puntajeKmCoherente     Float  // Km del tablero vs km IoT (detecta manipulación)
+  puntajeSinAccidentes   Float  // 100 si no hay daños nuevos, menos según gravedad
+
+  puntajeTotal           Float  // Promedio ponderado
+
+  observaciones          String?
+
+  createdAt              DateTime @default(now())
+
+  @@index([riderId])
+}
+
+// ─── LECTURAS DE KM (IoT) ──────────────────────────────────────
+
+model LecturaKm {
+  id              String   @id @default(cuid())
+  motoId          String
+  moto            Moto     @relation(fields: [motoId], references: [id])
+
+  km              Int
+  fuente          FuenteKm // IOT, MANUAL, FOTO (Claude Vision)
+
+  createdAt       DateTime @default(now())
+
+  @@index([motoId, createdAt])
+}
+
+enum FuenteKm {
+  IOT
+  MANUAL
+  FOTO
+}
+
+// ─── NOTIFICACIONES DE MANTENIMIENTO ──────────────────────────────────────
+
+model NotificacionMantenimiento {
+  id        String   @id @default(cuid())
+  citaId    String
+  cita      CitaMantenimiento @relation(fields: [citaId], references: [id])
+  tipo      String   // "7_DIAS", "3_DIAS", "1_DIA", "DIA", "NO_ASISTIO"
+  canal     String   // "EMAIL", "PUSH", "SMS", "SISTEMA"
+  enviada   Boolean  @default(false)
+  enviadaAt DateTime?
+  error     String?
+
+  createdAt DateTime @default(now())
 }

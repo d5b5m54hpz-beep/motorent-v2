@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         take: limit,
         orderBy: { [orderByColumn]: sortOrder },
         include: {
-          _count: { select: { mantenimientos: true, repuestos: true } },
+          _count: { select: { repuestos: true } },
         },
       }),
       prisma.proveedor.count({ where }),

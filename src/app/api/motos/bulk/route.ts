@@ -61,8 +61,8 @@ export async function DELETE(req: NextRequest) {
     // Eliminar las que no tienen contratos
     let deleted = 0;
     if (idsSinContratos.length > 0) {
-      // Eliminar mantenimientos asociados primero
-      await prisma.mantenimiento.deleteMany({
+      // Eliminar órdenes de trabajo asociadas primero
+      await prisma.ordenTrabajo.deleteMany({
         where: { motoId: { in: idsSinContratos } },
       }).catch(() => {}); // Ignorar si no existe la tabla
 

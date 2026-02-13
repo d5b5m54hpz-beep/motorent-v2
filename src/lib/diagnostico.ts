@@ -33,7 +33,7 @@ const API_ENDPOINTS = [
   "/api/facturas",
   "/api/facturas-compra",
   "/api/gastos",
-  "/api/mantenimientos",
+  "/api/mantenimientos/ordenes",
   "/api/proveedores",
   "/api/repuestos",
   "/api/presupuestos",
@@ -439,26 +439,26 @@ export async function verificarIntegridad(
     mensaje: `${totalGastos} gastos (categoría es requerida)`,
   });
 
-  // 12. Mantenimientos pendientes vencidos
-  onProgress?.(12, "Verificando mantenimientos...");
+  // 12. Citas de mantenimiento vencidas
+  onProgress?.(12, "Verificando citas de mantenimiento...");
   const ahora = new Date();
-  const mantenimientosVencidos = await prisma.mantenimiento.findMany({
+  const citasVencidas = await prisma.citaMantenimiento.findMany({
     where: {
-      estado: "PENDIENTE",
+      estado: { in: ["PROGRAMADA", "NOTIFICADA"] },
       fechaProgramada: { lt: ahora },
     },
-    select: { id: true, visibleId: true, fechaProgramada: true },
+    select: { id: true, fechaProgramada: true },
   });
 
-  if (mantenimientosVencidos.length > 0) {
+  if (citasVencidas.length > 0) {
     checks.push({
       categoria: "Base de Datos",
-      nombre: "Mantenimientos PENDIENTE vencidos",
+      nombre: "Citas de mantenimiento vencidas",
       status: "warning",
-      mensaje: `${mantenimientosVencidos.length} mantenimientos con fecha pasada`,
-      ids: mantenimientosVencidos.map((m) => m.visibleId),
+      mensaje: `${citasVencidas.length} citas con fecha pasada`,
+      ids: citasVencidas.map((m) => m.id),
     });
-  } else {
+  } else{
     checks.push({
       categoria: "Base de Datos",
       nombre: "Mantenimientos PENDIENTE vencidos",
@@ -481,7 +481,7 @@ const CRUD_MODULES = [
   { name: "Facturas", endpoint: "/api/facturas" },
   { name: "Facturas Compra", endpoint: "/api/facturas-compra" },
   { name: "Gastos", endpoint: "/api/gastos" },
-  { name: "Mantenimientos", endpoint: "/api/mantenimientos" },
+  { name: "Órdenes de Trabajo", endpoint: "/api/mantenimientos/ordenes" },
   { name: "Proveedores", endpoint: "/api/proveedores" },
   { name: "Repuestos", endpoint: "/api/repuestos" },
   { name: "Presupuestos", endpoint: "/api/presupuestos" },

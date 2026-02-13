@@ -50,10 +50,10 @@ export const flotaTools: ToolMetadata[] = [
             include: { cliente: { select: { nombre: true, email: true } } },
             take: 3,
           },
-          mantenimientos: {
+          ordenesTrabajoMoto: {
             orderBy: { createdAt: "desc" },
             take: 3,
-            select: { tipo: true, estado: true, costoTotal: true, createdAt: true },
+            select: { tipoOT: true, estado: true, costoTotal: true, createdAt: true },
           },
         },
       });
@@ -75,8 +75,8 @@ export const flotaTools: ToolMetadata[] = [
           fechaFin: c.fechaFin.toLocaleDateString("es-AR"),
           monto: c.montoTotal,
         })),
-        ultimosMantenimientos: moto.mantenimientos.map((m) => ({
-          tipo: m.tipo,
+        ultimosMantenimientos: moto.ordenesTrabajoMoto.map((m) => ({
+          tipo: m.tipoOT,
           estado: m.estado,
           costo: m.costoTotal,
           fecha: m.createdAt.toLocaleDateString("es-AR"),
@@ -94,23 +94,23 @@ export const flotaTools: ToolMetadata[] = [
       const hace7dias = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
       const [pendientes, enProcesoLargo] = await Promise.all([
-        prisma.mantenimiento.findMany({
-          where: { estado: { in: ["PENDIENTE", "PROGRAMADO"] } },
+        prisma.ordenTrabajo.findMany({
+          where: { estado: { in: ["SOLICITADA", "APROBADA", "PROGRAMADA"] } },
           select: {
             id: true,
-            tipo: true,
+            tipoOT: true,
             descripcion: true,
             moto: { select: { marca: true, modelo: true, patente: true } },
           },
           take: 10,
         }),
-        prisma.mantenimiento.findMany({
-          where: { estado: "EN_PROCESO", fechaInicio: { lte: hace7dias } },
+        prisma.ordenTrabajo.findMany({
+          where: { estado: "EN_EJECUCION", fechaIngreso: { lte: hace7dias } },
           select: {
             id: true,
-            tipo: true,
+            tipoOT: true,
             descripcion: true,
-            fechaInicio: true,
+            fechaIngreso: true,
             moto: { select: { marca: true, modelo: true, patente: true } },
           },
           take: 10,
@@ -125,13 +125,13 @@ export const flotaTools: ToolMetadata[] = [
       return {
         mantenimientosPendientes: pendientes.map((m) => ({
           moto: `${m.moto.marca} ${m.moto.modelo} (${m.moto.patente})`,
-          tipo: m.tipo,
+          tipo: m.tipoOT,
           descripcion: m.descripcion,
         })),
         enProcesoMasDe7Dias: enProcesoLargo.map((m) => ({
           moto: `${m.moto.marca} ${m.moto.modelo} (${m.moto.patente})`,
-          tipo: m.tipo,
-          dias: Math.ceil((Date.now() - new Date(m.fechaInicio!).getTime()) / (1000 * 60 * 60 * 24)),
+          tipo: m.tipoOT,
+          dias: Math.ceil((Date.now() - new Date(m.fechaIngreso!).getTime()) / (1000 * 60 * 60 * 24)),
         })),
         repuestosStockBajo: repuestosBajo.map((r) => ({
           nombre: r.nombre,
@@ -203,11 +203,11 @@ export const flotaTools: ToolMetadata[] = [
           patente: true,
           kilometraje: true,
           estado: true,
-          mantenimientos: {
-            where: { estado: { in: ["COMPLETADO"] } },
+          ordenesTrabajoMoto: {
+            where: { estado: { in: ["COMPLETADA"] } },
             orderBy: { createdAt: "desc" },
             take: 1,
-            select: { createdAt: true, tipo: true },
+            select: { createdAt: true, tipoOT: true },
           },
         },
       });
@@ -217,10 +217,10 @@ export const flotaTools: ToolMetadata[] = [
           moto: `${m.marca} ${m.modelo} (${m.patente})`,
           kilometraje: m.kilometraje,
           estado: m.estado,
-          ultimoMantenimiento: m.mantenimientos[0]
+          ultimoMantenimiento: m.ordenesTrabajoMoto[0]
             ? {
-                tipo: m.mantenimientos[0].tipo,
-                fecha: m.mantenimientos[0].createdAt.toLocaleDateString("es-AR"),
+                tipo: m.ordenesTrabajoMoto[0].tipoOT,
+                fecha: m.ordenesTrabajoMoto[0].createdAt.toLocaleDateString("es-AR"),
               }
             : null,
         })),
