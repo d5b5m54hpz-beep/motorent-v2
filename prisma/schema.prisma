@@ -273,6 +273,7 @@ model Proveedor {
   gastos         Gasto[]
   facturasCompra FacturaCompra[]
   ordenesCompra  OrdenCompra[]
+  embarques      EmbarqueImportacion[]
 }
 
 model Repuesto {
@@ -303,6 +304,17 @@ model Repuesto {
   peso             Float?    // Peso en gramos (para envíos/logística)
   activo           Boolean   @default(true) // Para dar de baja sin eliminar
 
+  // ─── Campos nuevos de costeo ──────────────────────────────────
+  ncmCodigo          String?   // Nomenclatura Común del Mercosur (ej: "8714.10.00")
+  pesoUnitarioKg     Float?    // Peso por unidad en kg (para prorrateo de flete)
+  volumenUnitarioCbm Float?    // Volumen por unidad en CBM (para prorrateo)
+  esOEM              Boolean   @default(false) // Original vs genérico
+  costoPromedioArs   Float     @default(0) // Costo promedio ponderado actual en ARS
+  costoPromedioUsd   Float     @default(0) // Costo promedio ponderado actual en USD
+  ultimoCostoUpdate  DateTime? // Última vez que se recalculó el costo promedio
+  margenObjetivo     Float?    // Margen objetivo para esta pieza (override de categoría)
+  margenMinimo       Float?    // Margen mínimo (override de categoría)
+
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   tareasPlan   TareaPlan[]
@@ -313,6 +325,11 @@ model Repuesto {
   movimientos      MovimientoStock[]
   itemsOrdenCompra ItemOrdenCompra[]
   itemsRecepcion   ItemRecepcion[]
+
+  // ─── Relaciones nuevas costeo ─────────────────────────────────
+  historialCostos    HistorialCostoRepuesto[]
+  asignacionesCosto  AsignacionCostoImportacion[]
+  itemsEmbarque      ItemEmbarque[]
 }
 
 // ─── Finanzas ───────────────────────────────────────────────────────────────
@@ -1547,4 +1564,223 @@ model ItemRecepcion {
   ubicacionAsignada String?             // "E2-F3-P1" — dónde se guardó
   observaciones     String?
   createdAt         DateTime            @default(now())
+}
+
+// ==========================================
+// COSTEO DE IMPORTACIÓN Y PRICING
+// ==========================================
+
+// ─── CONFIGURACIÓN DE CATEGORÍA ─────────────────────────────────
+
+model CategoriaRepuestoConfig {
+  id              String   @id @default(cuid())
+  categoria       String   @unique // "FRENOS", "MOTOR", "FILTROS", etc.
+  nombre          String   // Nombre legible
+  margenObjetivo  Float    @default(0.45) // 45% margen objetivo
+  margenMinimo    Float    @default(0.25) // 25% margen mínimo
+  markupDefault   Float    @default(1.8)  // Multiplicador default (1.8x = 80% markup)
+  arancelImpo     Float    @default(0.16) // 16% arancel para esta categoría
+  ncmDefault      String?  // NCM default para la categoría
+  notas           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─── EMBARQUES DE IMPORTACIÓN ───────────────────────────────────
+
+model EmbarqueImportacion {
+  id                  String              @id @default(cuid())
+  visibleId           String              @unique @default(cuid())
+  referencia          String              @unique // "EMB-001" autogenerado
+  proveedorId         String
+  proveedor           Proveedor           @relation(fields: [proveedorId], references: [id])
+  estado              EstadoEmbarque      @default(BORRADOR)
+  metodoFlete         MetodoFlete
+
+  // Fechas
+  fechaSalida         DateTime?           // ETD
+  fechaLlegadaEstimada DateTime?          // ETA
+  fechaLlegadaReal    DateTime?
+
+  // Contenedor
+  numeroContenedor    String?
+  tipoContenedor      String?             // "20GP", "40GP", "40HQ"
+
+  // ─── Costos compartidos en USD ────────────────────────────────
+  totalFobUsd         Float               @default(0)
+  fleteUsd            Float               @default(0)
+  seguroUsd           Float               @default(0)
+  cifUsd              Float               @default(0) // FOB + Flete + Seguro
+
+  // ─── Impuestos de aduana (calculados) ─────────────────────────
+  derechosImportacion Float?   // DIE — NO recuperable
+  tasaEstadistica     Float?   // 3% — NO recuperable
+  ivaAduana           Float?   // 21% — RECUPERABLE (crédito fiscal)
+  ivaAdicional        Float?   // 20% — RECUPERABLE
+  gananciasAnticipado Float?   // 6% — RECUPERABLE
+  iibbAnticipado      Float?   // ~3% — RECUPERABLE
+  tasaOficializacion  Float?   // USD $10 fijo — NO recuperable
+  tasaDigitalizacion  Float?   // USD $28 fijo — NO recuperable
+
+  // ─── Gastos logísticos en USD ─────────────────────────────────
+  despachanteFee      Float?   // Honorarios despachante
+  gastosPuerto        Float?   // Terminal, almacenaje, etc
+  transporteInterno   Float?   // Flete interno hasta depósito
+  otrosGastos         Float?   // Otros gastos no categorizados
+  otrosGastosDetalle  String?  // Descripción de otros gastos
+
+  // ─── Tipo de cambio ───────────────────────────────────────────
+  tipoCambioArsUsd    Float?   // TC Banco Nación vendedor al momento del despacho
+  fechaDespacho       DateTime?
+  numeroDespacho      String?  // Número de despacho aduanero
+
+  // ─── Totales calculados ───────────────────────────────────────
+  costoTotalNoRecuperable Float?  // Todo lo que suma al costo del inventario
+  costoTotalRecuperable   Float?  // IVA + Ganancias + IIBB (crédito fiscal)
+  desembolsoTotal         Float?  // Total que se paga en aduana
+
+  // ─── Cantidad de despachos parciales ──────────────────────────
+  cantidadDespachos       Int     @default(1)
+
+  notas               String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  items                ItemEmbarque[]
+  despachos            DespachoAduanero[]
+  asignaciones         AsignacionCostoImportacion[]
+}
+
+enum EstadoEmbarque {
+  BORRADOR
+  EN_TRANSITO
+  EN_PUERTO
+  EN_ADUANA
+  DESPACHADO_PARCIAL
+  RECIBIDO
+  COSTO_FINALIZADO
+}
+
+enum MetodoFlete {
+  MARITIMO_FCL    // Contenedor completo
+  MARITIMO_LCL   // Carga consolidada
+  AEREO           // Avión
+}
+
+// ─── ITEMS DEL EMBARQUE ─────────────────────────────────────────
+
+model ItemEmbarque {
+  id              String             @id @default(cuid())
+  embarqueId      String
+  embarque        EmbarqueImportacion @relation(fields: [embarqueId], references: [id], onDelete: Cascade)
+  repuestoId      String
+  repuesto        Repuesto           @relation(fields: [repuestoId], references: [id])
+
+  cantidad        Int                // Cantidad importada
+  precioFobUnitarioUsd Float         // Precio FOB por unidad en USD
+  subtotalFobUsd  Float              // cantidad × precioFobUnitario
+  pesoTotalKg     Float?             // Peso total de esta línea
+  volumenTotalCbm Float?             // Volumen total de esta línea
+  ncmCodigo       String?            // NCM específico (override del repuesto)
+  arancelPorcentaje Float?           // % arancel específico (override de categoría)
+
+  // ─── Costos asignados (se calculan al finalizar) ──────────────
+  costoAsignadoFlete    Float?       // Flete prorrateado a esta línea
+  costoAsignadoSeguro   Float?
+  costoAsignadoDerechos Float?
+  costoAsignadoTasas    Float?
+  costoAsignadoLogistica Float?
+
+  costoLandedUnitarioUsd Float?      // Costo puesto en almacén por unidad (USD)
+  costoLandedUnitarioArs Float?      // Costo puesto en almacén por unidad (ARS)
+
+  createdAt       DateTime           @default(now())
+
+  @@unique([embarqueId, repuestoId])
+}
+
+// ─── DESPACHOS ADUANEROS (parciales) ────────────────────────────
+
+model DespachoAduanero {
+  id                  String             @id @default(cuid())
+  embarqueId          String
+  embarque            EmbarqueImportacion @relation(fields: [embarqueId], references: [id])
+  numeroDespacho      String             @unique
+  fecha               DateTime
+  tipoCambio          Float              // TC BNA vendedor en la fecha
+  cifParcialUsd       Float              // CIF de lo despachado en este despacho
+  derechosPagados     Float              @default(0)
+  tasaEstadistica     Float              @default(0)
+  ivaPagado           Float              @default(0)
+  ivaAdicionalPagado  Float              @default(0)
+  gananciasPagado     Float              @default(0)
+  iibbPagado          Float              @default(0)
+  tasaOficializacion  Float              @default(10)  // USD 10
+  tasaDigitalizacion  Float              @default(28)  // USD 28
+  gastosDespachante   Float?
+  otrosGastos         Float?
+  notas               String?
+
+  // Items despachados en este despacho parcial
+  itemsDespachados    Json?              // [{ repuestoId, cantidad }]
+
+  createdAt           DateTime           @default(now())
+
+  @@index([embarqueId])
+}
+
+// ─── ASIGNACIÓN DE COSTOS POR REPUESTO ──────────────────────────
+
+model AsignacionCostoImportacion {
+  id                  String             @id @default(cuid())
+  embarqueId          String
+  embarque            EmbarqueImportacion @relation(fields: [embarqueId], references: [id])
+  repuestoId          String
+  repuesto            Repuesto           @relation(fields: [repuestoId], references: [id])
+
+  cantidad            Int
+  fobUnitarioUsd      Float
+  fleteUnitarioUsd    Float
+  seguroUnitarioUsd   Float
+  derechosUnitarioUsd Float
+  tasasUnitarioUsd    Float
+  logisticaUnitarioUsd Float
+
+  // Totales por unidad
+  costoLandedUnitarioUsd Float          // Solo costos no recuperables
+  costoLandedUnitarioArs Float          // Convertido a ARS al TC del despacho
+  desembolsoUnitarioUsd  Float          // Incluyendo recuperables (cash flow)
+
+  metodoAsignacion    String            // "POR_VALOR", "POR_VOLUMEN", "POR_PESO", "HIBRIDO"
+  tipoCambioUsado     Float
+
+  createdAt           DateTime          @default(now())
+
+  @@index([embarqueId])
+  @@index([repuestoId])
+}
+
+// ─── HISTORIAL DE COSTOS ────────────────────────────────────────
+
+model HistorialCostoRepuesto {
+  id                  String   @id @default(cuid())
+  repuestoId          String
+  repuesto            Repuesto @relation(fields: [repuestoId], references: [id])
+
+  costoAnteriorArs    Float
+  costoNuevoArs       Float
+  costoAnteriorUsd    Float?
+  costoNuevoUsd       Float?
+  cantidadAnterior    Int
+  cantidadNueva       Int
+
+  motivo              String   // "IMPORTACION", "AJUSTE_MANUAL", "CORRECCION", "RECEPCION_LOCAL"
+  referencia          String?  // ID del embarque, OC, o ajuste que originó el cambio
+  tipoCambio          Float?
+  usuario             String?  // Email del usuario
+
+  createdAt           DateTime @default(now())
+
+  @@index([repuestoId, createdAt])
 }

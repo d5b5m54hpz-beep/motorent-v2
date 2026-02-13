@@ -28,6 +28,7 @@ import {
   Building2,
   Settings,
   FileSpreadsheet,
+  Ship,
   BookOpen,
   Tag,
   Calendar,
@@ -71,6 +72,7 @@ export function AppSidebar({ user }: Props) {
     { title: "Talleres", href: "/admin/talleres", icon: Factory },
     { title: "Repuestos", href: "/admin/repuestos", icon: Package },
     { title: "Precios", href: "/admin/precios", icon: Tag },
+    { title: "Costeo Importación", href: "/admin/pricing-repuestos", icon: Ship },
   ];
 
   const comercial: NavItem[] = [
