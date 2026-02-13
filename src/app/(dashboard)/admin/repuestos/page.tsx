@@ -21,6 +21,8 @@ import {
   MapPin,
   Download,
   Upload,
+  FileDown,
+  FileJson,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,10 +44,25 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getColumns } from "./columns";
 import { RepuestoForm } from "./repuesto-form";
 import { DeleteRepuestoDialog } from "./delete-repuesto-dialog";
+import { DashboardTab } from "./dashboard-tab";
+import { ImportDialog } from "./import-dialog";
+import { AjustarStockDialog } from "./ajustar-stock-dialog";
+import { MovimientosSheet } from "./movimientos-sheet";
+import { OrdenesCompraTab } from "./ordenes-compra-tab";
+import { RecepcionesTab } from "./recepciones-tab";
+import { UbicacionesTab } from "./ubicaciones-tab";
+import { printRepuestoLabel } from "./print-label";
+import { exportRepuestos } from "./export-utils";
 import type { Repuesto, RepuestosApiResponse } from "./types";
 import type { RepuestoInput } from "@/lib/validations";
 
@@ -69,6 +86,13 @@ export default function RepuestosPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Repuesto | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // New dialogs/sheets
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [ajustarStockDialogOpen, setAjustarStockDialogOpen] = useState(false);
+  const [itemToAjustar, setItemToAjustar] = useState<Repuesto | null>(null);
+  const [movimientosSheetOpen, setMovimientosSheetOpen] = useState(false);
+  const [itemMovimientos, setItemMovimientos] = useState<Repuesto | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -173,13 +197,15 @@ export default function RepuestosPage() {
       setDeleteDialogOpen(true);
     },
     onAjustarStock: (r) => {
-      toast.info("Ajustar stock - Por implementar");
+      setItemToAjustar(r);
+      setAjustarStockDialogOpen(true);
     },
     onVerMovimientos: (r) => {
-      toast.info("Ver movimientos - Por implementar");
+      setItemMovimientos(r);
+      setMovimientosSheetOpen(true);
     },
     onImprimirEtiqueta: (r) => {
-      toast.info("Imprimir etiqueta - Por implementar");
+      printRepuestoLabel(r);
     },
   });
 
@@ -228,63 +254,12 @@ export default function RepuestosPage() {
 
         {/* TAB 1: DASHBOARD */}
         <TabsContent value="dashboard" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Repuestos</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">—</div>
-                <p className="text-xs text-muted-foreground">
-                  Use API: /api/repuestos/dashboard
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Stock Bajo</CardTitle>
-                <Package className="h-4 w-4 text-yellow-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">—</div>
-                <p className="text-xs text-muted-foreground">Requiere atención</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Sin Stock</CardTitle>
-                <Package className="h-4 w-4 text-destructive" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">—</div>
-                <p className="text-xs text-muted-foreground">Crítico</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Valor Inventario</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">—</div>
-                <p className="text-xs text-muted-foreground">Precio de compra</p>
-              </CardContent>
-            </Card>
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Dashboard de Stock</CardTitle>
-              <CardDescription>
-                Consumir API /api/repuestos/dashboard para mostrar KPIs completos, gráficos y alertas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Implementación pendiente: gráficos con Recharts, alertas de stock bajo, top consumidos
-              </p>
-            </CardContent>
-          </Card>
+          <DashboardTab
+            onFilterStockBajo={() => {
+              setActiveTab("inventario");
+              // TODO: Add stock filter when filters are implemented
+            }}
+          />
         </TabsContent>
 
         {/* TAB 2: INVENTARIO */}
@@ -302,14 +277,28 @@ export default function RepuestosPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => toast.info("Importar - Por implementar")}>
+              <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" />
                 Importar
               </Button>
-              <Button variant="outline" size="sm" onClick={() => toast.info("Exportar - Por implementar")}>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportRepuestos("csv")}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Exportar CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportRepuestos("json")}>
+                    <FileJson className="mr-2 h-4 w-4" />
+                    Exportar JSON
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 onClick={() => {
                   setSelectedItem(null);
@@ -419,53 +408,17 @@ export default function RepuestosPage() {
 
         {/* TAB 3: ÓRDENES DE COMPRA */}
         <TabsContent value="ordenes-compra" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Órdenes de Compra</CardTitle>
-              <CardDescription>
-                Use API /api/ordenes-compra para listar, crear y gestionar OCs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Implementación pendiente: Lista de OCs, formulario para crear/editar, cambiar estados, vincular recepciones
-              </p>
-            </CardContent>
-          </Card>
+          <OrdenesCompraTab />
         </TabsContent>
 
         {/* TAB 4: RECEPCIONES */}
         <TabsContent value="recepciones" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recepción de Mercadería</CardTitle>
-              <CardDescription>
-                Use API /api/recepciones para registrar llegadas y actualizar stock
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Implementación pendiente: Lista de recepciones, formulario para registrar (con/sin OC), actualización transaccional de stock
-              </p>
-            </CardContent>
-          </Card>
+          <RecepcionesTab />
         </TabsContent>
 
         {/* TAB 5: UBICACIONES */}
         <TabsContent value="ubicaciones" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ubicaciones de Depósito</CardTitle>
-              <CardDescription>
-                Use API /api/ubicaciones-deposito para gestionar ubicaciones físicas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Implementación pendiente: Grilla visual (estante/fila/posición), CRUD de ubicaciones, mapa con /api/ubicaciones-deposito/mapa
-              </p>
-            </CardContent>
-          </Card>
+          <UbicacionesTab />
         </TabsContent>
       </Tabs>
 
@@ -494,6 +447,25 @@ export default function RepuestosPage() {
         repuesto={itemToDelete}
         onConfirm={handleDelete}
         isLoading={isDeleting}
+      />
+
+      <ImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onSuccess={fetchData}
+      />
+
+      <AjustarStockDialog
+        open={ajustarStockDialogOpen}
+        onOpenChange={setAjustarStockDialogOpen}
+        repuesto={itemToAjustar}
+        onSuccess={fetchData}
+      />
+
+      <MovimientosSheet
+        open={movimientosSheetOpen}
+        onOpenChange={setMovimientosSheetOpen}
+        repuesto={itemMovimientos}
       />
     </div>
   );
