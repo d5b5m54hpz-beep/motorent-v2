@@ -80,6 +80,9 @@ model Cliente {
   citasMantenimiento  CitaMantenimiento[]
   ordenesTrabajoRider OrdenTrabajo[] @relation("OrdenTrabajoRider")
   puntajes            PuntajeRider[]
+
+  // ─── Relaciones nuevas pricing motor ──────────────────────────
+  gruposCliente       MiembroGrupoCliente[]
 }
 
 model Moto {
@@ -330,6 +333,10 @@ model Repuesto {
   historialCostos    HistorialCostoRepuesto[]
   asignacionesCosto  AsignacionCostoImportacion[]
   itemsEmbarque      ItemEmbarque[]
+
+  // ─── Relaciones nuevas pricing motor ──────────────────────────
+  itemsListaPrecio   ItemListaPrecio[]
+  historialPrecios   HistorialPrecioRepuesto[]
 }
 
 // ─── Finanzas ───────────────────────────────────────────────────────────────
@@ -1783,4 +1790,225 @@ model HistorialCostoRepuesto {
   createdAt           DateTime @default(now())
 
   @@index([repuestoId, createdAt])
+}
+
+// ==========================================
+// MOTOR DE PRICING — REPUESTOS
+// ==========================================
+
+// ─── LISTAS DE PRECIOS ──────────────────────────────────────────
+
+model ListaPrecio {
+  id              String           @id @default(cuid())
+  nombre          String           // "B2C Retail", "Rider Activo", "Taller Externo", "Uso Interno"
+  codigo          String           @unique // "B2C", "RIDER", "TALLER", "INTERNO"
+  tipo            TipoListaPrecio
+  moneda          String           @default("ARS")
+  activa          Boolean          @default(true)
+  prioridad       Int              @default(0) // Mayor prioridad = se evalúa primero
+  descripcion     String?
+
+  // Descuento global de la lista (% sobre precio retail)
+  descuentoGlobalPct Float?        // Ej: 0.15 = 15% off retail
+
+  // Vigencia opcional
+  vigenciaDesde   DateTime?
+  vigenciaHasta   DateTime?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  items           ItemListaPrecio[]
+  reglasDescuento ReglaDescuento[]
+  gruposCliente   GrupoCliente[]
+}
+
+enum TipoListaPrecio {
+  RETAIL        // Precio público B2C (base para las demás)
+  PREFERENCIAL  // Descuento para riders activos
+  MAYORISTA     // Para talleres y mecánicos externos
+  INTERNO       // Uso interno de la flota propia
+  PERSONALIZADA // Negociación específica
+}
+
+// ─── ITEMS DE LISTA DE PRECIOS ──────────────────────────────────
+
+model ItemListaPrecio {
+  id              String       @id @default(cuid())
+  listaPrecioId   String
+  listaPrecio     ListaPrecio  @relation(fields: [listaPrecioId], references: [id], onDelete: Cascade)
+  repuestoId      String
+  repuesto        Repuesto     @relation(fields: [repuestoId], references: [id])
+
+  precioArs       Float        // Precio final en ARS para esta lista
+  precioUsd       Float?       // Precio en USD (referencial)
+
+  // Cantidad mínima para este precio (permite escalonado)
+  cantidadMinima  Int          @default(1)
+
+  // Vigencia temporal
+  vigenciaDesde   DateTime     @default(now())
+  vigenciaHasta   DateTime?
+
+  // Metadata de cálculo (para auditoría: cómo se llegó a este precio)
+  costoBase       Float?       // Costo al momento de calcular
+  markupAplicado  Float?       // Multiplicador aplicado
+  descuentoAplicado Float?     // % de descuento aplicado
+  metodoCalculo   String?      // "MARKUP_CATEGORIA", "MARKUP_BANDA", "MANUAL", "BULK_UPDATE"
+
+  createdAt       DateTime     @default(now())
+
+  @@unique([listaPrecioId, repuestoId, cantidadMinima, vigenciaDesde])
+  @@index([listaPrecioId, repuestoId])
+  @@index([vigenciaDesde, vigenciaHasta])
+}
+
+// ─── REGLAS DE MARKUP ───────────────────────────────────────────
+
+model ReglaMarkup {
+  id              String   @id @default(cuid())
+  nombre          String   // "Banda $0-$5", "Banda $5-$75", etc.
+  
+  // Condiciones (al menos una debe aplicar)
+  categoria       String?  // Si null, aplica a todas las categorías
+  costoBandaDesde Float?   // Rango de costo unitario (en ARS)
+  costoBandaHasta Float?
+  esOEM           Boolean? // null = ambos, true = solo OEM, false = solo genérico
+
+  // Acción
+  multiplicador   Float    // Ej: 2.5 = precio = costo × 2.5
+  redondeo        String?  // "NEAREST_10", "NEAREST_50", "NEAREST_99", "NONE"
+
+  prioridad       Int      @default(0) // Mayor = se evalúa primero
+  activa          Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([categoria])
+}
+
+// ─── REGLAS DE DESCUENTO ────────────────────────────────────────
+
+model ReglaDescuento {
+  id              String       @id @default(cuid())
+  nombre          String       // "Descuento Plan Premium", "Antigüedad 1+ año"
+  listaPrecioId   String?      // Si null, aplica a todas las listas
+  listaPrecio     ListaPrecio? @relation(fields: [listaPrecioId], references: [id])
+
+  // ─── Condiciones ──────────────────────────────────────────────
+  tipoCondicion   TipoCondicionDescuento
+  
+  // Para PLAN_ALQUILER: qué plan tiene el rider
+  planAlquiler    String?      // "BASICO", "PREMIUM", "VIP" (match contra contrato activo)
+  
+  // Para ANTIGUEDAD: meses mínimos como cliente activo
+  antiguedadMeses Int?         // 6, 12, 24, 60
+  
+  // Para CATEGORIA: aplica solo a una categoría de repuesto
+  categoria       String?
+  
+  // Para CANTIDAD: compras mayores a X unidades
+  cantidadMinima  Int?
+
+  // ─── Acción ───────────────────────────────────────────────────
+  tipoDescuento   TipoDescuento
+  valorDescuento  Float        // Porcentaje (0.10 = 10%) o monto fijo en ARS
+
+  // ─── Guardrails ───────────────────────────────────────────────
+  margenMinimo    Float?       // No aplicar si el margen cae por debajo de esto
+  acumulable      Boolean      @default(false) // ¿Se puede combinar con otros descuentos?
+
+  prioridad       Int          @default(0)
+  activa          Boolean      @default(true)
+  vigenciaDesde   DateTime?
+  vigenciaHasta   DateTime?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+enum TipoCondicionDescuento {
+  PLAN_ALQUILER     // Según el plan de alquiler del rider
+  ANTIGUEDAD        // Meses como cliente activo
+  CATEGORIA         // Categoría de repuesto
+  CANTIDAD          // Volumen de compra
+  GRUPO_CLIENTE     // Pertenencia a grupo
+  SIEMPRE           // Se aplica siempre (descuento de la lista)
+}
+
+enum TipoDescuento {
+  PORCENTAJE        // 10% off
+  MONTO_FIJO        // $500 off
+}
+
+// ─── GRUPOS DE CLIENTES ─────────────────────────────────────────
+
+model GrupoCliente {
+  id              String       @id @default(cuid())
+  nombre          String       @unique // "Riders Activos", "Talleres Externos", "VIP"
+  descripcion     String?
+  listaPrecioId   String?      // Lista de precios asignada por defecto
+  listaPrecio     ListaPrecio? @relation(fields: [listaPrecioId], references: [id])
+  descuentoExtra  Float?       // Descuento adicional sobre la lista
+  activo          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  miembros        MiembroGrupoCliente[]
+}
+
+model MiembroGrupoCliente {
+  id              String       @id @default(cuid())
+  grupoId         String
+  grupo           GrupoCliente @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  clienteId       String
+  cliente         Cliente      @relation(fields: [clienteId], references: [id])
+  fechaIngreso    DateTime     @default(now())
+
+  @@unique([grupoId, clienteId])
+}
+
+// ─── HISTORIAL DE PRECIOS ───────────────────────────────────────
+
+model HistorialPrecioRepuesto {
+  id              String   @id @default(cuid())
+  repuestoId      String
+  repuesto        Repuesto @relation(fields: [repuestoId], references: [id])
+  listaPrecioId   String?  // null = precio general (precioVenta del repuesto)
+
+  precioAnterior  Float?
+  precioNuevo     Float
+  
+  tipoCambio      String   // "MANUAL", "BULK_UPDATE", "RECALCULO_COSTO", "REGLA_MARKUP", "IMPORTACION"
+  motivo          String?  // "Actualización por embarque EMB-003", "Ajuste inflación +15%"
+  loteId          String?  // Agrupa cambios bulk (para rollback)
+
+  // Snapshot al momento del cambio
+  costoAlMomento  Float?
+  margenAlMomento Float?   // (precio - costo) / precio
+
+  usuario         String   // Email del usuario
+  createdAt       DateTime @default(now())
+
+  @@index([repuestoId, createdAt])
+  @@index([loteId])
+  @@index([createdAt])
+}
+
+// ─── LOTES DE CAMBIO DE PRECIO (para rollback) ─────────────────
+
+model LoteCambioPrecio {
+  id              String   @id @default(cuid())
+  descripcion     String   // "Ajuste inflación Marzo 2026", "Recálculo post EMB-003"
+  tipo            String   // "BULK_PORCENTAJE", "BULK_MARKUP", "RECALCULO_COSTO", "ROLLBACK"
+  
+  cantidadItems   Int      // Cuántos repuestos afectó
+  parametros      Json?    // { porcentaje: 15, categorias: ["FRENOS", "MOTOR"] }
+  
+  aplicado        Boolean  @default(false) // false = preview, true = confirmado
+  revertido       Boolean  @default(false) // true = se hizo rollback
+  revertidoPor    String?  // Lote ID del rollback
+
+  usuario         String
+  createdAt       DateTime @default(now())
 }
