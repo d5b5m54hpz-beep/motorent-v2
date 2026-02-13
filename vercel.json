@@ -15,6 +15,14 @@
     {
       "path": "/api/jobs/renovar-contratos",
       "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/jobs/generar-citas",
+      "schedule": "0 0 1 * *"
+    },
+    {
+      "path": "/api/jobs/notificaciones-mantenimiento",
+      "schedule": "0 8 * * *"
     }
   ]
 }

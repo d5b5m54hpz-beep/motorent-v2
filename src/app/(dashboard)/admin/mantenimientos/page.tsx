@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, Wrench, QrCode, FileText, Activity, Clock, DollarSign, Bike } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, Wrench, QrCode, FileText, Activity, DollarSign, Bike } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { CalendarioTab } from "./_components/calendario-tab";
+import { OrdenesTab } from "./_components/ordenes-tab";
+import { CheckinTab } from "./_components/checkin-tab";
+import { PlanesTab } from "./_components/planes-tab";
 
 type DashboardStats = {
   citasProgramadas: number;
@@ -165,94 +169,22 @@ export default function MantenimientosPage() {
 
         {/* Tab 1: Calendario de Citas */}
         <TabsContent value="calendario" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Calendario de Citas</CardTitle>
-              <CardDescription>
-                Visualiza y gestiona las citas de mantenimiento programadas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <Calendar className="h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm font-medium">Calendario de Citas</p>
-                  <p className="text-xs text-muted-foreground">
-                    Vista de calendario en desarrollo
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CalendarioTab />
         </TabsContent>
 
         {/* Tab 2: Órdenes de Trabajo */}
         <TabsContent value="ordenes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Órdenes de Trabajo</CardTitle>
-              <CardDescription>
-                Listado completo de órdenes de trabajo (OTs) con filtros y búsqueda
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <Wrench className="h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm font-medium">Tabla de Órdenes de Trabajo</p>
-                  <p className="text-xs text-muted-foreground">
-                    DataTable con filtros en desarrollo
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <OrdenesTab />
         </TabsContent>
 
         {/* Tab 3: Check-in/Check-out */}
         <TabsContent value="checkin" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Check-in / Check-out</CardTitle>
-              <CardDescription>
-                Escanea el código QR para iniciar o finalizar una orden de trabajo
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <QrCode className="h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm font-medium">Escáner QR</p>
-                  <p className="text-xs text-muted-foreground">
-                    Interfaz de check-in/out en desarrollo
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CheckinTab />
         </TabsContent>
 
         {/* Tab 4: Planes de Mantenimiento */}
         <TabsContent value="planes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Planes de Mantenimiento</CardTitle>
-              <CardDescription>
-                Visualiza los planes predefinidos (Básico, Intermedio, Mayor) y sus tareas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <FileText className="h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm font-medium">Planes de Mantenimiento</p>
-                  <p className="text-xs text-muted-foreground">
-                    Visualización de planes en desarrollo
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <PlanesTab />
         </TabsContent>
       </Tabs>
     </div>
