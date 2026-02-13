@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Ship, Package, FolderOpen, TrendingUp } from "lucide-react";
+import { Ship, Package, FolderOpen, TrendingUp, DollarSign, Settings, Users, Calculator } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmbarquesTab } from "@/components/pricing/embarques-tab";
 import { CategoriasTab } from "@/components/pricing/categorias-tab";
 import { ResumenTab } from "@/components/pricing/resumen-tab";
+import { PreciosTab } from "@/components/pricing/precios-tab";
+import { ReglasTab } from "@/components/pricing/reglas-tab";
+import { GruposTab } from "@/components/pricing/grupos-tab";
+import { CambiosBulkTab } from "@/components/pricing/cambios-bulk-tab";
+import { SimuladorPrecio } from "@/components/pricing/simulador-precio";
 
 export default function PricingRepuestosPage() {
   const [activeTab, setActiveTab] = useState("resumen");
@@ -15,18 +20,38 @@ export default function PricingRepuestosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Costeo de Importación</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Gestión de Pricing</h1>
           <p className="text-muted-foreground">
-            Gestión de costos de repuestos importados
+            Motor de precios inteligente + costeo de importación
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+        <TabsList className="grid grid-cols-9 w-full">
+          <TabsTrigger value="precios">
+            <DollarSign className="mr-2 h-4 w-4" />
+            Precios
+          </TabsTrigger>
+          <TabsTrigger value="reglas">
+            <Settings className="mr-2 h-4 w-4" />
+            Reglas
+          </TabsTrigger>
+          <TabsTrigger value="grupos">
+            <Users className="mr-2 h-4 w-4" />
+            Grupos
+          </TabsTrigger>
+          <TabsTrigger value="bulk">
+            <Package className="mr-2 h-4 w-4" />
+            Cambios Bulk
+          </TabsTrigger>
+          <TabsTrigger value="simulador">
+            <Calculator className="mr-2 h-4 w-4" />
+            Simulador
+          </TabsTrigger>
           <TabsTrigger value="resumen">
             <Package className="mr-2 h-4 w-4" />
-            Resumen
+            Costeo
           </TabsTrigger>
           <TabsTrigger value="embarques">
             <Ship className="mr-2 h-4 w-4" />
@@ -41,6 +66,26 @@ export default function PricingRepuestosPage() {
             Historial
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="precios" className="space-y-4">
+          <PreciosTab />
+        </TabsContent>
+
+        <TabsContent value="reglas" className="space-y-4">
+          <ReglasTab />
+        </TabsContent>
+
+        <TabsContent value="grupos" className="space-y-4">
+          <GruposTab />
+        </TabsContent>
+
+        <TabsContent value="bulk" className="space-y-4">
+          <CambiosBulkTab />
+        </TabsContent>
+
+        <TabsContent value="simulador" className="space-y-4">
+          <SimuladorPrecio />
+        </TabsContent>
 
         <TabsContent value="resumen" className="space-y-4">
           <ResumenTab />
