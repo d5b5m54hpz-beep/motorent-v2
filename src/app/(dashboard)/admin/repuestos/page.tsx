@@ -318,33 +318,33 @@ export default function RepuestosPage() {
                 />
               </div>
               {/* Filters */}
-              <Select value={filterCategoria} onValueChange={setFilterCategoria}>
+              <Select value={filterCategoria || undefined} onValueChange={(v) => setFilterCategoria(v === "all" ? "" : v)}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
                   {categorias.map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={filterEstadoStock} onValueChange={setFilterEstadoStock}>
+              <Select value={filterEstadoStock || undefined} onValueChange={(v) => setFilterEstadoStock(v === "all" ? "" : v)}>
                 <SelectTrigger className="w-36">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="bajo">Stock Bajo</SelectItem>
                   <SelectItem value="sin">Sin Stock</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filterProveedor} onValueChange={setFilterProveedor}>
+              <Select value={filterProveedor || undefined} onValueChange={(v) => setFilterProveedor(v === "all" ? "" : v)}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Proveedor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {proveedores.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
                   ))}
