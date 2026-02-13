@@ -356,18 +356,85 @@ export type ProveedorInput = z.infer<typeof proveedorSchema>;
 
 // ─── Repuestos ───────────────────────────────────────────────────────────────
 
+// ─── REPUESTO (V2 ampliado) ─────────────────────────────────────
 export const repuestoSchema = z.object({
   nombre: z.string().min(1, "Nombre es requerido"),
   codigo: z.string().optional(),
   categoria: z.string().optional(),
+  descripcion: z.string().optional(),
+  marca: z.string().optional(),
+  modelo: z.string().optional(),
   precioCompra: z.coerce.number().min(0).default(0),
   precioVenta: z.coerce.number().min(0).default(0),
   stock: z.coerce.number().int().min(0).default(0),
   stockMinimo: z.coerce.number().int().min(0).default(2),
   proveedorId: z.string().optional(),
+  unidad: z.string().optional(),
+  unidadCompra: z.string().optional(),
+  factorConversion: z.coerce.number().min(1).default(1).optional(),
+  vidaUtilKm: z.coerce.number().int().min(0).optional(),
+  ubicacion: z.string().optional(),
+  codigoBarras: z.string().optional(),
+  activo: z.boolean().default(true).optional(),
 });
 
 export type RepuestoInput = z.infer<typeof repuestoSchema>;
+
+// ─── UBICACIÓN DEPÓSITO ─────────────────────────────────────────
+export const ubicacionDepositoSchema = z.object({
+  estante: z.string().min(1, "Estante es requerido"),
+  fila: z.string().min(1, "Fila es requerida"),
+  posicion: z.string().min(1, "Posición es requerida"),
+  nombre: z.string().optional(),
+  notas: z.string().optional(),
+});
+
+// ─── ORDEN DE COMPRA ────────────────────────────────────────────
+export const ordenCompraSchema = z.object({
+  proveedorId: z.string().min(1, "Proveedor es requerido"),
+  fechaEntregaEstimada: z.string().optional(),
+  notas: z.string().optional(),
+  items: z.array(z.object({
+    repuestoId: z.string().min(1),
+    cantidad: z.coerce.number().int().min(1, "Mínimo 1"),
+    precioUnitario: z.coerce.number().min(0).default(0),
+  })).min(1, "Debe tener al menos 1 item"),
+});
+
+// ─── RECEPCIÓN DE MERCADERÍA ────────────────────────────────────
+export const recepcionSchema = z.object({
+  ordenCompraId: z.string().optional(),
+  notas: z.string().optional(),
+  items: z.array(z.object({
+    repuestoId: z.string().min(1),
+    cantidadRecibida: z.coerce.number().int().min(0),
+    cantidadRechazada: z.coerce.number().int().min(0).default(0),
+    ubicacionAsignada: z.string().optional(),
+    observaciones: z.string().optional(),
+  })).min(1, "Debe tener al menos 1 item"),
+});
+
+// ─── AJUSTE DE STOCK ────────────────────────────────────────────
+export const ajusteStockSchema = z.object({
+  repuestoId: z.string().min(1),
+  tipo: z.enum(["ENTRADA_AJUSTE", "SALIDA_AJUSTE", "SALIDA_ROTURA"]),
+  cantidad: z.coerce.number().int().min(1, "Mínimo 1"),
+  motivo: z.string().min(1, "Motivo es requerido"),
+});
+
+// ─── IMPORTACIÓN MASIVA ─────────────────────────────────────────
+export const importRepuestoSchema = z.object({
+  nombre: z.string().min(1, "Nombre es requerido"),
+  codigo: z.string().optional(),
+  categoria: z.string().optional(),
+  marca: z.string().optional(),
+  precioCompra: z.coerce.number().min(0).default(0),
+  precioVenta: z.coerce.number().min(0).default(0),
+  stock: z.coerce.number().int().min(0).default(0),
+  stockMinimo: z.coerce.number().int().min(0).default(2),
+  unidad: z.string().optional(),
+  ubicacion: z.string().optional(),
+});
 
 // ─── Contabilidad ────────────────────────────────────────────────────────────
 

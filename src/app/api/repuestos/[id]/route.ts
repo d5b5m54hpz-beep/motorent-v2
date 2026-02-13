@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { auth } from "@/lib/auth";
 import { repuestoSchema } from "@/lib/validations";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
-  if (error) return error;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
 
   const { id } = await params;
 
@@ -33,8 +35,10 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
-  if (error) return error;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
 
   const { id } = await params;
 
@@ -57,17 +61,38 @@ export async function PUT(
       );
     }
 
-    const { proveedorId, ...rest } = parsed.data;
+    const { proveedorId, stock, ...rest } = parsed.data;
+    const newStock = stock ?? existing.stock;
 
-    const repuesto = await prisma.repuesto.update({
-      where: { id },
-      data: {
-        ...rest,
-        proveedorId: proveedorId || null,
-      },
-      include: {
-        proveedor: { select: { id: true, nombre: true } },
-      },
+    const repuesto = await prisma.$transaction(async (tx) => {
+      const updated = await tx.repuesto.update({
+        where: { id },
+        data: {
+          ...rest,
+          stock: newStock,
+          proveedorId: proveedorId || null,
+        },
+        include: {
+          proveedor: { select: { id: true, nombre: true } },
+        },
+      });
+
+      if (newStock !== existing.stock) {
+        const diff = newStock - existing.stock;
+        await tx.movimientoStock.create({
+          data: {
+            repuestoId: id,
+            tipo: diff > 0 ? "ENTRADA_AJUSTE" : "SALIDA_AJUSTE",
+            cantidad: diff,
+            stockAnterior: existing.stock,
+            stockNuevo: newStock,
+            motivo: "Ajuste manual desde edición",
+            usuario: session.user.email || undefined,
+          },
+        });
+      }
+
+      return updated;
     });
 
     return NextResponse.json(repuesto);
@@ -84,8 +109,10 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN"]);
-  if (error) return error;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
 
   const { id } = await params;
 

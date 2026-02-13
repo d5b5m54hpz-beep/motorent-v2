@@ -272,6 +272,7 @@ model Proveedor {
   repuestos      Repuesto[]
   gastos         Gasto[]
   facturasCompra FacturaCompra[]
+  ordenesCompra  OrdenCompra[]
 }
 
 model Repuesto {
@@ -286,10 +287,32 @@ model Repuesto {
   stockMinimo  Int             @default(2)
   proveedorId  String?
   proveedor    Proveedor?      @relation(fields: [proveedorId], references: [id])
+  unidad       String?
+  vidaUtilKm   Int?
+
+  // ─── Campos nuevos V2 ─────────────────────────────────────────
+  descripcion      String?   // Descripción detallada / notas
+  marca            String?   // Marca del repuesto
+  modelo           String?   // Modelo compatible (ej: "Honda Wave 110")
+  imagenUrl        String?   // URL de foto del repuesto en R2
+  imagenKey        String?   // Key en R2 para poder eliminar
+  ubicacion        String?   // Ubicación en depósito: "E2-F3-P1" (Estante-Fila-Posición)
+  codigoBarras     String?   // Código de barras del fabricante
+  unidadCompra     String?   // "caja", "bolsa", "unidad"
+  factorConversion Float?    @default(1) // Cuántas unidades hay en 1 unidad de compra (ej: caja de 12 = 12)
+  peso             Float?    // Peso en gramos (para envíos/logística)
+  activo           Boolean   @default(true) // Para dar de baja sin eliminar
+
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   tareasPlan   TareaPlan[]
   repuestosOT  RepuestoOrdenTrabajo[]
+  repuestosTareaPlan RepuestoTareaPlan[]
+
+  // ─── Relaciones nuevas V2 ────────────────────────────────────
+  movimientos      MovimientoStock[]
+  itemsOrdenCompra ItemOrdenCompra[]
+  itemsRecepcion   ItemRecepcion[]
 }
 
 // ─── Finanzas ───────────────────────────────────────────────────────────────
@@ -970,7 +993,8 @@ model TareaPlan {
   repuestoSugerido   Repuesto? @relation(fields: [repuestoSugeridoId], references: [id])
   cantidadRepuesto   Float?    // Cantidad del repuesto (ej: 0.8 litros de aceite)
 
-  tareasOT        TareaOrdenTrabajo[]
+  tareasOT           TareaOrdenTrabajo[]
+  repuestosTareaPlan RepuestoTareaPlan[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1214,6 +1238,28 @@ model RepuestoOrdenTrabajo {
   @@unique([ordenTrabajoId, repuestoId])
 }
 
+// ─── REPUESTOS VINCULADOS A TAREAS DE PLAN ──────────────────────────────────────
+
+model RepuestoTareaPlan {
+  id              String   @id @default(cuid())
+  tareaPlanId     String
+  tareaPlan       TareaPlan @relation(fields: [tareaPlanId], references: [id], onDelete: Cascade)
+  repuestoId      String
+  repuesto        Repuesto @relation(fields: [repuestoId], references: [id])
+  cantidad        Float    @default(1) // Cantidad requerida del repuesto
+  tipoConsumo     TipoConsumoRepuesto @default(PLANIFICADO)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tareaPlanId, repuestoId])
+}
+
+enum TipoConsumoRepuesto {
+  PLANIFICADO   // Siempre se usa en este service
+  CONDICIONAL   // Se usa solo si se detecta desgaste
+  EXTRA         // Repuesto adicional no planificado
+}
+
 // ─── FOTOS DE INSPECCIÓN ──────────────────────────────────────
 
 model FotoInspeccion {
@@ -1379,4 +1425,126 @@ model NotificacionMantenimiento {
   error     String?
 
   createdAt DateTime @default(now())
+}
+
+// ==========================================
+// GESTIÓN DE INVENTARIO V2
+// ==========================================
+
+// ─── UBICACIONES EN DEPÓSITO ────────────────────────────────────
+
+model UbicacionDeposito {
+  id        String   @id @default(cuid())
+  codigo    String   @unique // "E2-F3-P1" (Estante 2, Fila 3, Posición 1)
+  estante   String   // "E2"
+  fila      String   // "F3"
+  posicion  String   // "P1"
+  nombre    String?  // "Estante Frenos", alias legible
+  notas     String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// ─── MOVIMIENTOS DE STOCK ───────────────────────────────────────
+
+model MovimientoStock {
+  id            String              @id @default(cuid())
+  repuestoId    String
+  repuesto      Repuesto            @relation(fields: [repuestoId], references: [id])
+  tipo          TipoMovimientoStock
+  cantidad      Int                 // Positivo = entrada, Negativo = salida
+  stockAnterior Int                 // Stock antes del movimiento
+  stockNuevo    Int                 // Stock después del movimiento
+  motivo        String?             // "Recepción OC-001", "Consumo OT-045", "Ajuste inventario", "Importación CSV"
+  referencia    String?             // ID de la OC, OT, o recepción que originó el movimiento
+  usuario       String?             // Email del usuario que hizo el movimiento
+  createdAt     DateTime            @default(now())
+
+  @@index([repuestoId])
+  @@index([createdAt])
+}
+
+enum TipoMovimientoStock {
+  ENTRADA_COMPRA       // Llegó mercadería de una OC
+  ENTRADA_AJUSTE       // Ajuste manual positivo (inventario)
+  ENTRADA_DEVOLUCION   // Devolvieron un repuesto de una OT
+  SALIDA_CONSUMO_OT    // Se usó en una Orden de Trabajo
+  SALIDA_AJUSTE        // Ajuste manual negativo (inventario)
+  SALIDA_ROTURA        // Se rompió o venció
+  IMPORTACION          // Carga masiva desde CSV/Excel
+}
+
+// ─── ORDENES DE COMPRA ──────────────────────────────────────────
+
+model OrdenCompra {
+  id                   String            @id @default(cuid())
+  visibleId            String            @unique @default(cuid())
+  numero               String            @unique // "OC-001" autogenerado
+  proveedorId          String
+  proveedor            Proveedor         @relation(fields: [proveedorId], references: [id])
+  estado               EstadoOrdenCompra @default(BORRADOR)
+  fechaEmision         DateTime          @default(now())
+  fechaEntregaEstimada DateTime?
+  subtotal             Float             @default(0)
+  iva                  Float             @default(0)
+  total                Float             @default(0)
+  notas                String?
+  creadoPor            String?           // Email del usuario
+  aprobadoPor          String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  items                ItemOrdenCompra[]
+  recepciones          RecepcionMercaderia[]
+}
+
+enum EstadoOrdenCompra {
+  BORRADOR       // Se está armando
+  PENDIENTE      // Enviada al proveedor, esperando
+  PARCIAL        // Recibida parcialmente
+  COMPLETADA     // Todo recibido
+  CANCELADA      // Cancelada
+}
+
+model ItemOrdenCompra {
+  id               String      @id @default(cuid())
+  ordenCompraId    String
+  ordenCompra      OrdenCompra @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
+  repuestoId       String
+  repuesto         Repuesto    @relation(fields: [repuestoId], references: [id])
+  cantidad         Int         // Cantidad pedida
+  cantidadRecibida Int         @default(0) // Cantidad ya recibida (se actualiza con recepciones)
+  precioUnitario   Float       @default(0)
+  subtotal         Float       @default(0) // cantidad × precioUnitario
+  createdAt        DateTime    @default(now())
+
+  @@unique([ordenCompraId, repuestoId])
+}
+
+// ─── RECEPCIÓN DE MERCADERÍA ────────────────────────────────────
+
+model RecepcionMercaderia {
+  id             String            @id @default(cuid())
+  visibleId      String            @unique @default(cuid())
+  ordenCompraId  String?           // Puede ser recepción sin OC (ingreso directo)
+  ordenCompra    OrdenCompra?      @relation(fields: [ordenCompraId], references: [id])
+  numero         String            @unique // "REC-001"
+  fechaRecepcion DateTime          @default(now())
+  recibidoPor    String?           // Email
+  notas          String?
+  createdAt      DateTime          @default(now())
+  items          ItemRecepcion[]
+}
+
+model ItemRecepcion {
+  id                String              @id @default(cuid())
+  recepcionId       String
+  recepcion         RecepcionMercaderia @relation(fields: [recepcionId], references: [id], onDelete: Cascade)
+  repuestoId        String
+  repuesto          Repuesto            @relation(fields: [repuestoId], references: [id])
+  cantidadEsperada  Int?                // Lo que decía la OC (null si es ingreso directo)
+  cantidadRecibida  Int                 // Lo que realmente llegó
+  cantidadRechazada Int                 @default(0) // Defectuosos / dañados
+  ubicacionAsignada String?             // "E2-F3-P1" — dónde se guardó
+  observaciones     String?
+  createdAt         DateTime            @default(now())
 }

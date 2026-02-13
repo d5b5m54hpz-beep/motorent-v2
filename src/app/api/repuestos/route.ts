@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { auth } from "@/lib/auth";
 import { repuestoSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
-  if (error) return error;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
 
   try {
     const url = new URL(req.url);
@@ -15,6 +17,10 @@ export async function GET(req: NextRequest) {
     const sortBy = url.searchParams.get("sortBy") ?? "nombre";
     const sortOrder = url.searchParams.get("sortOrder") === "desc" ? "desc" : "asc";
     const stockBajo = url.searchParams.get("stockBajo");
+    const categoria = url.searchParams.get("categoria");
+    const proveedorId = url.searchParams.get("proveedorId");
+    const activo = url.searchParams.get("activo");
+    const ubicacion = url.searchParams.get("ubicacion");
 
     const allowedSorts = ["nombre", "codigo", "stock", "precioCompra", "precioVenta", "createdAt"];
     const orderByColumn = allowedSorts.includes(sortBy) ? sortBy : "nombre";
@@ -26,6 +32,30 @@ export async function GET(req: NextRequest) {
         { nombre: { contains: search, mode: "insensitive" } },
         { codigo: { contains: search, mode: "insensitive" } },
         { categoria: { contains: search, mode: "insensitive" } },
+        { marca: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (categoria) {
+      where.categoria = categoria;
+    }
+
+    if (proveedorId) {
+      where.proveedorId = proveedorId;
+    }
+
+    if (activo !== null && activo !== undefined && activo !== "") {
+      where.activo = activo === "true";
+    }
+
+    if (ubicacion) {
+      where.ubicacion = { contains: ubicacion, mode: "insensitive" };
+    }
+
+    if (stockBajo === "true") {
+      where.OR = [
+        ...(Array.isArray(where.OR) ? where.OR : []),
+        { stock: { lte: prisma.repuesto.fields.stockMinimo } },
       ];
     }
 
@@ -49,7 +79,7 @@ export async function GET(req: NextRequest) {
         total: filtered.length,
         page,
         limit,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / limit),
       });
     }
 
@@ -73,8 +103,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
-  if (error) return error;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
 
   try {
     const body = await req.json();
@@ -87,16 +119,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { proveedorId, ...rest } = parsed.data;
+    const { proveedorId, stock, ...rest } = parsed.data;
+    const stockValue = stock ?? 0;
 
-    const repuesto = await prisma.repuesto.create({
-      data: {
-        ...rest,
-        proveedorId: proveedorId || null,
-      },
-      include: {
-        proveedor: { select: { id: true, nombre: true } },
-      },
+    const repuesto = await prisma.$transaction(async (tx) => {
+      const newRepuesto = await tx.repuesto.create({
+        data: {
+          ...rest,
+          stock: stockValue,
+          proveedorId: proveedorId || null,
+        },
+        include: {
+          proveedor: { select: { id: true, nombre: true } },
+        },
+      });
+
+      if (stockValue > 0) {
+        await tx.movimientoStock.create({
+          data: {
+            repuestoId: newRepuesto.id,
+            tipo: "IMPORTACION",
+            cantidad: stockValue,
+            stockAnterior: 0,
+            stockNuevo: stockValue,
+            motivo: "Stock inicial",
+            usuario: session.user.email || undefined,
+          },
+        });
+      }
+
+      return newRepuesto;
     });
 
     return NextResponse.json(repuesto, { status: 201 });
