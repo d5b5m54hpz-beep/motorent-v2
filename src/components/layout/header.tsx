@@ -48,11 +48,24 @@ export function Header({ user }: Props) {
   useEffect(() => {
     const fetchAlertasCount = async () => {
       try {
-        const res = await fetch("/api/alertas?leida=false&limit=1");
-        if (res.ok) {
-          const data = await res.json();
-          setAlertasCount(data.total || 0);
+        let totalAlertas = 0;
+
+        // Alertas generales
+        const resAlertas = await fetch("/api/alertas?leida=false&limit=1");
+        if (resAlertas.ok) {
+          const dataAlertas = await resAlertas.json();
+          totalAlertas += dataAlertas.total || 0;
         }
+
+        // Alertas de pricing (márgenes bajos, críticos, etc.)
+        const resPricing = await fetch("/api/pricing-repuestos/dashboard-margenes?periodo=30d");
+        if (resPricing.ok) {
+          const dataPricing = await resPricing.json();
+          const alertasPricing = dataPricing.alertas?.length || 0;
+          totalAlertas += alertasPricing;
+        }
+
+        setAlertasCount(totalAlertas);
       } catch (error) {
         console.error("Error fetching alertas count:", error);
       }

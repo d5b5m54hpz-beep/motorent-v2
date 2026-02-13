@@ -12,6 +12,7 @@ import { ReglasTab } from "@/components/pricing/reglas-tab";
 import { GruposTab } from "@/components/pricing/grupos-tab";
 import { CambiosBulkTab } from "@/components/pricing/cambios-bulk-tab";
 import { SimuladorPrecio } from "@/components/pricing/simulador-precio";
+import { HistorialTab } from "@/components/pricing/historial-tab";
 
 export default function PricingRepuestosPage() {
   const [activeTab, setActiveTab] = useState("resumen");
@@ -100,19 +101,7 @@ export default function PricingRepuestosPage() {
         </TabsContent>
 
         <TabsContent value="historial" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Historial de Costos</CardTitle>
-              <CardDescription>
-                Evolución de costos de repuestos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Sistema de historial implementado
-              </p>
-            </CardContent>
-          </Card>
+          <HistorialTab />
         </TabsContent>
       </Tabs>
     </div>

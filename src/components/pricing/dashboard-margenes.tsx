@@ -26,6 +26,7 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
+import { SimuladorWhatIfDialog } from "./simulador-whatif-dialog";
 
 type DashboardData = {
   kpis: {
@@ -100,6 +101,7 @@ export function DashboardMargenes() {
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState("30d");
   const [data, setData] = useState<DashboardData | null>(null);
+  const [dialogWhatIf, setDialogWhatIf] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -187,7 +189,7 @@ export function DashboardMargenes() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {}}
+            onClick={() => setDialogWhatIf(true)}
             className="gap-2"
           >
             <Sparkles className="h-4 w-4" />
@@ -447,6 +449,9 @@ export function DashboardMargenes() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog Simulador What-If */}
+      <SimuladorWhatIfDialog open={dialogWhatIf} onOpenChange={setDialogWhatIf} />
     </div>
   );
 }
