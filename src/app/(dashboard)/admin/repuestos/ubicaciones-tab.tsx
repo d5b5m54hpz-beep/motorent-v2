@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, MapPin, Package, QrCode } from "lucide-react";
+import { Plus, MapPin, Package, QrCode, CheckSquare, Square } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { CrearEstanteDialog } from "./crear-estante-dialog";
+import { printUbicacionesLabels } from "./print-ubicaciones";
 
 type UbicacionMapa = {
   estante: string;
@@ -20,6 +21,7 @@ type UbicacionMapa = {
   filas: Array<{
     fila: string;
     posiciones: Array<{
+      id: string;
       codigo: string;
       nombre: string | null;
       cantidadRepuestos: number;
@@ -32,6 +34,7 @@ export function UbicacionesTab() {
   const [mapa, setMapa] = useState<UbicacionMapa[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchMapa();
@@ -50,6 +53,56 @@ export function UbicacionesTab() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectEstante = (estante: UbicacionMapa) => {
+    const newSelected = new Set(selectedIds);
+    estante.filas.forEach((fila) => {
+      fila.posiciones.forEach((pos) => {
+        newSelected.add(pos.id);
+      });
+    });
+    setSelectedIds(newSelected);
+    toast.success(`${estante.estante}: Todas las ubicaciones seleccionadas`);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    toast.info("Selección limpiada");
+  };
+
+  const handlePrintSelected = () => {
+    if (selectedIds.size === 0) {
+      toast.error("Selecciona al menos una ubicación");
+      return;
+    }
+
+    // Flatten all positions and filter selected
+    const allUbicaciones = mapa.flatMap((estante) =>
+      estante.filas.flatMap((fila) =>
+        fila.posiciones.map((pos) => ({
+          id: pos.id,
+          codigo: pos.codigo,
+          nombre: pos.nombre,
+          estante: estante.estante,
+          fila: fila.fila,
+          posicion: pos.codigo.split("-")[2], // Extract P1, P2, etc
+        }))
+      )
+    );
+
+    const selected = allUbicaciones.filter((u) => selectedIds.has(u.id));
+    printUbicacionesLabels(selected);
   };
 
   if (isLoading) {
@@ -93,12 +146,28 @@ export function UbicacionesTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Ubicaciones de Depósito</h2>
-          <p className="text-muted-foreground">Mapa visual del depósito</p>
+          <p className="text-muted-foreground">
+            Mapa visual del depósito
+            {selectedIds.size > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {selectedIds.size} seleccionadas
+              </Badge>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.info("Imprimir etiquetas - Por implementar (usar Seleccionar estante + QR masivo)")}>
+          {selectedIds.size > 0 && (
+            <Button variant="outline" onClick={clearSelection}>
+              Limpiar selección
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={handlePrintSelected}
+            disabled={selectedIds.size === 0}
+          >
             <QrCode className="mr-2 h-4 w-4" />
-            Imprimir Etiquetas
+            Imprimir Etiquetas ({selectedIds.size})
           </Button>
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -110,15 +179,25 @@ export function UbicacionesTab() {
       {mapa.map((estante) => (
         <Card key={estante.estante}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Estante {estante.estante}
-              {estante.nombre && (
-                <span className="text-muted-foreground font-normal text-base">
-                  — {estante.nombre}
-                </span>
-              )}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Estante {estante.estante}
+                {estante.nombre && (
+                  <span className="text-muted-foreground font-normal text-base">
+                    — {estante.nombre}
+                  </span>
+                )}
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => selectEstante(estante)}
+              >
+                <CheckSquare className="mr-2 h-4 w-4" />
+                Seleccionar todo
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -131,27 +210,48 @@ export function UbicacionesTab() {
                     <div className="flex-1 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                       {fila.posiciones.map((pos) => {
                         const hasRepuestos = pos.cantidadRepuestos > 0;
+                        const isSelected = selectedIds.has(pos.id);
                         return (
-                          <Popover key={pos.codigo}>
-                            <PopoverTrigger asChild>
-                              <button
-                                className={`p-3 rounded-lg border text-center transition-colors ${
-                                  hasRepuestos
-                                    ? "bg-cyan-50 border-cyan-200 hover:bg-cyan-100"
-                                    : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                                }`}
-                              >
-                                <div className="text-xs font-mono font-medium mb-1">
-                                  {pos.codigo}
-                                </div>
-                                {hasRepuestos && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                    <Package className="h-2.5 w-2.5 mr-0.5" />
-                                    {pos.cantidadRepuestos}
-                                  </Badge>
-                                )}
-                              </button>
-                            </PopoverTrigger>
+                          <div key={pos.codigo} className="relative">
+                            {/* Checkbox overlay */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSelection(pos.id);
+                              }}
+                              className="absolute -top-1 -right-1 z-10 bg-white rounded-full shadow-sm border border-gray-300 p-0.5 hover:bg-gray-50"
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="h-4 w-4 text-cyan-600" />
+                              ) : (
+                                <Square className="h-4 w-4 text-gray-400" />
+                              )}
+                            </button>
+
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  className={`w-full p-3 rounded-lg border text-center transition-colors ${
+                                    isSelected
+                                      ? "ring-2 ring-cyan-500 ring-offset-2"
+                                      : ""
+                                  } ${
+                                    hasRepuestos
+                                      ? "bg-cyan-50 border-cyan-200 hover:bg-cyan-100"
+                                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                                  }`}
+                                >
+                                  <div className="text-xs font-mono font-medium mb-1">
+                                    {pos.codigo}
+                                  </div>
+                                  {hasRepuestos && (
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                      <Package className="h-2.5 w-2.5 mr-0.5" />
+                                      {pos.cantidadRepuestos}
+                                    </Badge>
+                                  )}
+                                </button>
+                              </PopoverTrigger>
                             {hasRepuestos && (
                               <PopoverContent className="w-64" align="start">
                                 <div className="space-y-2">
@@ -179,7 +279,8 @@ export function UbicacionesTab() {
                                 </div>
                               </PopoverContent>
                             )}
-                          </Popover>
+                            </Popover>
+                          </div>
                         );
                       })}
                     </div>

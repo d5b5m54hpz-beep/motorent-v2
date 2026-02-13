@@ -53,6 +53,7 @@ export function OrdenesCompraTab() {
   const [crearDialogOpen, setCrearDialogOpen] = useState(false);
   const [detalleSheetOpen, setDetalleSheetOpen] = useState(false);
   const [selectedOrdenId, setSelectedOrdenId] = useState<string | null>(null);
+  const [editarOrdenId, setEditarOrdenId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrdenes();
@@ -209,7 +210,12 @@ export function OrdenesCompraTab() {
 
                           {oc.estado === "BORRADOR" && (
                             <>
-                              <DropdownMenuItem onClick={() => toast.info("Editar - Por implementar")}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditarOrdenId(oc.id);
+                                  setCrearDialogOpen(true);
+                                }}
+                              >
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Editar
                               </DropdownMenuItem>
@@ -259,8 +265,12 @@ export function OrdenesCompraTab() {
 
       <CrearOCDialog
         open={crearDialogOpen}
-        onOpenChange={setCrearDialogOpen}
+        onOpenChange={(open) => {
+          setCrearDialogOpen(open);
+          if (!open) setEditarOrdenId(null);
+        }}
         onSuccess={fetchOrdenes}
+        ordenId={editarOrdenId}
       />
 
       <DetalleOCSheet

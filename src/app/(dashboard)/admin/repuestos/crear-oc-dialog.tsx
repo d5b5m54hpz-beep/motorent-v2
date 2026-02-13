@@ -46,9 +46,10 @@ type CrearOCDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  ordenId?: string | null;
 };
 
-export function CrearOCDialog({ open, onOpenChange, onSuccess }: CrearOCDialogProps) {
+export function CrearOCDialog({ open, onOpenChange, onSuccess, ordenId }: CrearOCDialogProps) {
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [proveedorId, setProveedorId] = useState("");
   const [fechaEntrega, setFechaEntrega] = useState("");
@@ -56,6 +57,7 @@ export function CrearOCDialog({ open, onOpenChange, onSuccess }: CrearOCDialogPr
   const [items, setItems] = useState<ItemOC[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sugeridos, setSugeridos] = useState<Repuesto[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Repuesto search
   const [searchOpen, setSearchOpen] = useState(false);
@@ -63,12 +65,18 @@ export function CrearOCDialog({ open, onOpenChange, onSuccess }: CrearOCDialogPr
   const [searchResults, setSearchResults] = useState<Repuesto[]>([]);
   const [searchingRepuestos, setSearchingRepuestos] = useState(false);
 
+  const isEditing = !!ordenId;
+
   useEffect(() => {
     if (open) {
       fetchProveedores();
-      resetForm();
+      if (isEditing) {
+        fetchOrdenCompra();
+      } else {
+        resetForm();
+      }
     }
-  }, [open]);
+  }, [open, ordenId]);
 
   useEffect(() => {
     if (proveedorId) {
@@ -96,6 +104,35 @@ export function CrearOCDialog({ open, onOpenChange, onSuccess }: CrearOCDialogPr
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al cargar proveedores");
+    }
+  };
+
+  const fetchOrdenCompra = async () => {
+    if (!ordenId) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/ordenes-compra/${ordenId}`);
+      if (!res.ok) throw new Error("Error fetching orden");
+      const oc = await res.json();
+
+      // Pre-fill form
+      setProveedorId(oc.proveedorId);
+      setFechaEntrega(oc.fechaEntregaEstimada ? oc.fechaEntregaEstimada.split("T")[0] : "");
+      setNotas(oc.notas || "");
+      setItems(
+        oc.items.map((i: any) => ({
+          repuestoId: i.repuestoId,
+          nombre: i.repuesto.nombre,
+          cantidad: i.cantidad,
+          precioUnitario: i.precioUnitario,
+        }))
+      );
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al cargar orden de compra");
+      onOpenChange(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -202,30 +239,50 @@ export function CrearOCDialog({ open, onOpenChange, onSuccess }: CrearOCDialogPr
         })),
       };
 
-      const res = await fetch("/api/ordenes-compra", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Error al crear OC");
-      }
-
-      const oc = await res.json();
-
-      // Si enviar=true, cambiar estado a PENDIENTE
-      if (enviar) {
-        const resEstado = await fetch(`/api/ordenes-compra/${oc.id}/estado`, {
+      let oc;
+      if (isEditing) {
+        // PUT para editar
+        const res = await fetch(`/api/ordenes-compra/${ordenId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ estado: "PENDIENTE" }),
+          body: JSON.stringify(body),
         });
-        if (!resEstado.ok) throw new Error("Error al enviar OC");
+
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || "Error al actualizar OC");
+        }
+
+        oc = await res.json();
+        toast.success("OC actualizada exitosamente");
+      } else {
+        // POST para crear
+        const res = await fetch("/api/ordenes-compra", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || "Error al crear OC");
+        }
+
+        oc = await res.json();
+
+        // Si enviar=true, cambiar estado a PENDIENTE
+        if (enviar) {
+          const resEstado = await fetch(`/api/ordenes-compra/${oc.id}/estado`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ estado: "PENDIENTE" }),
+          });
+          if (!resEstado.ok) throw new Error("Error al enviar OC");
+        }
+
+        toast.success(enviar ? "OC creada y enviada a proveedor" : "OC guardada como borrador");
       }
 
-      toast.success(enviar ? "OC creada y enviada a proveedor" : "OC guardada como borrador");
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -240,11 +297,18 @@ export function CrearOCDialog({ open, onOpenChange, onSuccess }: CrearOCDialogPr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nueva Orden de Compra</DialogTitle>
-          <DialogDescription>Complete los datos para generar la orden</DialogDescription>
+          <DialogTitle>{isEditing ? "Editar Orden de Compra" : "Nueva Orden de Compra"}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? "Modifica los datos de la orden (solo BORRADOR)" : "Complete los datos para generar la orden"}
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="space-y-4">
           {/* Proveedor y Fecha */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -448,27 +512,40 @@ export function CrearOCDialog({ open, onOpenChange, onSuccess }: CrearOCDialogPr
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleSubmit(false)}
-            disabled={isSubmitting || !proveedorId || items.length === 0}
-          >
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Guardar Borrador
-          </Button>
-          <Button
-            onClick={() => handleSubmit(true)}
-            disabled={isSubmitting || !proveedorId || items.length === 0}
-          >
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Enviar a Proveedor
-          </Button>
+          {isEditing ? (
+            <Button
+              onClick={() => handleSubmit(false)}
+              disabled={isSubmitting || !proveedorId || items.length === 0}
+            >
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar Cambios
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => handleSubmit(false)}
+                disabled={isSubmitting || !proveedorId || items.length === 0}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar Borrador
+              </Button>
+              <Button
+                onClick={() => handleSubmit(true)}
+                disabled={isSubmitting || !proveedorId || items.length === 0}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Enviar a Proveedor
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
