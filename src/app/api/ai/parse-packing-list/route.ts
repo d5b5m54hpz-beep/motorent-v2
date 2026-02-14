@@ -78,14 +78,29 @@ function parsePackingList(jsonData: any[][]): any[] {
   console.log("Headers normalizados:", headers);
 
   // 3. Detectar índices de columnas por keywords (multilingual)
-  const codigoIdx = findColumnIndex(headers, [
-    "part", "code", "sku", "codigo", "código", "item", "no.", "part number", "part no"
-  ]);
+  // Para código: priorizar "part number" sobre keywords genéricos
+  let codigoIdx = headers.findIndex((h) =>
+    h.includes("part number") || h.includes("part no") || h.includes("part#")
+  );
 
-  const descripcionIdx = findColumnIndex(headers, [
-    "description", "desc", "name", "nombre", "product", "descripcion", "descripción",
-    "designation", "produit", "article"
-  ]);
+  // Si no encuentra "part number", buscar otros patrones (pero NO "item no" solo)
+  if (codigoIdx === -1) {
+    codigoIdx = findColumnIndex(headers, [
+      "sku", "codigo", "código", "product code", "code"
+    ]);
+  }
+
+  // Para descripción: priorizar columnas en inglés/español, evitar caracteres chinos
+  let descripcionIdx = headers.findIndex((h) =>
+    (h.includes("description") || h.includes("descripcion") || h.includes("product name")) &&
+    !/[\u4e00-\u9fa5]/.test(h) // Evitar headers con caracteres chinos
+  );
+
+  if (descripcionIdx === -1) {
+    descripcionIdx = findColumnIndex(headers, [
+      "desc", "name", "nombre", "designation", "produit", "article"
+    ]);
+  }
 
   const cantidadIdx = findColumnIndex(headers, [
     "qty", "quantity", "cantidad", "pcs", "units", "qté", "quantité", "pieces"

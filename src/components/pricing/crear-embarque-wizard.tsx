@@ -218,16 +218,20 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
             );
           }
 
-          // Strategy 3: If still no match, try by name similarity (only if description is long enough)
-          if (!match && item.descripcion && item.descripcion.length > 5) {
-            const descLower = item.descripcion.toLowerCase();
-            const keywords = descLower.split(/\s+/).filter((w: string) => w.length > 3); // Get significant words
+          // Strategy 3: Exact name match (strict)
+          if (!match && item.descripcion) {
+            const descLower = item.descripcion.toLowerCase().trim();
+            match = repuestos.find((r) =>
+              r.nombre.toLowerCase().trim() === descLower
+            );
+          }
 
+          // Strategy 4: Name containment (only if one contains the other completely)
+          if (!match && item.descripcion && item.descripcion.length > 10) {
+            const descLower = item.descripcion.toLowerCase().trim();
             match = repuestos.find((r) => {
-              const nombreLower = r.nombre.toLowerCase();
-              // Check if at least 2 keywords match
-              const matchingKeywords = keywords.filter((kw: string) => nombreLower.includes(kw));
-              return matchingKeywords.length >= 2;
+              const nombreLower = r.nombre.toLowerCase().trim();
+              return descLower.includes(nombreLower) || nombreLower.includes(descLower);
             });
           }
 
