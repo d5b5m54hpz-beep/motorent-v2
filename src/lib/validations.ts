@@ -360,6 +360,7 @@ export type ProveedorInput = z.infer<typeof proveedorSchema>;
 export const repuestoSchema = z.object({
   nombre: z.string().min(1, "Nombre es requerido"),
   codigo: z.string().optional(),
+  codigoFabricante: z.string().optional(),
   categoria: z.string().optional(),
   descripcion: z.string().optional(),
   marca: z.string().optional(),
@@ -375,6 +376,8 @@ export const repuestoSchema = z.object({
   vidaUtilKm: z.coerce.number().int().min(0).optional(),
   ubicacion: z.string().optional(),
   codigoBarras: z.string().optional(),
+  pesoUnitarioKg: z.coerce.number().min(0).optional(),
+  volumenUnitarioCbm: z.coerce.number().min(0).optional(),
   activo: z.boolean().default(true).optional(),
 });
 

@@ -35,6 +35,7 @@ import {
 type Proveedor = {
   id: string;
   nombre: string;
+  codigoCorto?: string | null;
 };
 
 type Repuesto = {
@@ -181,21 +182,81 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
     }
   };
 
-  const handleConfirmParsedItems = () => {
-    const newItems = parsedItems.map((item) => ({
-      repuestoId: item.repuestoMatch?.id || "",
-      repuestoNombre: item.repuestoMatch?.nombre || `NUEVO: ${item.descripcion}`,
-      cantidad: item.cantidad,
-      precioFobUnitarioUsd: item.precioFobUnitarioUsd,
-      pesoTotalKg: item.pesoTotalKg || 0,
-      volumenTotalCbm: item.volumenTotalCbm || 0,
-      codigoFabricante: item.codigoFabricante,
-      isNew: item.isNew,
-    }));
+  const handleConfirmParsedItems = async () => {
+    try {
+      setUploadingPackingList(true);
 
-    setItems([...items, ...newItems]);
-    setParsedItems([]);
-    toast.success(`${newItems.length} items agregados al embarque`);
+      // 1. Obtener proveedor seleccionado para generar códigos
+      const proveedor = proveedores.find((p) => p.id === proveedorId);
+
+      // 2. Crear repuestos nuevos automáticamente
+      const newItems = await Promise.all(
+        parsedItems.map(async (item) => {
+          let repuestoId = item.repuestoMatch?.id;
+          let repuestoNombre = item.repuestoMatch?.nombre;
+
+          // Si es nuevo, crear el repuesto automáticamente
+          if (item.isNew) {
+            try {
+              // Generar código: {codigoCorto proveedor}-{codigoFabricante} o solo codigoFabricante
+              const codigo = proveedor?.codigoCorto
+                ? `${proveedor.codigoCorto}-${item.codigoFabricante}`
+                : item.codigoFabricante;
+
+              const res = await fetch("/api/repuestos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  nombre: item.descripcion,
+                  codigo,
+                  codigoFabricante: item.codigoFabricante,
+                  categoria: "Importación",
+                  proveedorId,
+                  activo: true,
+                  stock: 0,
+                  precioCompra: item.precioFobUnitarioUsd,
+                  precioVenta: item.precioFobUnitarioUsd * 2.0, // Markup default 2x
+                  pesoUnitarioKg: item.pesoTotalKg / item.cantidad,
+                  volumenUnitarioCbm: item.volumenTotalCbm / item.cantidad,
+                }),
+              });
+
+              if (res.ok) {
+                const newRepuesto = await res.json();
+                repuestoId = newRepuesto.id;
+                repuestoNombre = newRepuesto.nombre;
+                toast.success(`✅ Repuesto creado: ${codigo}`);
+              } else {
+                toast.error(`Error creando repuesto: ${item.codigoFabricante}`);
+              }
+            } catch (error) {
+              console.error("Error creating repuesto:", error);
+              toast.error(`Error creando: ${item.codigoFabricante}`);
+            }
+          }
+
+          return {
+            repuestoId: repuestoId || "",
+            repuestoNombre: repuestoNombre || item.descripcion,
+            cantidad: item.cantidad,
+            precioFobUnitarioUsd: item.precioFobUnitarioUsd,
+            pesoTotalKg: item.pesoTotalKg || 0,
+            volumenTotalCbm: item.volumenTotalCbm || 0,
+            codigoFabricante: item.codigoFabricante,
+            isNew: false, // Ya no es nuevo si se creó
+          };
+        })
+      );
+
+      setItems([...items, ...newItems]);
+      setParsedItems([]);
+      toast.success(`${newItems.length} items agregados al embarque`);
+    } catch (error) {
+      toast.error("Error al procesar items");
+      console.error(error);
+    } finally {
+      setUploadingPackingList(false);
+    }
   };
 
   const handleAddItem = () => {
