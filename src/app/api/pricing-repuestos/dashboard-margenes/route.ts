@@ -313,6 +313,31 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // ⭐ GAP 6: Alerta de cambio de tipo de cambio
+    // Obtener último TC registrado en el sistema
+    const ultimoEmbarque = await prisma.embarqueImportacion.findFirst({
+      where: { tipoCambioArsUsd: { not: null } },
+      orderBy: { fechaDespacho: 'desc' },
+      select: { tipoCambioArsUsd: true, fechaDespacho: true },
+    });
+
+    if (ultimoEmbarque?.tipoCambioArsUsd) {
+      // TC actual (en producción vendría de API externa, aquí asumimos 1200 ARS/USD)
+      const tcActual = 1200; // TODO: Obtener de API externa (dolarapi.com, etc.)
+      const tcAnterior = ultimoEmbarque.tipoCambioArsUsd;
+      const variacionTC = ((tcActual - tcAnterior) / tcAnterior) * 100;
+      const umbralAlerta = 10; // 10% de variación
+
+      if (Math.abs(variacionTC) >= umbralAlerta) {
+        alertas.push({
+          tipo: "TIPO_CAMBIO",
+          severidad: variacionTC > 20 ? "ALTA" : "MEDIA",
+          mensaje: `Tipo de cambio varió ${variacionTC > 0 ? '+' : ''}${variacionTC.toFixed(1)}% desde último embarque (${tcAnterior.toFixed(2)} → ${tcActual.toFixed(2)} ARS/USD)`,
+          accion: `Considerar ajuste de precios ${variacionTC > 0 ? 'al alza' : 'a la baja'} para mantener márgenes`,
+        });
+      }
+    }
+
     // Ordenar por severidad
     const severidadOrder = { ALTA: 0, MEDIA: 1, BAJA: 2 };
     alertas.sort((a, b) => severidadOrder[a.severidad as keyof typeof severidadOrder] - severidadOrder[b.severidad as keyof typeof severidadOrder]);

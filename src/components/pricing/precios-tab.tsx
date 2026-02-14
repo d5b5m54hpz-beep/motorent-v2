@@ -21,6 +21,7 @@ type Repuesto = {
   categoria: string | null;
   costoPromedioArs: number;
   precioVenta: number;
+  imagenUrl?: string | null; // ⭐ GAP 2
 };
 
 type PrecioResuelto = {
@@ -144,6 +145,7 @@ export function PreciosTab() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[60px]">Foto</TableHead>
                     <TableHead className="min-w-[200px]">Repuesto</TableHead>
                     <TableHead className="text-right">Costo Prom.</TableHead>
                     <TableHead className="text-right">B2C Retail</TableHead>
@@ -164,6 +166,19 @@ export function PreciosTab() {
 
                     return (
                       <TableRow key={rep.id}>
+                        <TableCell className="p-2">
+                          {rep.imagenUrl ? (
+                            <img
+                              src={rep.imagenUrl}
+                              alt={rep.nombre}
+                              className="w-10 h-10 object-cover rounded border"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">
+                              N/A
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div>
                             <div>{rep.nombre}</div>

@@ -1253,8 +1253,17 @@ model RepuestoOrdenTrabajo {
 
   cantidadPlanificada Float  // Lo que se esperaba usar
   cantidadUsada       Float  @default(0) // Lo que realmente se usó
+
+  // Costos (para la empresa)
   costoUnitario       Float  @default(0)
   costoTotal          Float  @default(0) // cantidadUsada * costoUnitario
+
+  // Precios (lo que se cobra al rider/cliente)
+  precioUnitario      Float  @default(0) // Resuelto por motor de pricing
+  precioTotal         Float  @default(0) // cantidadUsada * precioUnitario
+  listaId             String? // Lista de precios usada (B2C, Rider, etc.)
+  descuentoAplicadoPct Float @default(0) // % de descuento aplicado
+  margenUnitario      Float  @default(0) // (precioUnitario - costoUnitario) / precioUnitario
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1515,6 +1524,11 @@ model OrdenCompra {
   notas                String?
   creadoPor            String?           // Email del usuario
   aprobadoPor          String?
+
+  // ⭐ GAP 1: Vinculación opcional con embarque de importación
+  embarqueId           String?
+  embarque             EmbarqueImportacion? @relation(fields: [embarqueId], references: [id])
+
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
   items                ItemOrdenCompra[]
@@ -1657,6 +1671,7 @@ model EmbarqueImportacion {
   items                ItemEmbarque[]
   despachos            DespachoAduanero[]
   asignaciones         AsignacionCostoImportacion[]
+  ordenesCompra        OrdenCompra[]  // ⭐ GAP 1: OCs vinculadas a este embarque
 }
 
 enum EstadoEmbarque {
@@ -1810,6 +1825,10 @@ model ListaPrecio {
 
   // Descuento global de la lista (% sobre precio retail)
   descuentoGlobalPct Float?        // Ej: 0.15 = 15% off retail
+
+  // Auto-cálculo basado en costo (GAP 3)
+  autoCalcular    Boolean          @default(false) // Si true, calcula precio automáticamente
+  formulaMarkup   Float?           // Factor multiplicador sobre costo. Ej: 1.05 = costo + 5%
 
   // Vigencia opcional
   vigenciaDesde   DateTime?

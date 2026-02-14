@@ -276,28 +276,36 @@ export async function POST(req: NextRequest) {
     let precioBase: number;
     let metodoCalculo = "Calculado con markup";
 
-    const itemLista = await prisma.itemListaPrecio.findFirst({
-      where: {
-        listaPrecioId: listaPrecio.id,
-        repuestoId,
-        cantidadMinima: { lte: cantidad },
-        vigenciaDesde: { lte: new Date() },
-        OR: [
-          { vigenciaHasta: null },
-          { vigenciaHasta: { gt: new Date() } },
-        ],
-      },
-      orderBy: [{ cantidadMinima: "desc" }, { vigenciaDesde: "desc" }],
-    });
-
-    if (itemLista) {
-      precioBase = itemLista.precioArs;
-      metodoCalculo = itemLista.metodoCalculo || "Precio de lista";
+    // ⭐ GAP 3: Auto-cálculo para listas con autoCalcular=true (ej: Uso Interno)
+    if (listaPrecio.autoCalcular && listaPrecio.formulaMarkup) {
+      const costo = repuesto.costoPromedioArs || repuesto.precioCompra || 0;
+      precioBase = costo * listaPrecio.formulaMarkup;
+      metodoCalculo = `Auto-calculado (costo × ${listaPrecio.formulaMarkup})`;
     } else {
-      // Calcular con markup
-      const resultado = await calcularPrecioConMarkup(repuesto, listaPrecio);
-      precioBase = resultado.precio;
-      metodoCalculo = resultado.reglaAplicada;
+      // Buscar precio manual en itemLista o calcular con markup
+      const itemLista = await prisma.itemListaPrecio.findFirst({
+        where: {
+          listaPrecioId: listaPrecio.id,
+          repuestoId,
+          cantidadMinima: { lte: cantidad },
+          vigenciaDesde: { lte: new Date() },
+          OR: [
+            { vigenciaHasta: null },
+            { vigenciaHasta: { gt: new Date() } },
+          ],
+        },
+        orderBy: [{ cantidadMinima: "desc" }, { vigenciaDesde: "desc" }],
+      });
+
+      if (itemLista) {
+        precioBase = itemLista.precioArs;
+        metodoCalculo = itemLista.metodoCalculo || "Precio de lista";
+      } else {
+        // Calcular con markup
+        const resultado = await calcularPrecioConMarkup(repuesto, listaPrecio);
+        precioBase = resultado.precio;
+        metodoCalculo = resultado.reglaAplicada;
+      }
     }
 
     // Precio retail para comparación (siempre B2C)

@@ -37,7 +37,9 @@ async function seedPricing() {
       codigo: "INTERNO",
       tipo: "INTERNO" as const,
       prioridad: 20,
-      descripcion: "Para uso interno en mantenimiento de flota propia. Precio = costo + 5%",
+      autoCalcular: true,
+      formulaMarkup: 1.05,
+      descripcion: "Para uso interno en mantenimiento de flota propia. Precio = costo + 5% (auto-calculado)",
     },
   ];
 
