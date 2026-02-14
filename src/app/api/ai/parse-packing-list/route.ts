@@ -107,14 +107,23 @@ function parsePackingList(jsonData: any[][]): { items: any[], proveedorDetectado
 
   // 3. Detectar índices de columnas por keywords (multilingual)
   // Para código: priorizar "part number" sobre keywords genéricos
-  let codigoIdx = headers.findIndex((h) =>
-    h.includes("part number") || h.includes("part no") || h.includes("part#")
-  );
+  // IMPORTANTE: NO detectar "Item No." o "No." que son números secuenciales, NO códigos de parte
+  let codigoIdx = headers.findIndex((h) => {
+    // Debe contener "part" y alguna variación de número/código
+    if (h.includes("part number") || h.includes("part no") || h.includes("part#") || h.includes("partnumber")) {
+      return true;
+    }
+    // Rechazar explícitamente columnas que son solo "item no" o "no." (números secuenciales)
+    if (h === "item no" || h === "item no." || h === "no" || h === "no." || h === "item" || h === "#") {
+      return false;
+    }
+    return false;
+  });
 
-  // Si no encuentra "part number", buscar otros patrones (pero NO "item no" solo)
+  // Si no encuentra "part number", buscar otros patrones específicos
   if (codigoIdx === -1) {
     codigoIdx = findColumnIndex(headers, [
-      "sku", "codigo", "código", "product code", "code"
+      "sku", "codigo", "código", "product code", "model code", "reference"
     ]);
   }
 
@@ -161,16 +170,34 @@ function parsePackingList(jsonData: any[][]): { items: any[], proveedorDetectado
 
   // 4. Validar que se encontraron las columnas críticas
   if (codigoIdx === -1) {
-    throw new Error("No se detectó columna de código/part number. Headers: " + headers.join(", "));
+    throw new Error(
+      `❌ No se detectó columna de código de parte.\n\n` +
+      `Busqué: "Part Number", "Part No", "Part#", "SKU", "Product Code"\n` +
+      `Encontré estas columnas: ${headers.join(", ")}\n\n` +
+      `⚠️ IMPORTANTE: Si tu Excel tiene "Item No." o "No.", esas son números secuenciales, NO códigos de parte.\n` +
+      `Necesitas una columna con códigos como "BRK-110-F", "ELC-BAT-5", etc.`
+    );
   }
   if (descripcionIdx === -1) {
-    throw new Error("No se detectó columna de descripción. Headers: " + headers.join(", "));
+    throw new Error(
+      `No se detectó columna de descripción.\n` +
+      `Busqué: "Description", "Descripción", "Product Name"\n` +
+      `Encontré: ${headers.join(", ")}`
+    );
   }
   if (cantidadIdx === -1) {
-    throw new Error("No se detectó columna de cantidad. Headers: " + headers.join(", "));
+    throw new Error(
+      `No se detectó columna de cantidad.\n` +
+      `Busqué: "Qty", "Quantity", "Cantidad", "Pcs"\n` +
+      `Encontré: ${headers.join(", ")}`
+    );
   }
   if (precioIdx === -1) {
-    throw new Error("No se detectó columna de precio. Headers: " + headers.join(", "));
+    throw new Error(
+      `No se detectó columna de precio unitario.\n` +
+      `Busqué: "Price", "FOB", "Unit Price", "Cost"\n` +
+      `Encontré: ${headers.join(", ")}`
+    );
   }
 
   // 5. Procesar filas de datos (empezar después del header)
@@ -223,6 +250,23 @@ function parsePackingList(jsonData: any[][]): { items: any[], proveedorDetectado
   }
 
   console.log(`✅ Parsing exitoso: ${items.length} items válidos encontrados`);
+
+  // 6. Validar calidad de datos: detectar si los códigos son solo números (señal de error)
+  const codigosNumericos = items.filter(item => /^\d+$/.test(item.codigoFabricante));
+  if (codigosNumericos.length > items.length * 0.5) {
+    console.warn(`⚠️ ADVERTENCIA: ${codigosNumericos.length}/${items.length} códigos son solo números.`);
+    console.warn(`Primeros 5: ${codigosNumericos.slice(0, 5).map(i => i.codigoFabricante).join(", ")}`);
+    console.warn(`Esto puede indicar que se detectó "Item No." en lugar de "Part Number"`);
+
+    throw new Error(
+      `⚠️ ADVERTENCIA: Detecté ${codigosNumericos.length} códigos que son solo números (${codigosNumericos.slice(0, 5).map(i => i.codigoFabricante).join(", ")}).\n\n` +
+      `Esto sugiere que el parser detectó la columna "Item No." en lugar de "Part Number".\n\n` +
+      `✅ SOLUCIÓN:\n` +
+      `1. Verifica que tu Excel tenga una columna "Part Number" con códigos como "BRK-110-F", "ELC-BAT-5"\n` +
+      `2. Si solo tienes "Item No." (números 1, 2, 3...), necesitas agregar una columna con códigos reales\n` +
+      `3. Renombra la columna de códigos a "Part Number" para asegurar detección correcta`
+    );
+  }
 
   return { items, proveedorDetectado };
 }
