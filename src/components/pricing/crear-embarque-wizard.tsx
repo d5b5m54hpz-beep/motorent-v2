@@ -43,6 +43,7 @@ type Repuesto = {
   nombre: string;
   categoria: string | null;
   codigo: string | null;
+  codigoFabricante: string | null;
 };
 
 type ItemEmbarque = {
@@ -197,12 +198,38 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
 
       const parsedWithMatches = await Promise.all(
         data.items.map(async (item: any) => {
-          // Try to match by codigoFabricante
-          const match = repuestos.find(
-            (r) =>
-              r.codigo?.toLowerCase() === item.codigoFabricante?.toLowerCase() ||
-              (item.codigoFabricante && r.codigo?.includes(item.codigoFabricante))
-          );
+          let match = null;
+
+          // Strategy 1: Match by exact code (codigoFabricante)
+          if (item.codigoFabricante) {
+            match = repuestos.find(
+              (r) =>
+                r.codigo?.toLowerCase() === item.codigoFabricante.toLowerCase() ||
+                r.codigoFabricante?.toLowerCase() === item.codigoFabricante.toLowerCase()
+            );
+          }
+
+          // Strategy 2: If no match by code, try partial code match
+          if (!match && item.codigoFabricante) {
+            match = repuestos.find(
+              (r) =>
+                (r.codigo && r.codigo.toLowerCase().includes(item.codigoFabricante.toLowerCase())) ||
+                (r.codigoFabricante && r.codigoFabricante.toLowerCase().includes(item.codigoFabricante.toLowerCase()))
+            );
+          }
+
+          // Strategy 3: If still no match, try by name similarity (only if description is long enough)
+          if (!match && item.descripcion && item.descripcion.length > 5) {
+            const descLower = item.descripcion.toLowerCase();
+            const keywords = descLower.split(/\s+/).filter((w: string) => w.length > 3); // Get significant words
+
+            match = repuestos.find((r) => {
+              const nombreLower = r.nombre.toLowerCase();
+              // Check if at least 2 keywords match
+              const matchingKeywords = keywords.filter((kw: string) => nombreLower.includes(kw));
+              return matchingKeywords.length >= 2;
+            });
+          }
 
           return {
             ...item,

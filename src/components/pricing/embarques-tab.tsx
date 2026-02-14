@@ -253,7 +253,7 @@ export function EmbarquesTab() {
                 {filteredEmbarques.map((embarque) => (
                   <TableRow key={embarque.id}>
                     <TableCell className="font-medium">{embarque.referencia}</TableCell>
-                    <TableCell>{embarque.proveedor.nombre}</TableCell>
+                    <TableCell>{embarque.proveedor?.nombre || "Sin proveedor"}</TableCell>
                     <TableCell>
                       <Badge className={ESTADO_COLORS[embarque.estado]}>
                         {ESTADO_LABELS[embarque.estado]}
