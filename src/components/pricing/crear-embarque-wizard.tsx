@@ -465,9 +465,9 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
                     s === step
-                      ? "bg-primary text-white"
+                      ? "bg-cyan-500 text-white"
                       : s < step
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-cyan-100 text-cyan-600"
                       : "bg-gray-200 text-gray-500"
                   }`}
                 >
@@ -517,7 +517,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
             </div>
 
             {showProveedorForm && (
-              <div className="border rounded-lg p-4 space-y-3 bg-primary/5">
+              <div className="border rounded-lg p-4 space-y-3 bg-cyan-50">
                 <h4 className="font-medium text-sm">Crear Proveedor Rápido</h4>
                 <div>
                   <Label>Nombre *</Label>
@@ -562,8 +562,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   onClick={() => setMetodoFlete("MARITIMO_FCL")}
                   className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
                     metodoFlete === "MARITIMO_FCL"
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-200 hover:border-primary/50"
+                      ? "border-cyan-500 bg-cyan-50"
+                      : "border-gray-200 hover:border-cyan-300"
                   }`}
                 >
                   <Ship className="h-5 w-5" />
@@ -575,8 +575,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   onClick={() => setMetodoFlete("MARITIMO_LCL")}
                   className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
                     metodoFlete === "MARITIMO_LCL"
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-200 hover:border-primary/50"
+                      ? "border-cyan-500 bg-cyan-50"
+                      : "border-gray-200 hover:border-cyan-300"
                   }`}
                 >
                   <Package className="h-5 w-5" />
@@ -588,8 +588,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   onClick={() => setMetodoFlete("AEREO")}
                   className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
                     metodoFlete === "AEREO"
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-200 hover:border-primary/50"
+                      ? "border-cyan-500 bg-cyan-50"
+                      : "border-gray-200 hover:border-cyan-300"
                   }`}
                 >
                   <span className="text-lg">✈️</span>
@@ -665,7 +665,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
         {step === 2 && (
           <div className="space-y-4">
             {/* Opción A: Subir Packing List */}
-            <div className="border rounded-lg p-4 space-y-3 bg-primary/5">
+            <div className="border rounded-lg p-4 space-y-3 bg-cyan-50">
               <h4 className="font-medium flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 📂 Opción A: Subir Packing List (Recomendado)
@@ -681,7 +681,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
               />
               {uploadingPackingList && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                  <div className="animate-spin h-4 w-4 border-2 border-cyan-500 border-t-transparent rounded-full" />
                   {parseStatus}
                 </div>
               )}

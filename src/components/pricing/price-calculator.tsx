@@ -147,7 +147,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
               {/* Descuentos */}
               {pricing.descuentoTotal > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-primary">
+                  <div className="flex items-center gap-2 text-sm text-cyan-600">
                     <TrendingDown className="h-4 w-4" />
                     <span className="font-medium">Descuentos aplicados:</span>
                   </div>
@@ -157,7 +157,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
                       <span className="text-muted-foreground">
                         Por {pricing.meses} meses:
                       </span>
-                      <span className="text-primary">
+                      <span className="text-cyan-600">
                         -{pricing.descuentoDuracion}%
                       </span>
                     </div>
@@ -166,7 +166,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
                   {pricing.descuentoFrecuencia > 0 && (
                     <div className="flex justify-between text-sm pl-6">
                       <span className="text-muted-foreground">Por frecuencia {frecuencia}:</span>
-                      <span className="text-primary">
+                      <span className="text-cyan-600">
                         -{pricing.descuentoFrecuencia}%
                       </span>
                     </div>
@@ -200,7 +200,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
               {/* Total */}
               <div className="flex justify-between items-center">
                 <span className="text-base font-semibold">TOTAL:</span>
-                <span className="text-2xl font-bold text-primary">
+                <span className="text-2xl font-bold text-cyan-600">
                   {formatCurrency(pricing.montoTotal)}
                 </span>
               </div>
