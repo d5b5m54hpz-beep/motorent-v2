@@ -499,6 +499,17 @@ export function EmbarquesTab() {
                               >
                                 Marcar En Tránsito
                               </DropdownMenuItem>
+                            </>
+                          )}
+                          {embarque.estado === "EN_TRANSITO" && (
+                            <DropdownMenuItem
+                              onClick={() => handleChangeEstado(embarque.id, "EN_ADUANA")}
+                            >
+                              Marcar En Aduana
+                            </DropdownMenuItem>
+                          )}
+                          {(embarque.estado === "BORRADOR" || embarque.estado === "EN_TRANSITO") && (
+                            <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleEliminar(embarque)}
@@ -508,13 +519,6 @@ export function EmbarquesTab() {
                                 Eliminar
                               </DropdownMenuItem>
                             </>
-                          )}
-                          {embarque.estado === "EN_TRANSITO" && (
-                            <DropdownMenuItem
-                              onClick={() => handleChangeEstado(embarque.id, "EN_ADUANA")}
-                            >
-                              Marcar En Aduana
-                            </DropdownMenuItem>
                           )}
                           {embarque.estado === "EN_ADUANA" && (
                             <>

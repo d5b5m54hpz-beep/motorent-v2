@@ -143,9 +143,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Embarque no encontrado" }, { status: 404 });
     }
 
-    if (embarque.estado !== "BORRADOR") {
+    if (embarque.estado !== "BORRADOR" && embarque.estado !== "EN_TRANSITO") {
       return NextResponse.json(
-        { error: "Solo se pueden eliminar embarques en BORRADOR" },
+        { error: "Solo se pueden eliminar embarques en BORRADOR o EN_TRANSITO" },
         { status: 400 }
       );
     }
