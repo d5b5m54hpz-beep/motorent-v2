@@ -88,6 +88,10 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
   const [uploadingPackingList, setUploadingPackingList] = useState(false);
   const [parsedItems, setParsedItems] = useState<any[]>([]);
   const [showManualAdd, setShowManualAdd] = useState(false);
+  const [parseMethod, setParseMethod] = useState<"ai" | "manual" | null>(null);
+  const [parseStatus, setParseStatus] = useState<string>("");
+  const [showProveedorForm, setShowProveedorForm] = useState(false);
+  const [nuevoProveedor, setNuevoProveedor] = useState({ nombre: "", codigoCorto: "" });
 
   // Step 3: Costos
   const [fleteUsd, setFleteUsd] = useState(0);
@@ -134,16 +138,49 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
     }
   };
 
+  const handleCrearProveedor = async () => {
+    if (!nuevoProveedor.nombre.trim()) {
+      toast.error("Ingresa el nombre del proveedor");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/proveedores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: nuevoProveedor.nombre,
+          codigoCorto: nuevoProveedor.codigoCorto || null,
+          activo: true,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Error al crear proveedor");
+
+      const newProveedor = await res.json();
+      setProveedores([...proveedores, newProveedor]);
+      setProveedorId(newProveedor.id);
+      setShowProveedorForm(false);
+      setNuevoProveedor({ nombre: "", codigoCorto: "" });
+      toast.success("Proveedor creado exitosamente");
+    } catch (error) {
+      toast.error("Error al crear proveedor");
+      console.error(error);
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setUploadingPackingList(true);
+      setParseStatus("Subiendo archivo...");
 
       const formData = new FormData();
       formData.append("file", file);
 
+      setParseStatus("Procesando con IA...");
       const res = await fetch("/api/ai/parse-packing-list", {
         method: "POST",
         body: formData,
@@ -155,6 +192,9 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
       }
 
       const data = await res.json();
+      setParseMethod(data.method || "ai");
+      setParseStatus(data.method === "ai" ? "✅ Procesado con IA" : "✅ Procesado con parser manual");
+
       const parsedWithMatches = await Promise.all(
         data.items.map(async (item: any) => {
           // Try to match by codigoFabricante
@@ -173,8 +213,11 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
       );
 
       setParsedItems(parsedWithMatches);
-      toast.success(`${data.items.length} items procesados con IA`);
+      toast.success(
+        `${data.items.length} items procesados ${data.method === "ai" ? "con IA" : "con detección manual"}`
+      );
     } catch (error: any) {
+      setParseStatus("❌ Error al procesar");
       toast.error(error.message || "Error al procesar archivo");
       console.error(error);
     } finally {
@@ -288,12 +331,17 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
 
   const handleNext = async () => {
     if (step === 1) {
-      if (!proveedorId) {
-        toast.error("Selecciona un proveedor");
-        return;
-      }
+      // Proveedor is now optional
       setStep(2);
     } else if (step === 2) {
+      if (uploadingPackingList) {
+        toast.error("Espera a que termine el procesamiento");
+        return;
+      }
+      if (parsedItems.length > 0) {
+        toast.error("Confirma los items parseados primero");
+        return;
+      }
       if (items.length === 0) {
         toast.error("Agrega al menos un item");
         return;
@@ -395,19 +443,41 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
     setCostosCalculados(null);
     setParsedItems([]);
     setShowManualAdd(false);
+    setParseMethod(null);
+    setParseStatus("");
+    setShowProveedorForm(false);
+    setNuevoProveedor({ nombre: "", codigoCorto: "" });
   };
 
   const totalFob = items.reduce((sum, item) => sum + item.cantidad * item.precioFobUnitarioUsd, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Ship className="h-5 w-5" />
-            Nuevo Embarque de Importación - Paso {step} de 4
+            Nuevo Embarque de Importación
           </DialogTitle>
-          <DialogDescription>
+          <div className="flex items-center gap-2 mt-2">
+            {[1, 2, 3, 4].map((s) => (
+              <div key={s} className="flex items-center gap-2">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                    s === step
+                      ? "bg-teal-500 text-white"
+                      : s < step
+                      ? "bg-teal-100 text-teal-700"
+                      : "bg-gray-200 text-gray-500"
+                  }`}
+                >
+                  {s}
+                </div>
+                {s < 4 && <div className="w-8 h-0.5 bg-gray-200" />}
+              </div>
+            ))}
+          </div>
+          <DialogDescription className="mt-2">
             {step === 1 && "Información general del embarque"}
             {step === 2 && "Agrega los repuestos a importar"}
             {step === 3 && "Costos de flete y seguro"}
@@ -419,12 +489,13 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
         {step === 1 && (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="proveedor">Proveedor *</Label>
+              <Label htmlFor="proveedor">Proveedor (opcional)</Label>
               <Select value={proveedorId} onValueChange={setProveedorId}>
                 <SelectTrigger id="proveedor">
-                  <SelectValue placeholder="Selecciona un proveedor" />
+                  <SelectValue placeholder="Sin proveedor" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">Sin proveedor</SelectItem>
                   {proveedores.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.nombre}
@@ -432,20 +503,100 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   ))}
                 </SelectContent>
               </Select>
+              {!showProveedorForm && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="mt-1 px-0"
+                  onClick={() => setShowProveedorForm(true)}
+                >
+                  + Crear nuevo proveedor
+                </Button>
+              )}
             </div>
 
+            {showProveedorForm && (
+              <div className="border rounded-lg p-4 space-y-3 bg-teal-50/50">
+                <h4 className="font-medium text-sm">Crear Proveedor Rápido</h4>
+                <div>
+                  <Label>Nombre *</Label>
+                  <Input
+                    value={nuevoProveedor.nombre}
+                    onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, nombre: e.target.value })}
+                    placeholder="China Parts Co."
+                  />
+                </div>
+                <div>
+                  <Label>Código Corto (para SKUs)</Label>
+                  <Input
+                    value={nuevoProveedor.codigoCorto}
+                    onChange={(e) =>
+                      setNuevoProveedor({ ...nuevoProveedor, codigoCorto: e.target.value })
+                    }
+                    placeholder="CH01"
+                    maxLength={10}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" onClick={handleCrearProveedor} size="sm">
+                    Crear y Usar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowProveedorForm(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div>
-              <Label htmlFor="metodoFlete">Método de Flete</Label>
-              <Select value={metodoFlete} onValueChange={setMetodoFlete}>
-                <SelectTrigger id="metodoFlete">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MARITIMO_FCL">Marítimo FCL (contenedor completo)</SelectItem>
-                  <SelectItem value="MARITIMO_LCL">Marítimo LCL (carga consolidada)</SelectItem>
-                  <SelectItem value="AEREO">Aéreo</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Método de Flete</Label>
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setMetodoFlete("MARITIMO_FCL")}
+                  className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
+                    metodoFlete === "MARITIMO_FCL"
+                      ? "border-teal-500 bg-teal-50"
+                      : "border-gray-200 hover:border-teal-300"
+                  }`}
+                >
+                  <Ship className="h-5 w-5" />
+                  <span className="text-xs font-medium">Marítimo FCL</span>
+                  <span className="text-xs text-muted-foreground">Contenedor completo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMetodoFlete("MARITIMO_LCL")}
+                  className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
+                    metodoFlete === "MARITIMO_LCL"
+                      ? "border-teal-500 bg-teal-50"
+                      : "border-gray-200 hover:border-teal-300"
+                  }`}
+                >
+                  <Package className="h-5 w-5" />
+                  <span className="text-xs font-medium">Marítimo LCL</span>
+                  <span className="text-xs text-muted-foreground">Carga consolidada</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMetodoFlete("AEREO")}
+                  className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
+                    metodoFlete === "AEREO"
+                      ? "border-teal-500 bg-teal-50"
+                      : "border-gray-200 hover:border-teal-300"
+                  }`}
+                >
+                  <span className="text-lg">✈️</span>
+                  <span className="text-xs font-medium">Aéreo</span>
+                  <span className="text-xs text-muted-foreground">Envío rápido</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -469,31 +620,33 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="contenedor">Número de Contenedor</Label>
-                <Input
-                  id="contenedor"
-                  value={numeroContenedor}
-                  onChange={(e) => setNumeroContenedor(e.target.value)}
-                  placeholder="ABCD1234567"
-                />
+            {(metodoFlete === "MARITIMO_FCL" || metodoFlete === "MARITIMO_LCL") && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="contenedor">Número de Contenedor</Label>
+                  <Input
+                    id="contenedor"
+                    value={numeroContenedor}
+                    onChange={(e) => setNumeroContenedor(e.target.value)}
+                    placeholder="ABCD1234567"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="tipoContenedor">Tipo de Contenedor</Label>
+                  <Select value={tipoContenedor} onValueChange={setTipoContenedor}>
+                    <SelectTrigger id="tipoContenedor">
+                      <SelectValue placeholder="Selecciona tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="20FT">20 FT</SelectItem>
+                      <SelectItem value="40FT">40 FT</SelectItem>
+                      <SelectItem value="40HQ">40 FT High Cube</SelectItem>
+                      <SelectItem value="LCL">LCL (carga suelta)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="tipoContenedor">Tipo de Contenedor</Label>
-                <Select value={tipoContenedor} onValueChange={setTipoContenedor}>
-                  <SelectTrigger id="tipoContenedor">
-                    <SelectValue placeholder="Selecciona tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="20FT">20 FT</SelectItem>
-                    <SelectItem value="40FT">40 FT</SelectItem>
-                    <SelectItem value="40HQ">40 FT High Cube</SelectItem>
-                    <SelectItem value="LCL">LCL (carga suelta)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            )}
 
             <div>
               <Label htmlFor="notas">Notas</Label>
@@ -527,7 +680,15 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                 disabled={uploadingPackingList}
               />
               {uploadingPackingList && (
-                <p className="text-sm text-muted-foreground">🤖 Procesando con IA...</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="animate-spin h-4 w-4 border-2 border-teal-500 border-t-transparent rounded-full" />
+                  {parseStatus}
+                </div>
+              )}
+              {parseMethod && parsedItems.length > 0 && (
+                <Badge variant="outline" className={parseMethod === "ai" ? "bg-green-50" : "bg-blue-50"}>
+                  {parseMethod === "ai" ? "🤖 IA Claude" : "🔧 Parser Manual"}
+                </Badge>
               )}
             </div>
 
@@ -860,8 +1021,11 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
             </Button>
 
             {step < 4 ? (
-              <Button onClick={handleNext}>
-                Siguiente
+              <Button
+                onClick={handleNext}
+                disabled={uploadingPackingList || (step === 2 && parsedItems.length > 0)}
+              >
+                {uploadingPackingList ? "Procesando..." : "Siguiente"}
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
