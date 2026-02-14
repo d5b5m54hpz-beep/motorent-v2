@@ -490,12 +490,11 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
           <div className="space-y-4">
             <div>
               <Label htmlFor="proveedor">Proveedor (opcional)</Label>
-              <Select value={proveedorId} onValueChange={setProveedorId}>
+              <Select value={proveedorId || undefined} onValueChange={(val) => setProveedorId(val || "")}>
                 <SelectTrigger id="proveedor">
                   <SelectValue placeholder="Sin proveedor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin proveedor</SelectItem>
                   {proveedores.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.nombre}
