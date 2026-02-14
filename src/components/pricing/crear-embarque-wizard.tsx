@@ -192,8 +192,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
       }
 
       const data = await res.json();
-      setParseMethod(data.method || "ai");
-      setParseStatus(data.method === "ai" ? "✅ Procesado con IA" : "✅ Procesado con parser manual");
+      setParseMethod(data.method || "parser");
+      setParseStatus(`✅ ${data.totalItems} items detectados`);
 
       const parsedWithMatches = await Promise.all(
         data.items.map(async (item: any) => {
@@ -213,9 +213,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
       );
 
       setParsedItems(parsedWithMatches);
-      toast.success(
-        `${data.items.length} items procesados ${data.method === "ai" ? "con IA" : "con detección manual"}`
-      );
+      toast.success(`${data.totalItems} items procesados correctamente`);
     } catch (error: any) {
       setParseStatus("❌ Error al procesar");
       toast.error(error.message || "Error al procesar archivo");
@@ -453,7 +451,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto ring-0 focus:ring-0">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Ship className="h-5 w-5" />
@@ -463,17 +461,17 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
             {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center gap-2">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
                     s === step
-                      ? "bg-cyan-500 text-white"
+                      ? "bg-primary text-primary-foreground font-medium"
                       : s < step
-                      ? "bg-cyan-100 text-cyan-600"
-                      : "bg-gray-200 text-gray-500"
+                      ? "bg-primary/20 text-primary font-normal"
+                      : "bg-muted text-muted-foreground font-normal"
                   }`}
                 >
                   {s}
                 </div>
-                {s < 4 && <div className="w-8 h-0.5 bg-gray-200" />}
+                {s < 4 && <div className="w-6 h-0.5 bg-border" />}
               </div>
             ))}
           </div>
@@ -489,7 +487,9 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
         {step === 1 && (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="proveedor">Proveedor (opcional)</Label>
+              <Label htmlFor="proveedor">
+                Proveedor <span className="text-xs text-muted-foreground">(opcional)</span>
+              </Label>
               <Select value={proveedorId || undefined} onValueChange={(val) => setProveedorId(val || "")}>
                 <SelectTrigger id="proveedor">
                   <SelectValue placeholder="Sin proveedor" />
@@ -507,7 +507,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   type="button"
                   variant="link"
                   size="sm"
-                  className="mt-1 px-0"
+                  className="mt-1 px-0 text-primary"
                   onClick={() => setShowProveedorForm(true)}
                 >
                   + Crear nuevo proveedor
@@ -516,7 +516,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
             </div>
 
             {showProveedorForm && (
-              <div className="border rounded-lg p-4 space-y-3 bg-cyan-50">
+              <div className="border border-primary/20 rounded-lg p-4 space-y-3 bg-primary/5">
                 <h4 className="font-medium text-sm">Crear Proveedor Rápido</h4>
                 <div>
                   <Label>Nombre *</Label>
@@ -561,8 +561,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   onClick={() => setMetodoFlete("MARITIMO_FCL")}
                   className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
                     metodoFlete === "MARITIMO_FCL"
-                      ? "border-cyan-500 bg-cyan-50"
-                      : "border-gray-200 hover:border-cyan-300"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
                   }`}
                 >
                   <Ship className="h-5 w-5" />
@@ -574,8 +574,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   onClick={() => setMetodoFlete("MARITIMO_LCL")}
                   className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
                     metodoFlete === "MARITIMO_LCL"
-                      ? "border-cyan-500 bg-cyan-50"
-                      : "border-gray-200 hover:border-cyan-300"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
                   }`}
                 >
                   <Package className="h-5 w-5" />
@@ -587,8 +587,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   onClick={() => setMetodoFlete("AEREO")}
                   className={`border rounded-lg p-3 flex flex-col items-center gap-2 transition ${
                     metodoFlete === "AEREO"
-                      ? "border-cyan-500 bg-cyan-50"
-                      : "border-gray-200 hover:border-cyan-300"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
                   }`}
                 >
                   <span className="text-lg">✈️</span>
@@ -664,7 +664,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
         {step === 2 && (
           <div className="space-y-4">
             {/* Opción A: Subir Packing List */}
-            <div className="border rounded-lg p-4 space-y-3 bg-cyan-50">
+            <div className="border border-primary/20 rounded-lg p-4 space-y-3 bg-primary/5">
               <h4 className="font-medium flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 📂 Opción A: Subir Packing List (Recomendado)
@@ -680,13 +680,13 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
               />
               {uploadingPackingList && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="animate-spin h-4 w-4 border-2 border-cyan-500 border-t-transparent rounded-full" />
+                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
                   {parseStatus}
                 </div>
               )}
               {parseMethod && parsedItems.length > 0 && (
-                <Badge variant="outline" className={parseMethod === "ai" ? "bg-green-50" : "bg-blue-50"}>
-                  {parseMethod === "ai" ? "🤖 IA Claude" : "🔧 Parser Manual"}
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                  ✓ Parser Automático
                 </Badge>
               )}
             </div>

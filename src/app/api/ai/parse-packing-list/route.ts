@@ -1,69 +1,173 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import Anthropic from "@anthropic-ai/sdk";
 import * as XLSX from "xlsx";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
+// Auto-detectar la fila de headers (primera fila con al menos 3 celdas con texto)
+function detectHeaderRow(jsonData: any[][]): number {
+  for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+    const row = jsonData[i];
+    if (!row) continue;
 
-// Función de parsing manual con detección inteligente de columnas
-function parseManually(jsonData: any[][]): any[] {
+    const nonEmptyCells = row.filter((cell) => {
+      const str = String(cell || "").trim();
+      return str.length > 0 && isNaN(Number(str)); // Tiene texto y NO es solo número
+    });
+
+    if (nonEmptyCells.length >= 3) {
+      console.log(`✓ Header row detectado en fila ${i + 1}:`, row);
+      return i;
+    }
+  }
+
+  console.warn("⚠️ No se detectó header row, asumiendo fila 0");
+  return 0;
+}
+
+// Detectar índice de columna por keywords (multilingual)
+function findColumnIndex(headers: string[], keywords: string[]): number {
+  return headers.findIndex((h) =>
+    keywords.some((kw) => h.includes(kw))
+  );
+}
+
+// Verificar si una fila es un total o debe ser ignorada
+function shouldSkipRow(row: any[]): boolean {
+  const rowText = row.map((c) => String(c || "").toLowerCase()).join(" ");
+
+  // Ignorar filas con palabras clave de totales
+  if (
+    rowText.includes("total") ||
+    rowText.includes("subtotal") ||
+    rowText.includes("sum") ||
+    rowText.includes("grand") ||
+    rowText.includes("summary")
+  ) {
+    return true;
+  }
+
+  // Ignorar filas completamente vacías
+  const nonEmpty = row.filter((c) => String(c || "").trim().length > 0);
+  if (nonEmpty.length === 0) {
+    return true;
+  }
+
+  return false;
+}
+
+// Parser principal con auto-detección inteligente
+function parsePackingList(jsonData: any[][]): any[] {
   if (!jsonData || jsonData.length < 2) {
     throw new Error("Archivo vacío o sin suficientes datos");
   }
 
-  // Primera fila es el header
-  const headers = jsonData[0].map((h: any) =>
+  console.log(`📊 Procesando ${jsonData.length} filas...`);
+
+  // 1. Detectar fila de headers automáticamente
+  const headerRowIdx = detectHeaderRow(jsonData);
+  const headerRow = jsonData[headerRowIdx];
+
+  if (!headerRow) {
+    throw new Error("No se pudo detectar la fila de headers");
+  }
+
+  // 2. Normalizar headers a lowercase
+  const headers = headerRow.map((h: any) =>
     String(h || "").toLowerCase().trim()
   );
 
-  console.log("Headers detectados:", headers);
+  console.log("Headers normalizados:", headers);
 
-  // Detectar índices de columnas por keywords
-  const codigoIdx = headers.findIndex((h) =>
-    h.includes("code") || h.includes("part") || h.includes("sku") || h.includes("codigo") || h.includes("código")
-  );
-  const descripcionIdx = headers.findIndex((h) =>
-    h.includes("description") || h.includes("name") || h.includes("product") ||
-    h.includes("descripcion") || h.includes("descripción") || h.includes("nombre")
-  );
-  const cantidadIdx = headers.findIndex((h) =>
-    h.includes("qty") || h.includes("quantity") || h.includes("cantidad") || h.includes("qté")
-  );
+  // 3. Detectar índices de columnas por keywords (multilingual)
+  const codigoIdx = findColumnIndex(headers, [
+    "part", "code", "sku", "codigo", "código", "item", "no.", "part number", "part no"
+  ]);
+
+  const descripcionIdx = findColumnIndex(headers, [
+    "description", "desc", "name", "nombre", "product", "descripcion", "descripción",
+    "designation", "produit", "article"
+  ]);
+
+  const cantidadIdx = findColumnIndex(headers, [
+    "qty", "quantity", "cantidad", "pcs", "units", "qté", "quantité", "pieces"
+  ]);
+
+  // Para precio: buscar "price" o "fob" pero NO total/amount/subtotal
   const precioIdx = headers.findIndex((h) =>
-    h.includes("price") || h.includes("unit") || h.includes("precio") || h.includes("fob") || h.includes("cost")
-  );
-  const pesoIdx = headers.findIndex((h) =>
-    h.includes("weight") || h.includes("peso") || h.includes("kg")
-  );
-  const volumenIdx = headers.findIndex((h) =>
-    h.includes("volume") || h.includes("volumen") || h.includes("cbm") || h.includes("m3") || h.includes("m³")
+    (h.includes("price") || h.includes("fob") || h.includes("precio") || h.includes("cost") || h.includes("unit")) &&
+    !h.includes("total") &&
+    !h.includes("amount") &&
+    !h.includes("subtotal")
   );
 
-  console.log("Índices detectados:", { codigoIdx, descripcionIdx, cantidadIdx, precioIdx, pesoIdx, volumenIdx });
+  const pesoIdx = findColumnIndex(headers, [
+    "weight", "net weight", "peso", "kg", "kgs", "poids"
+  ]);
 
-  if (codigoIdx === -1 || descripcionIdx === -1 || cantidadIdx === -1 || precioIdx === -1) {
-    throw new Error("No se pudieron detectar las columnas requeridas (código, descripción, cantidad, precio)");
+  const volumenIdx = findColumnIndex(headers, [
+    "volume", "cbm", "m3", "m³", "volumen", "cubic"
+  ]);
+
+  console.log("Índices detectados:", {
+    codigoIdx,
+    descripcionIdx,
+    cantidadIdx,
+    precioIdx,
+    pesoIdx,
+    volumenIdx
+  });
+
+  // 4. Validar que se encontraron las columnas críticas
+  if (codigoIdx === -1) {
+    throw new Error("No se detectó columna de código/part number. Headers: " + headers.join(", "));
+  }
+  if (descripcionIdx === -1) {
+    throw new Error("No se detectó columna de descripción. Headers: " + headers.join(", "));
+  }
+  if (cantidadIdx === -1) {
+    throw new Error("No se detectó columna de cantidad. Headers: " + headers.join(", "));
+  }
+  if (precioIdx === -1) {
+    throw new Error("No se detectó columna de precio. Headers: " + headers.join(", "));
   }
 
+  // 5. Procesar filas de datos (empezar después del header)
   const items: any[] = [];
+  const maxRows = Math.min(jsonData.length, 500); // Máximo 500 items
 
-  // Procesar filas (saltear header)
-  for (let i = 1; i < jsonData.length && i < 201; i++) {
+  for (let i = headerRowIdx + 1; i < maxRows; i++) {
     const row = jsonData[i];
-    if (!row || row.length === 0) continue;
 
+    if (!row || shouldSkipRow(row)) {
+      continue;
+    }
+
+    // Extraer datos
     const codigo = String(row[codigoIdx] || "").trim();
     const descripcion = String(row[descripcionIdx] || "").trim();
-    const cantidad = parseFloat(String(row[cantidadIdx] || "0"));
-    const precio = parseFloat(String(row[precioIdx] || "0"));
+    const cantidadStr = String(row[cantidadIdx] || "0").replace(/,/g, "");
+    const precioStr = String(row[precioIdx] || "0").replace(/,/g, "").replace(/\$/g, "");
 
-    // Saltar filas inválidas
-    if (!codigo || !descripcion || cantidad <= 0 || precio <= 0) continue;
+    const cantidad = parseFloat(cantidadStr);
+    const precio = parseFloat(precioStr);
 
-    const peso = pesoIdx !== -1 ? parseFloat(String(row[pesoIdx] || "0")) : 0;
-    const volumen = volumenIdx !== -1 ? parseFloat(String(row[volumenIdx] || "0")) : 0;
+    // Validar datos críticos
+    if (!codigo || !descripcion) continue;
+    if (cantidad <= 0 || isNaN(cantidad)) continue;
+    if (precio <= 0 || isNaN(precio)) continue;
+
+    // Datos opcionales
+    let peso = 0;
+    let volumen = 0;
+
+    if (pesoIdx !== -1) {
+      const pesoStr = String(row[pesoIdx] || "0").replace(/,/g, "");
+      peso = parseFloat(pesoStr) || 0;
+    }
+
+    if (volumenIdx !== -1) {
+      const volStr = String(row[volumenIdx] || "0").replace(/,/g, "");
+      volumen = parseFloat(volStr) || 0;
+    }
 
     items.push({
       codigoFabricante: codigo,
@@ -75,17 +179,9 @@ function parseManually(jsonData: any[][]): any[] {
     });
   }
 
-  return items;
-}
+  console.log(`✅ Parsing exitoso: ${items.length} items válidos encontrados`);
 
-// Timeout helper
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout")), timeoutMs)
-    ),
-  ]);
+  return items;
 }
 
 export async function POST(req: NextRequest) {
@@ -104,102 +200,56 @@ export async function POST(req: NextRequest) {
 
     console.log("📂 Procesando archivo:", file.name, file.size, "bytes");
 
-    // Read file buffer
+    // Leer archivo
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Parse Excel/CSV with xlsx
+    // Parsear Excel/CSV con xlsx
     const workbook = XLSX.read(buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
-    // Convert to JSON array
+    // Convertir a JSON array
     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
 
-    console.log("📊 Datos extraídos:", jsonData.length, "filas");
+    console.log(`📊 Datos extraídos: ${jsonData.length} filas del sheet "${sheetName}"`);
 
     if (!jsonData || jsonData.length < 2) {
-      return NextResponse.json({ error: "El archivo está vacío o sin datos" }, { status: 400 });
+      return NextResponse.json({
+        error: "El archivo está vacío o sin datos"
+      }, { status: 400 });
     }
 
-    let items: any[] = [];
-    let method = "unknown";
-
-    // ESTRATEGIA 1: Intentar con Claude AI (con timeout de 15 segundos)
-    if (process.env.ANTHROPIC_API_KEY) {
-      try {
-        console.log("🤖 Intentando parsing con Claude AI...");
-
-        const textData = jsonData
-          .slice(0, 100) // Reducido a 100 filas para mejor performance
-          .map((row: any) => (row as any[]).join(" | "))
-          .join("\n");
-
-        const message = await withTimeout(
-          anthropic.messages.create({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 4096,
-            messages: [
-              {
-                role: "user",
-                content: `Eres un experto en parsing de packing lists. Analiza este archivo y extrae items.
-
-INSTRUCCIONES:
-1. Detecta columnas: código fabricante, descripción, cantidad, precio FOB USD, peso kg, volumen m³
-2. Interpreta cualquier idioma automáticamente
-3. Devuelve SOLO JSON array sin markdown:
-[{"codigoFabricante":"X","descripcion":"Y","cantidad":N,"precioFobUnitarioUsd":N,"pesoTotalKg":N,"volumenTotalCbm":N}]
-
-DATOS:
-${textData}`,
-              },
-            ],
-          }),
-          15000 // 15 segundos timeout
-        );
-
-        const responseText = message.content[0].type === "text" ? message.content[0].text : "";
-        const cleanJson = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-        items = JSON.parse(cleanJson);
-
-        if (Array.isArray(items) && items.length > 0) {
-          method = "ai";
-          console.log("✅ Claude AI parsing exitoso:", items.length, "items");
-        } else {
-          throw new Error("Claude devolvió array vacío");
-        }
-      } catch (aiError: any) {
-        console.warn("⚠️ Claude AI falló:", aiError.message);
-        // Continuar con fallback
-      }
-    } else {
-      console.log("⚠️ ANTHROPIC_API_KEY no configurada, usando fallback");
-    }
-
-    // ESTRATEGIA 2: Fallback con parsing manual
-    if (items.length === 0) {
-      console.log("🔧 Usando parsing manual con detección de columnas...");
-      items = parseManually(jsonData);
-      method = "manual";
-      console.log("✅ Parsing manual exitoso:", items.length, "items");
-    }
+    // Parsear con detección inteligente
+    const items = parsePackingList(jsonData);
 
     if (items.length === 0) {
       return NextResponse.json(
-        { error: "No se encontraron items en el archivo. Verifica que tenga columnas de código, descripción, cantidad y precio." },
+        {
+          error: "No se encontraron items válidos en el archivo",
+          hint: "Verifica que el archivo tenga columnas de: código, descripción, cantidad y precio"
+        },
         { status: 400 }
       );
     }
 
-    console.log(`✅ Parsing completado (${method}):`, items.length, "items");
+    console.log(`✅ Parser completado: ${items.length} items`);
 
-    return NextResponse.json({ items, method });
+    return NextResponse.json({
+      items,
+      method: "parser",
+      totalItems: items.length
+    });
+
   } catch (error: unknown) {
     console.error("❌ Error parsing packing list:", error);
+
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+
     return NextResponse.json(
       {
         error: "Error al procesar el archivo",
-        details: error instanceof Error ? error.message : "Unknown",
-        hint: "Verifica que el archivo tenga columnas claras de código, descripción, cantidad y precio"
+        details: errorMessage,
+        hint: "Verifica que el archivo sea un Excel válido (.xlsx) con columnas de código, descripción, cantidad y precio"
       },
       { status: 500 }
     );
