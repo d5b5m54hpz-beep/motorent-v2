@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    console.log("📦 Creating embarque with body:", JSON.stringify(body, null, 2));
+
     const {
       proveedorId,
       metodoFlete,
@@ -89,34 +91,36 @@ export async function POST(req: NextRequest) {
     }
     const referencia = `EMB-${String(nextNumber).padStart(3, "0")}`;
 
-    // Calculate FOB total
+    // Calculate FOB total and prepare items data
     let totalFobUsd = 0;
     const itemsData = items.map((item: any) => {
       const subtotal = item.cantidad * item.precioFobUnitarioUsd;
       totalFobUsd += subtotal;
       return {
-        repuestoId: item.repuestoId,
+        repuestoId: item.repuestoId || null,
         cantidad: item.cantidad,
         precioFobUnitarioUsd: item.precioFobUnitarioUsd,
         subtotalFobUsd: subtotal,
-        pesoTotalKg: item.pesoTotalKg,
-        volumenTotalCbm: item.volumenTotalCbm,
-        ncmCodigo: item.ncmCodigo,
-        arancelPorcentaje: item.arancelPorcentaje,
+        pesoTotalKg: item.pesoTotalKg || 0,
+        volumenTotalCbm: item.volumenTotalCbm || 0,
+        ncmCodigo: item.ncmCodigo || null,
+        arancelPorcentaje: item.arancelPorcentaje || null,
       };
     });
+
+    console.log("📝 Items to create:", itemsData.length);
 
     const embarque = await prisma.embarqueImportacion.create({
       data: {
         referencia,
-        proveedorId,
+        proveedorId: proveedorId || null,
         metodoFlete,
         fechaSalida: fechaSalida ? new Date(fechaSalida) : null,
         fechaLlegadaEstimada: fechaLlegadaEstimada ? new Date(fechaLlegadaEstimada) : null,
-        numeroContenedor,
-        tipoContenedor,
+        numeroContenedor: numeroContenedor || null,
+        tipoContenedor: tipoContenedor || null,
         totalFobUsd,
-        notas,
+        notas: notas || null,
         items: {
           create: itemsData,
         },
@@ -127,11 +131,22 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    console.log("✅ Embarque created successfully:", embarque.id);
+
     return NextResponse.json(embarque);
   } catch (err: unknown) {
-    console.error("Error creating embarque:", err);
+    console.error("❌ Error creating embarque:", err);
+    if (err instanceof Error) {
+      console.error("Error details:", {
+        message: err.message,
+        stack: err.stack,
+      });
+    }
     return NextResponse.json(
-      { error: "Error al crear embarque" },
+      {
+        error: "Error al crear embarque",
+        details: err instanceof Error ? err.message : "Unknown error"
+      },
       { status: 500 }
     );
   }

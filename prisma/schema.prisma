@@ -1615,8 +1615,8 @@ model EmbarqueImportacion {
   id                  String              @id @default(cuid())
   visibleId           String              @unique @default(cuid())
   referencia          String              @unique // "EMB-001" autogenerado
-  proveedorId         String
-  proveedor           Proveedor           @relation(fields: [proveedorId], references: [id])
+  proveedorId         String?
+  proveedor           Proveedor?          @relation(fields: [proveedorId], references: [id])
   estado              EstadoEmbarque      @default(BORRADOR)
   metodoFlete         MetodoFlete
 
@@ -1698,8 +1698,8 @@ model ItemEmbarque {
   id              String             @id @default(cuid())
   embarqueId      String
   embarque        EmbarqueImportacion @relation(fields: [embarqueId], references: [id], onDelete: Cascade)
-  repuestoId      String
-  repuesto        Repuesto           @relation(fields: [repuestoId], references: [id])
+  repuestoId      String?
+  repuesto        Repuesto?          @relation(fields: [repuestoId], references: [id])
 
   cantidad        Int                // Cantidad importada
   precioFobUnitarioUsd Float         // Precio FOB por unidad en USD
@@ -1720,8 +1720,6 @@ model ItemEmbarque {
   costoLandedUnitarioArs Float?      // Costo puesto en almacén por unidad (ARS)
 
   createdAt       DateTime           @default(now())
-
-  @@unique([embarqueId, repuestoId])
 }
 
 // ─── DESPACHOS ADUANEROS (parciales) ────────────────────────────

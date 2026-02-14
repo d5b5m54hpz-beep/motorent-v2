@@ -89,7 +89,7 @@ export async function POST(
         const cifItem = item.subtotalFobUsd + fleteAsignado + seguroAsignado;
 
         // 6. Arancel específico del item
-        const categoriaConfig = item.repuesto.categoria ? categoriasMap.get(item.repuesto.categoria) : null;
+        const categoriaConfig = item.repuesto?.categoria ? categoriasMap.get(item.repuesto.categoria) : null;
         const arancelPct = item.arancelPorcentaje ?? categoriaConfig?.arancelImpo ?? 0.16;
         const derechosItem = cifItem * arancelPct;
 
@@ -124,7 +124,7 @@ export async function POST(
         const desembolsoUnitarioUsd = desembolsoTotal / item.cantidad;
 
         // Calculate margin
-        const precioVenta = item.repuesto.precioVenta || 0;
+        const precioVenta = item.repuesto?.precioVenta || 0;
         const margenActual = precioVenta > 0 ? (precioVenta - costoLandedUnitarioArs) / precioVenta : 0;
         const margenObjetivo = categoriaConfig?.margenObjetivo ?? 0.45;
         const margenMinimo = categoriaConfig?.margenMinimo ?? 0.25;
@@ -135,7 +135,7 @@ export async function POST(
 
         return {
           repuestoId: item.repuestoId,
-          nombre: item.repuesto.nombre,
+          nombre: item.repuesto?.nombre || "Sin repuesto vinculado",
           cantidad: item.cantidad,
           fobUnitarioUsd: item.precioFobUnitarioUsd,
           costoLandedUnitarioUsd: Number(costoLandedUnitarioUsd.toFixed(2)),
@@ -180,7 +180,7 @@ export async function POST(
     // Resumen por categoría
     const porCategoria = new Map<string, any>();
     for (const item of embarque.items) {
-      const categoria = item.repuesto.categoria || "GENERAL";
+      const categoria = item.repuesto?.categoria || "GENERAL";
       if (!porCategoria.has(categoria)) {
         porCategoria.set(categoria, { categoria, items: 0, costoTotal: 0 });
       }
