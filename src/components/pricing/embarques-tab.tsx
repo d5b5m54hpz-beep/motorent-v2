@@ -529,7 +529,9 @@ export function EmbarquesTab() {
                             </>
                           )}
                           {embarque.estado === "COSTO_FINALIZADO" && (
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleChangeEstado(embarque.id, "RECIBIDO")}
+                            >
                               <CheckCircle className="mr-2 h-4 w-4" />
                               Confirmar Recepción
                             </DropdownMenuItem>
