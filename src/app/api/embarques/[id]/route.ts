@@ -78,11 +78,27 @@ export async function PUT(
       notas,
     } = body;
 
+    // Get current embarque data to calculate CIF
+    const currentEmbarque = await prisma.embarqueImportacion.findUnique({
+      where: { id },
+      select: { totalFobUsd: true, fleteUsd: true, seguroUsd: true },
+    });
+
+    if (!currentEmbarque) {
+      return NextResponse.json({ error: "Embarque no encontrado" }, { status: 404 });
+    }
+
+    // Calculate CIF = FOB + Flete + Seguro
+    const newFleteUsd = fleteUsd !== undefined ? fleteUsd : currentEmbarque.fleteUsd;
+    const newSeguroUsd = seguroUsd !== undefined ? seguroUsd : currentEmbarque.seguroUsd;
+    const cifUsd = currentEmbarque.totalFobUsd + newFleteUsd + newSeguroUsd;
+
     const updated = await prisma.embarqueImportacion.update({
       where: { id },
       data: {
         fleteUsd: fleteUsd !== undefined ? fleteUsd : undefined,
         seguroUsd: seguroUsd !== undefined ? seguroUsd : undefined,
+        cifUsd,
         fechaSalida: fechaSalida ? new Date(fechaSalida) : undefined,
         fechaLlegadaEstimada: fechaLlegadaEstimada ? new Date(fechaLlegadaEstimada) : undefined,
         fechaLlegadaReal: fechaLlegadaReal ? new Date(fechaLlegadaReal) : undefined,
