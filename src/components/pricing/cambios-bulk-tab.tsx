@@ -427,7 +427,7 @@ export function CambiosBulkTab() {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Margen nuevo:</p>
-                    <p className="text-lg font-medium text-teal-600">
+                    <p className="text-lg font-medium text-primary">
                       {(previsualizacion.margenPromedioNuevo * 100).toFixed(1)}%
                     </p>
                   </div>

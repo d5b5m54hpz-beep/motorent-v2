@@ -201,7 +201,7 @@ export function SimuladorPrecio() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Descuento Total</p>
-                    <p className="text-lg font-medium text-teal-600">
+                    <p className="text-lg font-medium text-primary">
                       {resultado.descuentoTotalPct.toFixed(1)}%
                     </p>
                   </div>
@@ -240,7 +240,7 @@ export function SimuladorPrecio() {
                         key={idx}
                         className="flex items-start gap-3 p-2 rounded-lg bg-muted/50"
                       >
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-sm font-medium">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-medium">
                           {item.paso}
                         </div>
                         <div className="flex-1 min-w-0">

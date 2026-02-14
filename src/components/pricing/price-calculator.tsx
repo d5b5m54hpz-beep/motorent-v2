@@ -147,7 +147,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
               {/* Descuentos */}
               {pricing.descuentoTotal > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-teal-600 dark:text-teal-400">
+                  <div className="flex items-center gap-2 text-sm text-primary">
                     <TrendingDown className="h-4 w-4" />
                     <span className="font-medium">Descuentos aplicados:</span>
                   </div>
@@ -157,7 +157,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
                       <span className="text-muted-foreground">
                         Por {pricing.meses} meses:
                       </span>
-                      <span className="text-teal-600 dark:text-teal-400">
+                      <span className="text-primary">
                         -{pricing.descuentoDuracion}%
                       </span>
                     </div>
@@ -166,7 +166,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
                   {pricing.descuentoFrecuencia > 0 && (
                     <div className="flex justify-between text-sm pl-6">
                       <span className="text-muted-foreground">Por frecuencia {frecuencia}:</span>
-                      <span className="text-teal-600 dark:text-teal-400">
+                      <span className="text-primary">
                         -{pricing.descuentoFrecuencia}%
                       </span>
                     </div>

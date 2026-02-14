@@ -65,7 +65,7 @@ const ESTADO_COLORS: Record<string, string> = {
   EN_TRANSITO: "bg-blue-500",
   EN_ADUANA: "bg-yellow-500",
   COSTO_FINALIZADO: "bg-green-500",
-  RECIBIDO: "bg-teal-500",
+  RECIBIDO: "bg-primary",
 };
 
 const ESTADO_LABELS: Record<string, string> = {
