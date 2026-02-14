@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Ship, Plus, Search, Filter, Eye, Calculator, CheckCircle, Clock } from "lucide-react";
+import { Ship, Plus, Search, Filter, Eye, Calculator, CheckCircle, Clock, Trash2, FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CrearEmbarqueWizard } from "./crear-embarque-wizard";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,32 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Embarque = {
   id: string;
@@ -82,6 +108,11 @@ export function EmbarquesTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("all");
   const [crearDialogOpen, setCrearDialogOpen] = useState(false);
+  const [selectedEmbarque, setSelectedEmbarque] = useState<Embarque | null>(null);
+  const [verDetalleOpen, setVerDetalleOpen] = useState(false);
+  const [calcularCostosOpen, setCalcularCostosOpen] = useState(false);
+  const [registrarDespachoOpen, setRegistrarDespachoOpen] = useState(false);
+  const [eliminarDialogOpen, setEliminarDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchEmbarques();
@@ -122,6 +153,44 @@ export function EmbarquesTab() {
       fetchEmbarques();
     } catch (error) {
       toast.error("Error al cambiar estado");
+      console.error(error);
+    }
+  };
+
+  const handleVerDetalle = (embarque: Embarque) => {
+    setSelectedEmbarque(embarque);
+    setVerDetalleOpen(true);
+  };
+
+  const handleCalcularCostos = (embarque: Embarque) => {
+    setSelectedEmbarque(embarque);
+    setCalcularCostosOpen(true);
+  };
+
+  const handleRegistrarDespacho = (embarque: Embarque) => {
+    setSelectedEmbarque(embarque);
+    setRegistrarDespachoOpen(true);
+  };
+
+  const handleEliminar = (embarque: Embarque) => {
+    setSelectedEmbarque(embarque);
+    setEliminarDialogOpen(true);
+  };
+
+  const confirmEliminar = async () => {
+    if (!selectedEmbarque) return;
+
+    try {
+      const res = await fetch(`/api/embarques/${selectedEmbarque.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Error al eliminar embarque");
+      toast.success("Embarque eliminado");
+      fetchEmbarques();
+      setEliminarDialogOpen(false);
+      setSelectedEmbarque(null);
+    } catch (error) {
+      toast.error("Error al eliminar embarque");
       console.error(error);
     }
   };
@@ -288,7 +357,7 @@ export function EmbarquesTab() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleVerDetalle(embarque)}>
                             <Eye className="mr-2 h-4 w-4" />
                             Ver Detalle
                           </DropdownMenuItem>
@@ -299,6 +368,14 @@ export function EmbarquesTab() {
                                 onClick={() => handleChangeEstado(embarque.id, "EN_TRANSITO")}
                               >
                                 Marcar En Tránsito
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleEliminar(embarque)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
                               </DropdownMenuItem>
                             </>
                           )}
@@ -311,11 +388,14 @@ export function EmbarquesTab() {
                           )}
                           {embarque.estado === "EN_ADUANA" && (
                             <>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleCalcularCostos(embarque)}>
                                 <Calculator className="mr-2 h-4 w-4" />
                                 Calcular Costos
                               </DropdownMenuItem>
-                              <DropdownMenuItem>Registrar Despacho</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleRegistrarDespacho(embarque)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Registrar Despacho
+                              </DropdownMenuItem>
                             </>
                           )}
                           {embarque.estado === "COSTO_FINALIZADO" && (
@@ -341,6 +421,204 @@ export function EmbarquesTab() {
         onOpenChange={setCrearDialogOpen}
         onSuccess={fetchEmbarques}
       />
+
+      {/* Ver Detalle Sheet */}
+      <Sheet open={verDetalleOpen} onOpenChange={setVerDetalleOpen}>
+        <SheetContent className="overflow-y-auto sm:max-w-2xl">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Ship className="h-5 w-5" />
+              {selectedEmbarque?.referencia}
+            </SheetTitle>
+            <SheetDescription>
+              Detalle del embarque de importación
+            </SheetDescription>
+          </SheetHeader>
+
+          {selectedEmbarque && (
+            <div className="mt-6 space-y-6">
+              {/* Información General */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-sm">Información General</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Proveedor:</span>
+                    <p className="font-medium">{selectedEmbarque.proveedor?.nombre || "Sin proveedor"}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Estado:</span>
+                    <div className="mt-1">
+                      <Badge className={ESTADO_COLORS[selectedEmbarque.estado]}>
+                        {ESTADO_LABELS[selectedEmbarque.estado]}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Fecha Salida:</span>
+                    <p className="font-medium">
+                      {selectedEmbarque.fechaSalida
+                        ? new Date(selectedEmbarque.fechaSalida).toLocaleDateString("es-AR")
+                        : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Llegada Estimada:</span>
+                    <p className="font-medium">
+                      {selectedEmbarque.fechaLlegadaEstimada
+                        ? new Date(selectedEmbarque.fechaLlegadaEstimada).toLocaleDateString("es-AR")
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resumen Financiero */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-sm">Resumen Financiero</h3>
+                <div className="border rounded-lg p-3 space-y-2 text-sm bg-muted/50">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">FOB:</span>
+                    <span>USD {selectedEmbarque.totalFobUsd.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Flete:</span>
+                    <span>USD {selectedEmbarque.fleteUsd.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Seguro:</span>
+                    <span>USD {(selectedEmbarque.seguroUsd || 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between font-bold pt-2 border-t">
+                    <span>CIF Total:</span>
+                    <span>USD {(selectedEmbarque.cifUsd || 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-sm">Items ({selectedEmbarque.items?.length || 0})</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Repuesto</TableHead>
+                        <TableHead className="text-right">Cant.</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedEmbarque.items?.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="text-sm">{item.repuesto?.nombre || "Sin nombre"}</TableCell>
+                          <TableCell className="text-right">{item.cantidad}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Calcular Costos Dialog */}
+      <Dialog open={calcularCostosOpen} onOpenChange={setCalcularCostosOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              Calcular Costos
+            </DialogTitle>
+            <DialogDescription>
+              {selectedEmbarque?.referencia} - Cálculo de costos de nacionalización
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Esta funcionalidad será implementada próximamente. Permitirá calcular:
+            </p>
+            <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+              <li>• Aranceles por NCM</li>
+              <li>• IVA y otros impuestos</li>
+              <li>• Gastos de despacho</li>
+              <li>• Costo landed final por repuesto</li>
+            </ul>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCalcularCostosOpen(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registrar Despacho Dialog */}
+      <Dialog open={registrarDespachoOpen} onOpenChange={setRegistrarDespachoOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Registrar Despacho
+            </DialogTitle>
+            <DialogDescription>
+              {selectedEmbarque?.referencia} - Datos de despacho aduanero
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="despacho-numero">Número de Despacho</Label>
+              <Input id="despacho-numero" placeholder="ej: 123-45678/2026" />
+            </div>
+            <div>
+              <Label htmlFor="despacho-fecha">Fecha de Despacho</Label>
+              <Input id="despacho-fecha" type="date" />
+            </div>
+            <div>
+              <Label htmlFor="despacho-notas">Notas</Label>
+              <Input id="despacho-notas" placeholder="Observaciones del despacho" />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRegistrarDespachoOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              toast.success("Despacho registrado");
+              setRegistrarDespachoOpen(false);
+              fetchEmbarques();
+            }}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Eliminar AlertDialog */}
+      <AlertDialog open={eliminarDialogOpen} onOpenChange={setEliminarDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar embarque?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará el embarque{" "}
+              <span className="font-medium">{selectedEmbarque?.referencia}</span> y todos sus items.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmEliminar}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

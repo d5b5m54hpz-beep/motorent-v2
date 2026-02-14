@@ -93,6 +93,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
   const [parseStatus, setParseStatus] = useState<string>("");
   const [showProveedorForm, setShowProveedorForm] = useState(false);
   const [nuevoProveedor, setNuevoProveedor] = useState({ nombre: "", codigoCorto: "" });
+  const [proveedorDetectado, setProveedorDetectado] = useState<string | null>(null);
+  const [proveedorMatchId, setProveedorMatchId] = useState<string | null>(null);
 
   // Step 3: Costos
   const [fleteUsd, setFleteUsd] = useState(0);
@@ -195,6 +197,26 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
       const data = await res.json();
       setParseMethod(data.method || "parser");
       setParseStatus(`✅ ${data.totalItems} items detectados`);
+
+      // Auto-detect proveedor from Excel
+      if (data.proveedorDetectado) {
+        setProveedorDetectado(data.proveedorDetectado);
+
+        // Fuzzy match against existing proveedores
+        const detectedLower = data.proveedorDetectado.toLowerCase();
+        const match = proveedores.find((p) => {
+          const nombreLower = p.nombre.toLowerCase();
+          return nombreLower.includes(detectedLower) || detectedLower.includes(nombreLower);
+        });
+
+        if (match) {
+          setProveedorMatchId(match.id);
+          setProveedorId(match.id); // Auto-link
+        } else {
+          // Pre-fill for new proveedor creation
+          setNuevoProveedor({ nombre: data.proveedorDetectado, codigoCorto: "" });
+        }
+      }
 
       const parsedWithMatches = await Promise.all(
         data.items.map(async (item: any) => {
@@ -476,6 +498,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
     setParseStatus("");
     setShowProveedorForm(false);
     setNuevoProveedor({ nombre: "", codigoCorto: "" });
+    setProveedorDetectado(null);
+    setProveedorMatchId(null);
   };
 
   const totalFob = items.reduce((sum, item) => sum + item.cantidad * item.precioFobUnitarioUsd, 0);
@@ -721,6 +745,48 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                 </Badge>
               )}
             </div>
+
+            {/* Banner de proveedor detectado */}
+            {proveedorDetectado && (
+              <div className="border border-primary/20 rounded-lg p-4 space-y-3 bg-primary/5">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  📋 Proveedor detectado en el documento
+                </h4>
+                <p className="text-sm font-mono bg-background px-3 py-2 rounded border">
+                  {proveedorDetectado}
+                </p>
+                {proveedorMatchId ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      ✅ Ya existe en MotoLibre
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Auto-vinculado a: {proveedores.find((p) => p.id === proveedorMatchId)?.nombre}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                        ⚠️ Proveedor nuevo
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        No existe en la base de datos
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => setShowProveedorForm(true)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Crear Proveedor con Este Nombre
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Preview de items parseados */}
             {parsedItems.length > 0 && (
