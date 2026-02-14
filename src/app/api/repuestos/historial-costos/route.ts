@@ -18,19 +18,19 @@ export async function GET(req: NextRequest) {
     if (repuestoId) where.repuestoId = repuestoId;
 
     const [data, total] = await Promise.all([
-      prisma.historialPrecioRepuesto.findMany({
+      prisma.historialCostoRepuesto.findMany({
         where,
         include: { repuesto: { select: { id: true, nombre: true, categoria: true } } },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
       }),
-      prisma.historialPrecioRepuesto.count({ where }),
+      prisma.historialCostoRepuesto.count({ where }),
     ]);
 
     return NextResponse.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (err: unknown) {
-    console.error("Error fetching historial:", err);
-    return NextResponse.json({ error: "Error al cargar historial" }, { status: 500 });
+    console.error("Error fetching historial costos:", err);
+    return NextResponse.json({ error: "Error al cargar historial de costos" }, { status: 500 });
   }
 }

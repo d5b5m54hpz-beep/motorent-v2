@@ -32,7 +32,7 @@ import { es } from "date-fns/locale";
 
 type HistorialPrecio = {
   id: string;
-  repuesto: { nombre: string };
+  repuesto: { id: string; nombre: string };
   precioAnterior: number | null;
   precioNuevo: number;
   tipoCambio: string;
@@ -43,11 +43,18 @@ type HistorialPrecio = {
 
 type HistorialCosto = {
   id: string;
-  repuesto: { nombre: string };
+  repuesto: { id: string; nombre: string };
   costoAnteriorArs: number | null;
   costoNuevoArs: number;
   motivo: string | null;
   createdAt: string;
+};
+
+type ChartDataPoint = {
+  fecha: string;
+  precio: number | null;
+  costo: number | null;
+  margen: number | null;
 };
 
 export function HistorialTab() {
@@ -56,6 +63,9 @@ export function HistorialTab() {
   const [historialPrecios, setHistorialPrecios] = useState<HistorialPrecio[]>([]);
   const [historialCostos, setHistorialCostos] = useState<HistorialCosto[]>([]);
   const [repuestoFiltro, setRepuestoFiltro] = useState("");
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [loadingChart, setLoadingChart] = useState(false);
+  const [repuestoSeleccionado, setRepuestoSeleccionado] = useState<{ id: string; nombre: string } | null>(null);
 
   useEffect(() => {
     fetchHistorial();
@@ -95,6 +105,100 @@ export function HistorialTab() {
   const historialCostosFiltrado = historialCostos.filter((h) =>
     h.repuesto.nombre.toLowerCase().includes(repuestoFiltro.toLowerCase())
   );
+
+  // Detectar repuesto único para mostrar gráfico de evolución
+  useEffect(() => {
+    if (!repuestoFiltro.trim()) {
+      setRepuestoSeleccionado(null);
+      setChartData([]);
+      return;
+    }
+
+    // Obtener repuestos únicos de los datos filtrados
+    const repuestosUnicos = new Map<string, { id: string; nombre: string }>();
+
+    historialPreciosFiltrado.forEach((h) => {
+      if (!repuestosUnicos.has(h.repuesto.id)) {
+        repuestosUnicos.set(h.repuesto.id, { id: h.repuesto.id, nombre: h.repuesto.nombre });
+      }
+    });
+
+    historialCostosFiltrado.forEach((h) => {
+      if (!repuestosUnicos.has(h.repuesto.id)) {
+        repuestosUnicos.set(h.repuesto.id, { id: h.repuesto.id, nombre: h.repuesto.nombre });
+      }
+    });
+
+    // Si hay exactamente un repuesto único, cargar su evolución
+    if (repuestosUnicos.size === 1) {
+      const repuesto = Array.from(repuestosUnicos.values())[0];
+      setRepuestoSeleccionado(repuesto);
+      fetchEvolucion(repuesto.id);
+    } else {
+      setRepuestoSeleccionado(null);
+      setChartData([]);
+    }
+  }, [repuestoFiltro, historialPreciosFiltrado, historialCostosFiltrado]);
+
+  const fetchEvolucion = async (repuestoId: string) => {
+    try {
+      setLoadingChart(true);
+
+      // Fetch completo de historial de precios y costos para este repuesto
+      const [resPrecios, resCostos] = await Promise.all([
+        fetch(`/api/pricing-repuestos/historial?repuestoId=${repuestoId}&limit=100`),
+        fetch(`/api/repuestos/historial-costos?repuestoId=${repuestoId}&limit=100`),
+      ]);
+
+      let preciosData: HistorialPrecio[] = [];
+      let costosData: HistorialCosto[] = [];
+
+      if (resPrecios.ok) {
+        const data = await resPrecios.json();
+        preciosData = data.data || [];
+      }
+
+      if (resCostos.ok) {
+        const data = await resCostos.json();
+        costosData = data.data || [];
+      }
+
+      // Combinar datos por fecha
+      const dataMap = new Map<string, { precio: number | null; costo: number | null }>();
+
+      // Agregar precios
+      preciosData.forEach((h) => {
+        const fecha = format(new Date(h.createdAt), "dd/MM/yyyy");
+        dataMap.set(fecha, { precio: h.precioNuevo, costo: dataMap.get(fecha)?.costo || null });
+      });
+
+      // Agregar costos
+      costosData.forEach((h) => {
+        const fecha = format(new Date(h.createdAt), "dd/MM/yyyy");
+        const existing = dataMap.get(fecha);
+        dataMap.set(fecha, { precio: existing?.precio || null, costo: h.costoNuevoArs });
+      });
+
+      // Convertir a array y ordenar por fecha
+      const chartPoints: ChartDataPoint[] = Array.from(dataMap.entries())
+        .map(([fecha, { precio, costo }]) => {
+          const margen = precio && costo && precio > 0 ? ((precio - costo) / precio) * 100 : null;
+          return { fecha, precio, costo, margen };
+        })
+        .sort((a, b) => {
+          const [dA, mA, yA] = a.fecha.split("/").map(Number);
+          const [dB, mB, yB] = b.fecha.split("/").map(Number);
+          return new Date(yA, mA - 1, dA).getTime() - new Date(yB, mB - 1, dB).getTime();
+        });
+
+      setChartData(chartPoints);
+    } catch (error) {
+      toast.error("Error al cargar evolución");
+      console.error(error);
+    } finally {
+      setLoadingChart(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -278,15 +382,90 @@ export function HistorialTab() {
         </Card>
       )}
 
-      {/* Gráfico de evolución (placeholder para implementación futura) */}
-      {repuestoFiltro && (
+      {/* Gráfico de evolución */}
+      {repuestoSeleccionado && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Evolución de Precio y Costo - {repuestoSeleccionado.nombre}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingChart ? (
+              <div className="text-center py-8 text-muted-foreground">Cargando gráfico...</div>
+            ) : chartData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No hay suficientes datos históricos para mostrar evolución
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={350}>
+                <ComposedChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="fecha"
+                    tick={{ fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis
+                    yAxisId="left"
+                    label={{ value: "ARS", angle: -90, position: "insideLeft" }}
+                    tickFormatter={(val) => `$${val.toLocaleString("es-AR")}`}
+                  />
+                  <Tooltip
+                    formatter={(value: any, name: string) => {
+                      if (value === null || value === undefined) return ["-", name];
+                      const numValue = Number(value);
+                      if (isNaN(numValue)) return ["-", name];
+                      if (name === "margen") return [`${numValue.toFixed(1)}%`, "Margen"];
+                      return [`$${numValue.toLocaleString("es-AR")}`, name === "precio" ? "Precio" : "Costo"];
+                    }}
+                  />
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="margen"
+                    fill="#22c55e"
+                    fillOpacity={0.15}
+                    stroke="none"
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="precio"
+                    stroke="#5CE1E6"
+                    strokeWidth={2}
+                    dot={{ fill: "#5CE1E6", r: 4 }}
+                    name="Precio de venta"
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="costo"
+                    stroke="#6b7280"
+                    strokeWidth={2}
+                    dot={{ fill: "#6b7280", r: 4 }}
+                    name="Costo promedio"
+                    connectNulls
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {repuestoFiltro && !repuestoSeleccionado && historialPreciosFiltrado.length + historialCostosFiltrado.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Evolución de Precio y Costo</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground text-center py-8">
-              Gráfico de evolución disponible cuando se selecciona un repuesto específico
+              Múltiples repuestos coinciden con la búsqueda. Refina el filtro para ver la evolución de un repuesto específico.
             </p>
           </CardContent>
         </Card>
