@@ -496,14 +496,13 @@ export function ReglasTab() {
             <div className="grid gap-2">
               <Label htmlFor="redondeo">Redondeo</Label>
               <Select
-                value={formMarkup.redondeo || ""}
-                onValueChange={(val) => setFormMarkup({ ...formMarkup, redondeo: val })}
+                value={formMarkup.redondeo || undefined}
+                onValueChange={(val) => setFormMarkup({ ...formMarkup, redondeo: val || "" })}
               >
                 <SelectTrigger id="redondeo">
-                  <SelectValue />
+                  <SelectValue placeholder="Sin redondeo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin redondeo</SelectItem>
                   <SelectItem value="NEAREST_50">Múltiplo de $50</SelectItem>
                   <SelectItem value="NEAREST_99">Terminar en .99</SelectItem>
                   <SelectItem value="NEAREST_10">Múltiplo de $10</SelectItem>

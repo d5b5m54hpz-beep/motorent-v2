@@ -329,14 +329,13 @@ export function GruposTab() {
             <div className="grid gap-2">
               <Label htmlFor="lista-precio">Lista de Precios</Label>
               <Select
-                value={formNuevo.listaPrecioId}
-                onValueChange={(val) => setFormNuevo({ ...formNuevo, listaPrecioId: val })}
+                value={formNuevo.listaPrecioId || undefined}
+                onValueChange={(val) => setFormNuevo({ ...formNuevo, listaPrecioId: val || "" })}
               >
                 <SelectTrigger id="lista-precio">
-                  <SelectValue placeholder="Selecciona una lista" />
+                  <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
                   {listas.map((lista) => (
                     <SelectItem key={lista.id} value={lista.id}>
                       {lista.nombre} ({lista.codigo})
