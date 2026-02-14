@@ -261,6 +261,7 @@ model Proveedor {
   id             String          @id @default(cuid())
   visibleId      String          @unique @default(cuid())
   nombre         String
+  codigoCorto    String?         // Código corto único para generación de SKU (ej: "CH01", "CH02")
   cuit           String?
   condicionIva   CondicionIva?
   contacto       String?
@@ -298,6 +299,7 @@ model Repuesto {
   descripcion      String?   // Descripción detallada / notas
   marca            String?   // Marca del repuesto
   modelo           String?   // Modelo compatible (ej: "Honda Wave 110")
+  codigoFabricante String?   // Código original del fabricante (para match con packing lists)
   imagenUrl        String?   // URL de foto del repuesto en R2
   imagenKey        String?   // Key en R2 para poder eliminar
   ubicacion        String?   // Ubicación en depósito: "E2-F3-P1" (Estante-Fila-Posición)

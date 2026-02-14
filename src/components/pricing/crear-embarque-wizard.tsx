@@ -41,6 +41,7 @@ type Repuesto = {
   id: string;
   nombre: string;
   categoria: string | null;
+  codigo: string | null;
 };
 
 type ItemEmbarque = {
@@ -68,7 +69,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
 
   // Step 1: Información General
   const [proveedorId, setProveedorId] = useState("");
-  const [metodoFlete, setMetodoFlete] = useState("MARITIMO");
+  const [metodoFlete, setMetodoFlete] = useState("MARITIMO_FCL");
   const [fechaSalida, setFechaSalida] = useState("");
   const [fechaLlegadaEstimada, setFechaLlegadaEstimada] = useState("");
   const [numeroContenedor, setNumeroContenedor] = useState("");
@@ -83,6 +84,9 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
     pesoTotalKg: 0,
     volumenTotalCbm: 0,
   });
+  const [uploadingPackingList, setUploadingPackingList] = useState(false);
+  const [parsedItems, setParsedItems] = useState<any[]>([]);
+  const [showManualAdd, setShowManualAdd] = useState(false);
 
   // Step 3: Costos
   const [fleteUsd, setFleteUsd] = useState(0);
@@ -127,6 +131,71 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
     } catch (error) {
       toast.error("Error al cargar repuestos");
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingPackingList(true);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/ai/parse-packing-list", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Error al procesar archivo");
+      }
+
+      const data = await res.json();
+      const parsedWithMatches = await Promise.all(
+        data.items.map(async (item: any) => {
+          // Try to match by codigoFabricante
+          const match = repuestos.find(
+            (r) =>
+              r.codigo?.toLowerCase() === item.codigoFabricante?.toLowerCase() ||
+              (item.codigoFabricante && r.codigo?.includes(item.codigoFabricante))
+          );
+
+          return {
+            ...item,
+            repuestoMatch: match || null,
+            isNew: !match,
+          };
+        })
+      );
+
+      setParsedItems(parsedWithMatches);
+      toast.success(`${data.items.length} items procesados con IA`);
+    } catch (error: any) {
+      toast.error(error.message || "Error al procesar archivo");
+      console.error(error);
+    } finally {
+      setUploadingPackingList(false);
+    }
+  };
+
+  const handleConfirmParsedItems = () => {
+    const newItems = parsedItems.map((item) => ({
+      repuestoId: item.repuestoMatch?.id || "",
+      repuestoNombre: item.repuestoMatch?.nombre || `NUEVO: ${item.descripcion}`,
+      cantidad: item.cantidad,
+      precioFobUnitarioUsd: item.precioFobUnitarioUsd,
+      pesoTotalKg: item.pesoTotalKg || 0,
+      volumenTotalCbm: item.volumenTotalCbm || 0,
+      codigoFabricante: item.codigoFabricante,
+      isNew: item.isNew,
+    }));
+
+    setItems([...items, ...newItems]);
+    setParsedItems([]);
+    toast.success(`${newItems.length} items agregados al embarque`);
   };
 
   const handleAddItem = () => {
@@ -253,7 +322,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
   const resetForm = () => {
     setStep(1);
     setProveedorId("");
-    setMetodoFlete("MARITIMO");
+    setMetodoFlete("MARITIMO_FCL");
     setFechaSalida("");
     setFechaLlegadaEstimada("");
     setNumeroContenedor("");
@@ -263,6 +332,8 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
     setFleteUsd(0);
     setSeguroUsd(0);
     setCostosCalculados(null);
+    setParsedItems([]);
+    setShowManualAdd(false);
   };
 
   const totalFob = items.reduce((sum, item) => sum + item.cantidad * item.precioFobUnitarioUsd, 0);
@@ -309,9 +380,9 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MARITIMO">Marítimo</SelectItem>
+                  <SelectItem value="MARITIMO_FCL">Marítimo FCL (contenedor completo)</SelectItem>
+                  <SelectItem value="MARITIMO_LCL">Marítimo LCL (carga consolidada)</SelectItem>
                   <SelectItem value="AEREO">Aéreo</SelectItem>
-                  <SelectItem value="TERRESTRE">Terrestre</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -379,98 +450,184 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
         {/* Step 2: Items */}
         {step === 2 && (
           <div className="space-y-4">
-            <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
+            {/* Opción A: Subir Packing List */}
+            <div className="border rounded-lg p-4 space-y-3 bg-teal-50/50">
               <h4 className="font-medium flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Agregar Item
+                📂 Opción A: Subir Packing List (Recomendado)
               </h4>
-
-              <div>
-                <Label htmlFor="repuesto">Repuesto *</Label>
-                <Select
-                  value={currentItem.repuestoId || ""}
-                  onValueChange={(value) => setCurrentItem({ ...currentItem, repuestoId: value })}
-                >
-                  <SelectTrigger id="repuesto">
-                    <SelectValue placeholder="Selecciona un repuesto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {repuestos.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Cantidad *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={currentItem.cantidad || ""}
-                    onChange={(e) =>
-                      setCurrentItem({ ...currentItem, cantidad: parseInt(e.target.value) || 0 })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Precio FOB Unitario (USD) *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={currentItem.precioFobUnitarioUsd || ""}
-                    onChange={(e) =>
-                      setCurrentItem({
-                        ...currentItem,
-                        precioFobUnitarioUsd: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Peso Total (kg)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={currentItem.pesoTotalKg || ""}
-                    onChange={(e) =>
-                      setCurrentItem({ ...currentItem, pesoTotalKg: parseFloat(e.target.value) || 0 })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Volumen Total (m³)</Label>
-                  <Input
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={currentItem.volumenTotalCbm || ""}
-                    onChange={(e) =>
-                      setCurrentItem({
-                        ...currentItem,
-                        volumenTotalCbm: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <Button onClick={handleAddItem} size="sm" className="w-full">
-                <Plus className="mr-2 h-4 w-4" />
-                Agregar Item
-              </Button>
+              <p className="text-xs text-muted-foreground">
+                Sube tu Excel/CSV del proveedor. La IA interpretará automáticamente las columnas y hará match con tus repuestos.
+              </p>
+              <Input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileUpload}
+                disabled={uploadingPackingList}
+              />
+              {uploadingPackingList && (
+                <p className="text-sm text-muted-foreground">🤖 Procesando con IA...</p>
+              )}
             </div>
 
+            {/* Preview de items parseados */}
+            {parsedItems.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted px-4 py-2">
+                  <h4 className="font-medium text-sm">Preview - {parsedItems.length} items detectados</h4>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Código Fab.</TableHead>
+                      <TableHead>Descripción</TableHead>
+                      <TableHead className="text-right">Cant.</TableHead>
+                      <TableHead className="text-right">FOB Unit.</TableHead>
+                      <TableHead>Match MotoLibre</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedItems.slice(0, 10).map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-mono text-xs">{item.codigoFabricante}</TableCell>
+                        <TableCell className="text-xs">{item.descripcion}</TableCell>
+                        <TableCell className="text-right">{item.cantidad}</TableCell>
+                        <TableCell className="text-right">${item.precioFobUnitarioUsd.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {item.repuestoMatch ? (
+                            <Badge variant="outline" className="bg-green-50 text-xs">
+                              ✅ {item.repuestoMatch.nombre}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-yellow-50 text-xs">
+                              ⚠️ Nuevo
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {parsedItems.length > 10 && (
+                  <div className="px-4 py-2 bg-muted text-xs text-muted-foreground">
+                    ... y {parsedItems.length - 10} más
+                  </div>
+                )}
+                <div className="p-4 bg-muted/50">
+                  <Button onClick={handleConfirmParsedItems} className="w-full">
+                    Confirmar y Agregar {parsedItems.length} Items
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Opción B: Agregar Manual */}
+            {!showManualAdd && parsedItems.length === 0 && (
+              <div className="text-center py-2">
+                <Button variant="outline" size="sm" onClick={() => setShowManualAdd(true)}>
+                  O agregar manualmente →
+                </Button>
+              </div>
+            )}
+
+            {showManualAdd && (
+              <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Agregar Item Manual
+                </h4>
+
+                <div>
+                  <Label htmlFor="repuesto">Repuesto *</Label>
+                  <Select
+                    value={currentItem.repuestoId || ""}
+                    onValueChange={(value) => setCurrentItem({ ...currentItem, repuestoId: value })}
+                  >
+                    <SelectTrigger id="repuesto">
+                      <SelectValue placeholder="Selecciona un repuesto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {repuestos.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Cantidad *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={currentItem.cantidad || ""}
+                      onChange={(e) =>
+                        setCurrentItem({ ...currentItem, cantidad: parseInt(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Precio FOB Unitario (USD) *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={currentItem.precioFobUnitarioUsd || ""}
+                      onChange={(e) =>
+                        setCurrentItem({
+                          ...currentItem,
+                          precioFobUnitarioUsd: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Peso Total (kg)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={currentItem.pesoTotalKg || ""}
+                      onChange={(e) =>
+                        setCurrentItem({ ...currentItem, pesoTotalKg: parseFloat(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Volumen Total (m³)</Label>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={currentItem.volumenTotalCbm || ""}
+                      onChange={(e) =>
+                        setCurrentItem({
+                          ...currentItem,
+                          volumenTotalCbm: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <Button onClick={handleAddItem} size="sm" className="w-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Agregar Item
+                </Button>
+              </div>
+            )}
+
+            {/* Lista de items agregados */}
             {items.length > 0 && (
               <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted px-4 py-2">
+                  <h4 className="font-medium text-sm">Items del Embarque ({items.length})</h4>
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
