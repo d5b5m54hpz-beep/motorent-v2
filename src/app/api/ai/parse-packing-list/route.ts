@@ -54,13 +54,41 @@ function shouldSkipRow(row: any[]): boolean {
   return false;
 }
 
+// Detectar nombre de proveedor en las primeras filas
+function detectProveedorFromHeaders(jsonData: any[][]): string | null {
+  const maxRows = Math.min(5, jsonData.length);
+  const keywords = ["co.", "ltd", "inc", "corp", "s.a.", "s.r.l.", "motorcycle", "trading", "company", "limited", "industrial"];
+
+  for (let i = 0; i < maxRows; i++) {
+    for (const cell of jsonData[i]) {
+      const text = String(cell || "").trim();
+
+      // Buscar textos largos (>15 chars) que contengan keywords de empresa
+      if (text.length > 15) {
+        const textLower = text.toLowerCase();
+        const hasKeyword = keywords.some(kw => textLower.includes(kw));
+
+        if (hasKeyword) {
+          console.log(`✓ Proveedor detectado en fila ${i + 1}: "${text}"`);
+          return text;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 // Parser principal con auto-detección inteligente
-function parsePackingList(jsonData: any[][]): any[] {
+function parsePackingList(jsonData: any[][]): { items: any[], proveedorDetectado: string | null } {
   if (!jsonData || jsonData.length < 2) {
     throw new Error("Archivo vacío o sin suficientes datos");
   }
 
   console.log(`📊 Procesando ${jsonData.length} filas...`);
+
+  // 0. Detectar proveedor antes de headers
+  const proveedorDetectado = detectProveedorFromHeaders(jsonData);
 
   // 1. Detectar fila de headers automáticamente
   const headerRowIdx = detectHeaderRow(jsonData);
@@ -196,7 +224,7 @@ function parsePackingList(jsonData: any[][]): any[] {
 
   console.log(`✅ Parsing exitoso: ${items.length} items válidos encontrados`);
 
-  return items;
+  return { items, proveedorDetectado };
 }
 
 export async function POST(req: NextRequest) {
@@ -235,7 +263,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Parsear con detección inteligente
-    const items = parsePackingList(jsonData);
+    const { items, proveedorDetectado } = parsePackingList(jsonData);
 
     if (items.length === 0) {
       return NextResponse.json(
@@ -248,11 +276,15 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`✅ Parser completado: ${items.length} items`);
+    if (proveedorDetectado) {
+      console.log(`📋 Proveedor detectado: ${proveedorDetectado}`);
+    }
 
     return NextResponse.json({
       items,
       method: "parser",
-      totalItems: items.length
+      totalItems: items.length,
+      proveedorDetectado: proveedorDetectado || null,
     });
 
   } catch (error: unknown) {
