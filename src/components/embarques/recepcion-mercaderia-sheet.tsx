@@ -32,7 +32,9 @@ import {
   MapPin,
   Package,
   Search,
+  Camera,
 } from "lucide-react";
+import { QRScannerDialog } from "./qr-scanner-dialog";
 
 type EstadoRecepcionItem =
   | "PENDIENTE"
@@ -53,6 +55,9 @@ interface RecepcionItem {
   observaciones: string | null;
   procesadoPor: string | null;
   fechaProcesado: string | null;
+  pesoEsperadoKg: number | null;
+  pesoRecibidoKg: number | null;
+  alertaPeso: boolean;
   repuesto: {
     id: string;
     nombre: string;
@@ -63,6 +68,7 @@ interface RecepcionItem {
   itemEmbarque: {
     cantidad: number;
     precioFobUnitarioUsd: number;
+    pesoTotalKg: number | null;
   };
 }
 
@@ -103,12 +109,14 @@ export function RecepcionMercaderiaSheet({
   const [finalizando, setFinalizando] = useState(false);
   const [procesando, setProcesando] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Estado del formulario para procesar item
   const [itemSeleccionado, setItemSeleccionado] = useState<string | null>(null);
   const [cantidadRecibida, setCantidadRecibida] = useState(0);
   const [cantidadRechazada, setCantidadRechazada] = useState(0);
   const [cantidadFaltante, setCantidadFaltante] = useState(0);
+  const [pesoRecibido, setPesoRecibido] = useState<number>(0);
   const [ubicacion, setUbicacion] = useState("");
   const [motivoRechazo, setMotivoRechazo] = useState("");
   const [observaciones, setObservaciones] = useState("");
@@ -271,6 +279,26 @@ export function RecepcionMercaderiaSheet({
     setObservaciones("");
   };
 
+  const handleQRScan = (code: string) => {
+    // Set search term to filter items
+    setSearchTerm(code);
+
+    // Try to find and select the item
+    const matchingItem = recepcion?.items.find(
+      (item) =>
+        item.repuesto.codigo?.toLowerCase() === code.toLowerCase() ||
+        item.repuesto.codigoFabricante?.toLowerCase() === code.toLowerCase() ||
+        item.repuesto.nombre.toLowerCase().includes(code.toLowerCase())
+    );
+
+    if (matchingItem) {
+      seleccionarItem(matchingItem);
+      toast.success(`Item encontrado: ${matchingItem.repuesto.nombre}`);
+    } else {
+      toast.error("No se encontró el item escaneado");
+    }
+  };
+
   const getEstadoBadge = (estado: EstadoRecepcionItem) => {
     switch (estado) {
       case "PENDIENTE":
@@ -391,15 +419,25 @@ export function RecepcionMercaderiaSheet({
                 </div>
 
                 {/* Barra de búsqueda */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Buscar por nombre o código..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Buscar o escanear código..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setScannerOpen(true)}
+                    title="Escanear QR"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 <ScrollArea className="h-[500px] pr-4">
@@ -589,6 +627,13 @@ export function RecepcionMercaderiaSheet({
           </div>
         )}
       </SheetContent>
+
+      {/* QR Scanner Dialog */}
+      <QRScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScan={handleQRScan}
+      />
     </Sheet>
   );
 }

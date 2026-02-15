@@ -1847,6 +1847,11 @@ model RecepcionItemEmbarque {
   estadoItem        EstadoRecepcionItem @default(PENDIENTE)
   motivoRechazo     String?   // Si hay cantidadRechazada > 0
 
+  // Control de peso
+  pesoEsperadoKg    Float?    // Peso esperado del packing list
+  pesoRecibidoKg    Float?    // Peso real recibido
+  alertaPeso        Boolean   @default(false)  // True si difiere >10%
+
   // Ubicación en depósito
   ubicacionAsignada String?   // Formato: "E2-F3-P1" (Estante-Fila-Posición)
 
