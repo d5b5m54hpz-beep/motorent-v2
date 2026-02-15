@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { Camera, X } from "lucide-react";
+import { Camera, X, Upload, ImageIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 type QRScannerDialogProps = {
@@ -21,11 +24,14 @@ type QRScannerDialogProps = {
 
 export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"camera" | "upload">("camera");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && mode === "camera") {
       startScanning();
     } else {
       stopScanning();
@@ -34,7 +40,7 @@ export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogP
     return () => {
       stopScanning();
     };
-  }, [open]);
+  }, [open, mode]);
 
   const startScanning = async () => {
     try {
@@ -50,7 +56,7 @@ export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogP
         },
         (decodedText) => {
           // Success callback
-          toast.success("QR code detected!");
+          toast.success("QR detectado!");
           onScan(decodedText);
           onOpenChange(false);
         },
@@ -63,8 +69,10 @@ export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogP
       setIsScanning(true);
     } catch (err) {
       console.error("Error starting scanner:", err);
-      setError("No se pudo acceder a la cámara. Verifica los permisos.");
+      setError("No se pudo acceder a la cámara. Verifica los permisos o usa la opción 'Subir Imagen'.");
       toast.error("Error al iniciar cámara");
+      // Auto-switch to upload mode if camera fails
+      setMode("upload");
     }
   };
 
@@ -80,6 +88,29 @@ export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogP
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const scanner = new Html5Qrcode("qr-file-reader");
+      const decodedText = await scanner.scanFile(file, true);
+
+      toast.success("QR detectado desde imagen!");
+      onScan(decodedText);
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Error reading QR from file:", err);
+      setError("No se pudo detectar un código QR en esta imagen. Asegúrate de que la imagen sea clara.");
+      toast.error("No se detectó código QR");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -89,25 +120,82 @@ export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogP
             Escanear Código QR
           </DialogTitle>
           <DialogDescription>
-            Apunta la cámara hacia el código QR del producto
+            Elige cómo escanear el código QR
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "camera" | "upload")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="camera">
+              <Camera className="mr-2 h-4 w-4" />
+              Cámara
+            </TabsTrigger>
+            <TabsTrigger value="upload">
+              <ImageIcon className="mr-2 h-4 w-4" />
+              Subir Imagen
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="camera" className="space-y-4">
+            {error && mode === "camera" && (
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <div id="qr-reader" className="rounded-lg overflow-hidden border min-h-[200px]" />
+
+            <p className="text-xs text-muted-foreground text-center">
+              Apunta la cámara hacia el código QR del producto
+            </p>
+          </TabsContent>
+
+          <TabsContent value="upload" className="space-y-4">
+            {error && mode === "upload" && (
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Upload className="h-6 w-6 text-primary" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="qr-file" className="text-sm font-medium cursor-pointer">
+                  Sube una imagen con el código QR
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Formatos: JPG, PNG, WEBP (máx 10MB)
+                </p>
+              </div>
+
+              <Input
+                ref={fileInputRef}
+                id="qr-file"
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                disabled={isProcessing}
+                className="cursor-pointer"
+              />
+
+              {isProcessing && (
+                <p className="text-sm text-muted-foreground">Procesando imagen...</p>
+              )}
             </div>
-          )}
 
-          <div id="qr-reader" className="rounded-lg overflow-hidden border" />
+            {/* Hidden div for file scanning */}
+            <div id="qr-file-reader" className="hidden" />
+          </TabsContent>
+        </Tabs>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              <X className="mr-2 h-4 w-4" />
-              Cancelar
-            </Button>
-          </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <X className="mr-2 h-4 w-4" />
+            Cancelar
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
