@@ -92,10 +92,27 @@ export default function SupplierPortalPage() {
       }
       const labelData = await res.json();
 
-      // TODO: Generate PDF with jsPDF using labelData.embarque.items
-      // For now, show success message
-      toast.success(`Label data ready for ${labelData.embarque.items.length} items`);
-      console.log("Label data:", labelData);
+      // Dynamic import to avoid SSR issues
+      const { generateLabelsPDF } = await import("@/lib/generate-labels-pdf");
+
+      toast.info("Generating PDF...");
+      const pdfBlob = await generateLabelsPDF(
+        labelData.embarque.items,
+        labelData.embarque.referencia,
+        labelData.embarque.proveedor
+      );
+
+      // Download PDF
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `labels-${labelData.embarque.referencia}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`PDF generated with ${labelData.embarque.items.length} labels!`);
     } catch (error) {
       console.error("Error downloading labels:", error);
       toast.error("Error generating labels");
