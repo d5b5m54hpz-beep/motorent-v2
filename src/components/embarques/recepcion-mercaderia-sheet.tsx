@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -499,37 +500,31 @@ export function RecepcionMercaderiaSheet({
                       <div className="grid grid-cols-3 gap-2">
                         <div className="space-y-2">
                           <Label>Recibido OK</Label>
-                          <Input
-                            type="number"
+                          <NumericInput
                             min={0}
                             value={cantidadRecibida}
-                            onChange={(e) =>
-                              setCantidadRecibida(parseInt(e.target.value) || 0)
-                            }
+                            onChange={setCantidadRecibida}
+                            placeholder="0"
                             disabled={itemActual.estadoItem !== "PENDIENTE"}
                           />
                         </div>
                         <div className="space-y-2">
                           <Label>Rechazado</Label>
-                          <Input
-                            type="number"
+                          <NumericInput
                             min={0}
                             value={cantidadRechazada}
-                            onChange={(e) =>
-                              setCantidadRechazada(parseInt(e.target.value) || 0)
-                            }
+                            onChange={setCantidadRechazada}
+                            placeholder="0"
                             disabled={itemActual.estadoItem !== "PENDIENTE"}
                           />
                         </div>
                         <div className="space-y-2">
                           <Label>Faltante</Label>
-                          <Input
-                            type="number"
+                          <NumericInput
                             min={0}
                             value={cantidadFaltante}
-                            onChange={(e) =>
-                              setCantidadFaltante(parseInt(e.target.value) || 0)
-                            }
+                            onChange={setCantidadFaltante}
+                            placeholder="0"
                             disabled={itemActual.estadoItem !== "PENDIENTE"}
                           />
                         </div>
