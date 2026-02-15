@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Ship, Plus, Search, Filter, Eye, Calculator, CheckCircle, Clock, Trash2, FileText } from "lucide-react";
+import { Ship, Plus, Search, Filter, Eye, Calculator, CheckCircle, Clock, Trash2, FileText, Package } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CrearEmbarqueWizard } from "./crear-embarque-wizard";
+import { RecepcionMercaderiaSheet } from "@/components/embarques/recepcion-mercaderia-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -96,6 +97,9 @@ const ESTADO_COLORS: Record<string, string> = {
   EN_ADUANA: "bg-yellow-500",
   COSTO_FINALIZADO: "bg-green-500",
   RECIBIDO: "bg-cyan-500",
+  EN_RECEPCION: "bg-purple-500",
+  RECEPCION_PARCIAL: "bg-orange-500",
+  ALMACENADO: "bg-teal-500",
 };
 
 const ESTADO_LABELS: Record<string, string> = {
@@ -104,6 +108,9 @@ const ESTADO_LABELS: Record<string, string> = {
   EN_ADUANA: "En Aduana",
   COSTO_FINALIZADO: "Costo Finalizado",
   RECIBIDO: "Recibido",
+  EN_RECEPCION: "En Recepción",
+  RECEPCION_PARCIAL: "Recepción Parcial",
+  ALMACENADO: "Almacenado",
 };
 
 export function EmbarquesTab() {
@@ -119,6 +126,7 @@ export function EmbarquesTab() {
   const [eliminarDialogOpen, setEliminarDialogOpen] = useState(false);
   const [calculandoCostos, setCalculandoCostos] = useState(false);
   const [costosCalculados, setCostosCalculados] = useState<any>(null);
+  const [recepcionOpen, setRecepcionOpen] = useState(false);
 
   // Calcular Costos form state
   const [tipoCambio, setTipoCambio] = useState(1200);
@@ -540,6 +548,20 @@ export function EmbarquesTab() {
                               Confirmar Recepción
                             </DropdownMenuItem>
                           )}
+                          {(embarque.estado === "RECIBIDO" || embarque.estado === "COSTO_FINALIZADO" || embarque.estado === "EN_RECEPCION") && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedEmbarque(embarque);
+                                  setRecepcionOpen(true);
+                                }}
+                              >
+                                <Package className="mr-2 h-4 w-4" />
+                                Iniciar Control de Calidad
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -958,6 +980,17 @@ export function EmbarquesTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Recepción de Mercadería Sheet */}
+      {selectedEmbarque && (
+        <RecepcionMercaderiaSheet
+          open={recepcionOpen}
+          onOpenChange={setRecepcionOpen}
+          embarqueId={selectedEmbarque.id}
+          embarqueReferencia={selectedEmbarque.referencia}
+          onRecepcionFinalizada={fetchEmbarques}
+        />
+      )}
     </div>
   );
 }

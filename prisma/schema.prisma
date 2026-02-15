@@ -30,6 +30,7 @@ model User {
   diagnosticosEjecutados  DiagnosticoRun[]
   historialEstadosMotos   HistorialEstadoMoto[]
   notasCreditoCreadas     NotaCredito[]
+  recepcionesMercaderia   RecepcionMercaderiaEmbarque[]
 }
 
 enum Role {
@@ -339,6 +340,9 @@ model Repuesto {
   // ─── Relaciones nuevas pricing motor ──────────────────────────
   itemsListaPrecio   ItemListaPrecio[]
   historialPrecios   HistorialPrecioRepuesto[]
+
+  // ─── Relaciones nuevas recepción mercadería ───────────────────
+  recepcionesItems   RecepcionItemEmbarque[]
 }
 
 // ─── Finanzas ───────────────────────────────────────────────────────────────
@@ -1674,6 +1678,7 @@ model EmbarqueImportacion {
   despachos            DespachoAduanero[]
   asignaciones         AsignacionCostoImportacion[]
   ordenesCompra        OrdenCompra[]  // ⭐ GAP 1: OCs vinculadas a este embarque
+  recepcion            RecepcionMercaderiaEmbarque?
 }
 
 enum EstadoEmbarque {
@@ -1682,8 +1687,11 @@ enum EstadoEmbarque {
   EN_PUERTO
   EN_ADUANA
   DESPACHADO_PARCIAL
-  RECIBIDO
   COSTO_FINALIZADO
+  RECIBIDO              // Llegó al almacén, pendiente de revisión
+  EN_RECEPCION          // En proceso de control de calidad
+  RECEPCION_PARCIAL     // Algunos items recibidos, otros pendientes
+  ALMACENADO            // Todos los items verificados y ubicados
 }
 
 enum MetodoFlete {
@@ -1720,6 +1728,8 @@ model ItemEmbarque {
   costoLandedUnitarioArs Float?      // Costo puesto en almacén por unidad (ARS)
 
   createdAt       DateTime           @default(now())
+
+  recepcionItem   RecepcionItemEmbarque?
 }
 
 // ─── DESPACHOS ADUANEROS (parciales) ────────────────────────────
@@ -1781,6 +1791,83 @@ model AsignacionCostoImportacion {
 
   @@index([embarqueId])
   @@index([repuestoId])
+}
+
+// ─── RECEPCIÓN DE MERCADERÍA (WORKFLOW ALMACÉN) ─────────────────
+
+model RecepcionMercaderiaEmbarque {
+  id              String   @id @default(cuid())
+  embarqueId      String   @unique
+  embarque        EmbarqueImportacion @relation(fields: [embarqueId], references: [id], onDelete: Cascade)
+
+  // Usuario que realiza la recepción
+  usuarioId       String?
+  usuario         User? @relation(fields: [usuarioId], references: [id])
+
+  // Fechas
+  fechaInicio     DateTime @default(now())  // Cuando se inicia la recepción
+  fechaFinalizada DateTime?                  // Cuando se completa
+
+  // Totales de control
+  totalItemsEsperados  Int      @default(0)  // Total de líneas en el embarque
+  totalItemsRecibidos  Int      @default(0)  // Líneas ya procesadas
+  totalItemsRechazados Int      @default(0)  // Líneas con problemas
+
+  // Observaciones generales
+  observaciones   String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           RecepcionItemEmbarque[]
+}
+
+model RecepcionItemEmbarque {
+  id                String   @id @default(cuid())
+  recepcionId       String
+  recepcion         RecepcionMercaderiaEmbarque @relation(fields: [recepcionId], references: [id], onDelete: Cascade)
+
+  // Vinculación al item del embarque
+  itemEmbarqueId    String       @unique
+  itemEmbarque      ItemEmbarque @relation(fields: [itemEmbarqueId], references: [id])
+
+  repuestoId        String
+  repuesto          Repuesto @relation(fields: [repuestoId], references: [id])
+
+  // Control de cantidades
+  cantidadEsperada  Int       // De la packing list
+  cantidadRecibida  Int       // Lo que realmente llegó OK
+  cantidadRechazada Int       @default(0)  // Defectuosos/dañados
+  cantidadFaltante  Int       @default(0)  // Diferencia negativa
+
+  // Control de calidad
+  estadoItem        EstadoRecepcionItem @default(PENDIENTE)
+  motivoRechazo     String?   // Si hay cantidadRechazada > 0
+
+  // Ubicación en depósito
+  ubicacionAsignada String?   // Formato: "E2-F3-P1" (Estante-Fila-Posición)
+
+  // Usuario que procesó este item
+  procesadoPor      String?   // Email del usuario
+  fechaProcesado    DateTime?
+
+  // Observaciones específicas de este item
+  observaciones     String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([recepcionId, itemEmbarqueId])
+  @@index([recepcionId])
+  @@index([repuestoId])
+}
+
+enum EstadoRecepcionItem {
+  PENDIENTE       // No procesado aún
+  RECIBIDO_OK     // Cantidad correcta, sin problemas
+  RECIBIDO_PARCIAL // Algunos OK, algunos con problemas
+  RECHAZADO_TOTAL  // Todo el lote rechazado
+  FALTANTE         // No llegó nada de este item
 }
 
 // ─── HISTORIAL DE COSTOS ────────────────────────────────────────
