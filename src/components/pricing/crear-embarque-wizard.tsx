@@ -778,10 +778,13 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                       type="button"
                       variant="default"
                       size="sm"
-                      onClick={() => setShowProveedorForm(true)}
+                      onClick={() => {
+                        setNuevoProveedor({ nombre: proveedorDetectado || "", codigoCorto: "" });
+                        setShowProveedorForm(true);
+                      }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Crear Proveedor con Este Nombre
+                      Crear Proveedor "{proveedorDetectado}"
                     </Button>
                   </div>
                 )}

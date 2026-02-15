@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Ship, PackageCheck, Link2, Tag } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmbarquesTab } from "@/components/pricing/embarques-tab";
+import { RecepcionesTab } from "@/components/pricing/recepciones-tab";
+import { PortalProveedorTab } from "@/components/pricing/portal-proveedor-tab";
+import { EtiquetasTab } from "@/components/pricing/etiquetas-tab";
 
 export default function ImportacionesPage() {
   const [activeTab, setActiveTab] = useState("embarques");
@@ -44,33 +47,15 @@ export default function ImportacionesPage() {
         </TabsContent>
 
         <TabsContent value="recepciones" className="space-y-4">
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <PackageCheck className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Recepciones</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Vista de embarques pendientes de recepción e historial
-            </p>
-          </div>
+          <RecepcionesTab />
         </TabsContent>
 
         <TabsContent value="portal-proveedor" className="space-y-4">
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <Link2 className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Portal de Proveedor</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Genera links públicos para que proveedores confirmen embarques y descarguen etiquetas
-            </p>
-          </div>
+          <PortalProveedorTab />
         </TabsContent>
 
         <TabsContent value="etiquetas" className="space-y-4">
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <Tag className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Etiquetas</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Generación y reimpresión de etiquetas individuales, de caja y master
-            </p>
-          </div>
+          <EtiquetasTab />
         </TabsContent>
       </Tabs>
     </div>
