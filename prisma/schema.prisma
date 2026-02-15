@@ -1679,6 +1679,8 @@ model EmbarqueImportacion {
   asignaciones         AsignacionCostoImportacion[]
   ordenesCompra        OrdenCompra[]  // ⭐ GAP 1: OCs vinculadas a este embarque
   recepcion            RecepcionMercaderiaEmbarque?
+  portalToken          PortalProveedorToken?
+  etiquetas            EtiquetaEmbarque[]
 }
 
 enum EstadoEmbarque {
@@ -1730,6 +1732,7 @@ model ItemEmbarque {
   createdAt       DateTime           @default(now())
 
   recepcionItem   RecepcionItemEmbarque?
+  etiquetas       EtiquetaEmbarque[]
 }
 
 // ─── DESPACHOS ADUANEROS (parciales) ────────────────────────────
@@ -1868,6 +1871,48 @@ enum EstadoRecepcionItem {
   RECIBIDO_PARCIAL // Algunos OK, algunos con problemas
   RECHAZADO_TOTAL  // Todo el lote rechazado
   FALTANTE         // No llegó nada de este item
+}
+
+// ─── PORTAL DE PROVEEDOR ────────────────────────────────────────
+
+model PortalProveedorToken {
+  id           String   @id @default(cuid())
+  embarqueId   String   @unique
+  embarque     EmbarqueImportacion @relation(fields: [embarqueId], references: [id], onDelete: Cascade)
+  token        String   @unique @default(cuid())
+  activo       Boolean  @default(true)
+  vistoPor     String?  // IP o user agent del proveedor
+  vistoAt      DateTime?
+  confirmado   Boolean  @default(false)
+  confirmadoAt DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([token])
+  @@index([embarqueId])
+}
+
+// ─── ETIQUETAS DE EMBARQUE ──────────────────────────────────────
+
+model EtiquetaEmbarque {
+  id          String   @id @default(cuid())
+  embarqueId  String
+  embarque    EmbarqueImportacion @relation(fields: [embarqueId], references: [id], onDelete: Cascade)
+  itemId      String?
+  item        ItemEmbarque? @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tipo        TipoEtiqueta // "INDIVIDUAL" | "CAJA" | "MASTER"
+  codigoQr    String   @unique // UUID para el QR
+  datos       Json     // datos codificados en el QR
+  impreso     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([embarqueId])
+  @@index([codigoQr])
+}
+
+enum TipoEtiqueta {
+  INDIVIDUAL  // Etiqueta individual (5cm x 3cm)
+  CAJA        // Etiqueta de caja (10cm x 7cm)
+  MASTER      // Etiqueta master box (15cm x 10cm)
 }
 
 // ─── HISTORIAL DE COSTOS ────────────────────────────────────────

@@ -68,11 +68,17 @@ export function AppSidebar({ user }: Props) {
   // Categories with subitems
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
+    { title: "Tarifas de Alquiler", href: "/admin/precios", icon: Tag },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
     { title: "Talleres", href: "/admin/talleres", icon: Factory },
-    { title: "Repuestos", href: "/admin/repuestos", icon: Package },
-    { title: "Precios", href: "/admin/precios", icon: Tag },
-    { title: "Costeo Importación", href: "/admin/pricing-repuestos", icon: Ship },
+  ];
+
+  const supplyChain: NavItem[] = [
+    { title: "Inventario", href: "/admin/repuestos", icon: Package },
+    { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
+    { title: "Importaciones", href: "/admin/importaciones", icon: Ship },
+    { title: "Costeo", href: "/admin/pricing-repuestos?tab=costeo", icon: Calculator },
+    { title: "Precios Repuestos", href: "/admin/pricing-repuestos?tab=precios", icon: Tag },
   ];
 
   const comercial: NavItem[] = [
@@ -84,17 +90,15 @@ export function AppSidebar({ user }: Props) {
   ];
 
   const finanzas: NavItem[] = [
-    { title: "Finanzas", href: "/admin/finanzas", icon: BarChart3 },
-    { title: "Estado de Resultados", href: "/admin/finanzas/estado-resultados", icon: FileSpreadsheet },
-    { title: "Indicadores Económicos", href: "/admin/finanzas/indicadores", icon: Activity },
+    { title: "Dashboard Financiero", href: "/admin/finanzas", icon: BarChart3 },
     { title: "Flujo de Caja", href: "/admin/finanzas/flujo-caja", icon: Banknote },
     { title: "Gastos", href: "/admin/gastos", icon: Wallet },
     { title: "Rentabilidad", href: "/admin/finanzas/rentabilidad", icon: TrendingUp },
     { title: "Presupuestos", href: "/admin/presupuestos", icon: Calculator },
-    { title: "Pricing", href: "/admin/finanzas/pricing", icon: DollarSign },
   ];
 
   const contabilidad: NavItem[] = [
+    { title: "Estado de Resultados", href: "/admin/finanzas/estado-resultados", icon: FileSpreadsheet },
     { title: "Facturas Compra", href: "/admin/facturas-compra", icon: FileSpreadsheet },
     { title: "Plan de Cuentas", href: "/admin/cuentas-contables", icon: BookOpen },
     { title: "Asientos Contables", href: "/admin/asientos-contables", icon: Calculator },
@@ -102,7 +106,6 @@ export function AppSidebar({ user }: Props) {
   ];
 
   const rrhh: NavItem[] = [
-    { title: "Dashboard RRHH", href: "/admin/rrhh", icon: Users },
     { title: "Empleados", href: "/admin/rrhh/empleados", icon: UserCog },
     { title: "Ausencias", href: "/admin/rrhh/ausencias", icon: Calendar },
     { title: "Liquidación", href: "/admin/rrhh/liquidacion", icon: Banknote },
@@ -110,7 +113,6 @@ export function AppSidebar({ user }: Props) {
 
   const sistema: NavItem[] = [
     { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
-    { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
     { title: "Configuración Empresa", href: "/admin/configuracion/empresa", icon: Building2 },
     { title: "Diagnóstico", href: "/admin/sistema/diagnostico", icon: Activity },
@@ -251,6 +253,18 @@ export function AppSidebar({ user }: Props) {
             items={flota}
             isCollapsed={isCollapsed}
             storageKey="sidebar-flota-open"
+          />
+
+          {/* Separator */}
+          <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
+
+          {/* Supply Chain */}
+          <CollapsibleNavSection
+            title="Supply Chain"
+            icon={Package}
+            items={supplyChain}
+            isCollapsed={isCollapsed}
+            storageKey="sidebar-supply-chain-open"
           />
 
           {/* Separator */}

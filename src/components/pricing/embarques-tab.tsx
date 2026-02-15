@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Ship, Plus, Search, Filter, Eye, Calculator, CheckCircle, Clock, Trash2, FileText, Package } from "lucide-react";
+import { Ship, Plus, Search, Filter, Eye, Calculator, CheckCircle, Clock, Trash2, FileText, Package, Link2, Copy } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CrearEmbarqueWizard } from "./crear-embarque-wizard";
 import { RecepcionMercaderiaSheet } from "@/components/embarques/recepcion-mercaderia-sheet";
@@ -181,6 +181,23 @@ export function EmbarquesTab() {
   const handleVerDetalle = (embarque: Embarque) => {
     setSelectedEmbarque(embarque);
     setVerDetalleOpen(true);
+  };
+
+  const handleGenerarLinkProveedor = async (embarqueId: string) => {
+    try {
+      const res = await fetch(`/api/embarques/${embarqueId}/generar-link-proveedor`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Error al generar link");
+      const data = await res.json();
+
+      // Copiar URL al portapapeles
+      await navigator.clipboard.writeText(data.url);
+      toast.success(`Link generado y copiado al portapapeles`);
+    } catch (error) {
+      toast.error("Error al generar link");
+      console.error(error);
+    }
   };
 
   const handleCalcularCostos = (embarque: Embarque) => {
@@ -418,6 +435,11 @@ export function EmbarquesTab() {
                             <Eye className="mr-2 h-4 w-4" />
                             Ver Detalle
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleGenerarLinkProveedor(embarque.id)}>
+                            <Link2 className="mr-2 h-4 w-4" />
+                            Generar Link Proveedor
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           {embarque.estado === "BORRADOR" && (
                             <>
                               <DropdownMenuItem>Editar</DropdownMenuItem>

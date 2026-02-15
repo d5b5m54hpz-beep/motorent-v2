@@ -72,8 +72,53 @@ export async function GET(req: NextRequest) {
       prisma.repuesto.count({ where }),
     ]);
 
+    // Calcular unidades en tránsito para cada repuesto
+    const repuestoIds = data.map((r) => r.id);
+    const embarquesActivos = await prisma.itemEmbarque.findMany({
+      where: {
+        repuestoId: { in: repuestoIds },
+        embarque: {
+          estado: {
+            in: ["EN_TRANSITO", "EN_PUERTO", "EN_ADUANA", "DESPACHADO_PARCIAL", "EN_RECEPCION"],
+          },
+        },
+      },
+      select: {
+        repuestoId: true,
+        cantidad: true,
+        embarque: {
+          select: {
+            referencia: true,
+          },
+        },
+      },
+    });
+
+    // Agrupar por repuestoId
+    const transitoMap = new Map<string, { total: number; embarques: { embarqueRef: string; cantidad: number }[] }>();
+    for (const item of embarquesActivos) {
+      if (!item.repuestoId) continue;
+      const existing = transitoMap.get(item.repuestoId) || { total: 0, embarques: [] };
+      existing.total += item.cantidad;
+      existing.embarques.push({
+        embarqueRef: item.embarque.referencia,
+        cantidad: item.cantidad,
+      });
+      transitoMap.set(item.repuestoId, existing);
+    }
+
+    // Agregar enTransito a cada repuesto
+    const dataWithTransit = data.map((r) => {
+      const transitInfo = transitoMap.get(r.id);
+      return {
+        ...r,
+        enTransito: transitInfo?.total ?? 0,
+        embarquesEnTransito: transitInfo?.embarques ?? [],
+      };
+    });
+
     if (stockBajo === "true") {
-      const filtered = data.filter((r) => r.stock <= r.stockMinimo);
+      const filtered = dataWithTransit.filter((r) => r.stock <= r.stockMinimo);
       return NextResponse.json({
         data: filtered,
         total: filtered.length,
@@ -84,7 +129,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      data,
+      data: dataWithTransit,
       total,
       page,
       limit,

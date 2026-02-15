@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash2, Package, History, QrCode, MapPin } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Pencil, Trash2, Package, History, QrCode, MapPin, Ship } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatCurrency } from "@/lib/utils";
 import type { Repuesto } from "./types";
 import Image from "next/image";
@@ -165,6 +171,53 @@ export function getColumns(actions: ColumnActions): ColumnDef<Repuesto>[] {
             </span>
             {badge}
           </div>
+        );
+      },
+    },
+    {
+      accessorKey: "enTransito",
+      header: () => (
+        <div className="flex items-center gap-1">
+          <Ship className="h-3 w-3" />
+          En Tránsito
+        </div>
+      ),
+      cell: ({ row }) => {
+        const enTransito = row.original.enTransito ?? 0;
+        const embarques = row.original.embarquesEnTransito ?? [];
+
+        if (enTransito === 0) {
+          return <span className="text-muted-foreground">—</span>;
+        }
+
+        const tooltipContent = embarques.length > 0 ? (
+          <div className="space-y-1">
+            {embarques.map((emb, idx) => (
+              <div key={idx} className="text-xs">
+                <span className="font-medium">{emb.embarqueRef}</span>: {emb.cantidad} uds
+              </div>
+            ))}
+          </div>
+        ) : null;
+
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs font-medium">
+                    <Ship className="mr-1 h-3 w-3" />
+                    {enTransito}
+                  </Badge>
+                </div>
+              </TooltipTrigger>
+              {tooltipContent && (
+                <TooltipContent>
+                  {tooltipContent}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         );
       },
     },

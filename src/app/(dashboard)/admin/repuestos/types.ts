@@ -11,6 +11,8 @@ export type Repuesto = {
   precioVenta: number;
   stock: number;
   stockMinimo: number;
+  enTransito?: number; // Unidades en embarques activos
+  embarquesEnTransito?: { embarqueRef: string; cantidad: number }[]; // Detalle de embarques
   proveedorId: string | null;
   unidad: string | null;
   unidadCompra: string | null;

@@ -31,6 +31,7 @@ import {
   Loader2,
   MapPin,
   Package,
+  Search,
 } from "lucide-react";
 
 type EstadoRecepcionItem =
@@ -101,6 +102,7 @@ export function RecepcionMercaderiaSheet({
   const [iniciando, setIniciando] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
   const [procesando, setProcesando] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Estado del formulario para procesar item
   const [itemSeleccionado, setItemSeleccionado] = useState<string | null>(null);
@@ -306,6 +308,24 @@ export function RecepcionMercaderiaSheet({
 
   const itemActual = recepcion?.items.find((i) => i.id === itemSeleccionado);
 
+  // Filtrar items por búsqueda
+  const itemsFiltrados = recepcion?.items.filter((item) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      item.repuesto.nombre.toLowerCase().includes(term) ||
+      item.repuesto.codigo?.toLowerCase().includes(term) ||
+      item.repuesto.codigoFabricante?.toLowerCase().includes(term)
+    );
+  });
+
+  // Ordenar: pendientes primero, procesados al final
+  const itemsOrdenados = itemsFiltrados?.sort((a, b) => {
+    if (a.estadoItem === "PENDIENTE" && b.estadoItem !== "PENDIENTE") return -1;
+    if (a.estadoItem !== "PENDIENTE" && b.estadoItem === "PENDIENTE") return 1;
+    return 0;
+  });
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-[900px] sm:max-w-[900px] overflow-y-auto">
@@ -363,10 +383,28 @@ export function RecepcionMercaderiaSheet({
             <div className="grid grid-cols-2 gap-6">
               {/* Columna izquierda: Lista de items */}
               <div className="space-y-4">
-                <h3 className="font-medium">Items del Embarque</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Items del Embarque</h3>
+                  <Badge variant="secondary">
+                    {itemsOrdenados?.length || 0} items
+                  </Badge>
+                </div>
+
+                {/* Barra de búsqueda */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar por nombre o código..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
                 <ScrollArea className="h-[500px] pr-4">
                   <div className="space-y-2">
-                    {recepcion.items.map((item) => (
+                    {itemsOrdenados?.map((item) => (
                       <div
                         key={item.id}
                         className={`rounded-lg border p-3 cursor-pointer transition-colors ${
