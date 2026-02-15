@@ -5,6 +5,7 @@ import { Ship, Plus, Search, Filter, Eye, Calculator, CheckCircle, Clock, Trash2
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CrearEmbarqueWizard } from "./crear-embarque-wizard";
 import { RecepcionMercaderiaSheet } from "@/components/embarques/recepcion-mercaderia-sheet";
+import { CalcularCostosDialog } from "@/components/embarques/calcular-costos-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -124,19 +125,7 @@ export function EmbarquesTab() {
   const [calcularCostosOpen, setCalcularCostosOpen] = useState(false);
   const [registrarDespachoOpen, setRegistrarDespachoOpen] = useState(false);
   const [eliminarDialogOpen, setEliminarDialogOpen] = useState(false);
-  const [calculandoCostos, setCalculandoCostos] = useState(false);
-  const [costosCalculados, setCostosCalculados] = useState<any>(null);
   const [recepcionOpen, setRecepcionOpen] = useState(false);
-
-  // Calcular Costos form state
-  const [tipoCambio, setTipoCambio] = useState(1200);
-  const [diePct, setDiePct] = useState(16);
-  const [tasaEstPct, setTasaEstPct] = useState(3);
-  const [ivaPct, setIvaPct] = useState(21);
-  const [ivaAdicPct, setIvaAdicPct] = useState(10.5);
-  const [gananciasPct, setGananciasPct] = useState(6);
-  const [iibbPct, setIibbPct] = useState(2.5);
-  const [gastosFijosUsd, setGastosFijosUsd] = useState(0);
 
   // Registrar Despacho form state
   const [despachoNumero, setDespachoNumero] = useState("");
@@ -196,77 +185,7 @@ export function EmbarquesTab() {
 
   const handleCalcularCostos = (embarque: Embarque) => {
     setSelectedEmbarque(embarque);
-    setCostosCalculados(null);
     setCalcularCostosOpen(true);
-  };
-
-  const ejecutarCalculoCostos = async () => {
-    if (!selectedEmbarque) return;
-
-    try {
-      setCalculandoCostos(true);
-
-      const cifUsd = selectedEmbarque.cifUsd || 0;
-
-      // Calculate base and taxes
-      const die = cifUsd * (diePct / 100);
-      const tasaEst = cifUsd * (tasaEstPct / 100);
-      const baseIva = cifUsd + die + tasaEst;
-      const iva = baseIva * (ivaPct / 100);
-      const ivaAdic = baseIva * (ivaAdicPct / 100);
-      const ganancias = baseIva * (gananciasPct / 100);
-      const iibb = baseIva * (iibbPct / 100);
-      const totalImpuestos = die + tasaEst + iva + ivaAdic + ganancias + iibb + gastosFijosUsd;
-      const costoLandedUsd = cifUsd + totalImpuestos;
-      const costoLandedArs = costoLandedUsd * tipoCambio;
-
-      setCostosCalculados({
-        cifUsd,
-        die,
-        tasaEst,
-        baseIva,
-        iva,
-        ivaAdic,
-        ganancias,
-        iibb,
-        gastosFijosUsd,
-        totalImpuestos,
-        costoLandedUsd,
-        costoLandedArs,
-        tipoCambio,
-      });
-
-      toast.success("Costos calculados exitosamente");
-    } catch (error) {
-      toast.error("Error al calcular costos");
-      console.error(error);
-    } finally {
-      setCalculandoCostos(false);
-    }
-  };
-
-  const guardarCostos = async () => {
-    if (!selectedEmbarque || !costosCalculados) return;
-
-    try {
-      const res = await fetch(`/api/embarques/${selectedEmbarque.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cifUsd: costosCalculados.cifUsd,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Error al guardar costos");
-
-      toast.success("Costos guardados exitosamente");
-      fetchEmbarques();
-      setCalcularCostosOpen(false);
-      setCostosCalculados(null);
-    } catch (error) {
-      toast.error("Error al guardar costos");
-      console.error(error);
-    }
   };
 
   const handleRegistrarDespacho = (embarque: Embarque) => {
@@ -693,193 +612,15 @@ export function EmbarquesTab() {
       </Sheet>
 
       {/* Calcular Costos Dialog */}
-      <Dialog open={calcularCostosOpen} onOpenChange={setCalcularCostosOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              Calcular Costos de Nacionalización
-            </DialogTitle>
-            <DialogDescription>
-              {selectedEmbarque?.referencia} - Impuestos de importación Argentina
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {!costosCalculados ? (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="tipoCambio">Tipo de Cambio ARS/USD *</Label>
-                    <Input
-                      id="tipoCambio"
-                      type="number"
-                      value={tipoCambio}
-                      onChange={(e) => setTipoCambio(parseFloat(e.target.value) || 0)}
-                      placeholder="1200"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="diePct">DIE % *</Label>
-                    <Input
-                      id="diePct"
-                      type="number"
-                      value={diePct}
-                      onChange={(e) => setDiePct(parseFloat(e.target.value) || 0)}
-                      placeholder="16"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="tasaEstPct">Tasa Estadística % *</Label>
-                    <Input
-                      id="tasaEstPct"
-                      type="number"
-                      value={tasaEstPct}
-                      onChange={(e) => setTasaEstPct(parseFloat(e.target.value) || 0)}
-                      placeholder="3"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="ivaPct">IVA % *</Label>
-                    <Input
-                      id="ivaPct"
-                      type="number"
-                      value={ivaPct}
-                      onChange={(e) => setIvaPct(parseFloat(e.target.value) || 0)}
-                      placeholder="21"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="ivaAdicPct">IVA Adicional % *</Label>
-                    <Input
-                      id="ivaAdicPct"
-                      type="number"
-                      value={ivaAdicPct}
-                      onChange={(e) => setIvaAdicPct(parseFloat(e.target.value) || 0)}
-                      placeholder="10.5"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="gananciasPct">Ganancias % *</Label>
-                    <Input
-                      id="gananciasPct"
-                      type="number"
-                      value={gananciasPct}
-                      onChange={(e) => setGananciasPct(parseFloat(e.target.value) || 0)}
-                      placeholder="6"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="iibbPct">IIBB % *</Label>
-                    <Input
-                      id="iibbPct"
-                      type="number"
-                      value={iibbPct}
-                      onChange={(e) => setIibbPct(parseFloat(e.target.value) || 0)}
-                      placeholder="2.5"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="gastosFijosUsd">Gastos Fijos Despacho USD</Label>
-                    <Input
-                      id="gastosFijosUsd"
-                      type="number"
-                      value={gastosFijosUsd}
-                      onChange={(e) => setGastosFijosUsd(parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4 bg-muted/50 space-y-2 text-sm">
-                  <h4 className="font-medium">Desglose de Costos</h4>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">CIF (Base Imponible):</span>
-                    <span>USD {costosCalculados.cifUsd.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">DIE ({diePct}%):</span>
-                    <span>USD {costosCalculados.die.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tasa Estadística ({tasaEstPct}%):</span>
-                    <span>USD {costosCalculados.tasaEst.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium pt-2 border-t">
-                    <span>Base IVA:</span>
-                    <span>USD {costosCalculados.baseIva.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">IVA ({ivaPct}%):</span>
-                    <span>USD {costosCalculados.iva.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">IVA Adicional ({ivaAdicPct}%):</span>
-                    <span>USD {costosCalculados.ivaAdic.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Ganancias ({gananciasPct}%):</span>
-                    <span>USD {costosCalculados.ganancias.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">IIBB ({iibbPct}%):</span>
-                    <span>USD {costosCalculados.iibb.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Gastos Fijos:</span>
-                    <span>USD {costosCalculados.gastosFijosUsd.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold pt-2 border-t">
-                    <span>Total Impuestos:</span>
-                    <span>USD {costosCalculados.totalImpuestos.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-base pt-2 border-t text-primary">
-                    <span>Costo Landed USD:</span>
-                    <span>USD {costosCalculados.costoLandedUsd.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-base text-primary">
-                    <span>Costo Landed ARS:</span>
-                    <span>ARS {costosCalculados.costoLandedArs.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            {!costosCalculados ? (
-              <>
-                <Button variant="outline" onClick={() => setCalcularCostosOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={ejecutarCalculoCostos} disabled={calculandoCostos}>
-                  {calculandoCostos ? "Calculando..." : "Calcular"}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setCostosCalculados(null)}>
-                  Recalcular
-                </Button>
-                <Button onClick={guardarCostos}>
-                  Guardar Costos
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {selectedEmbarque && (
+        <CalcularCostosDialog
+          open={calcularCostosOpen}
+          onOpenChange={setCalcularCostosOpen}
+          embarqueId={selectedEmbarque.id}
+          embarqueReferencia={selectedEmbarque.referencia}
+          onSuccess={fetchEmbarques}
+        />
+      )}
 
       {/* Registrar Despacho Dialog */}
       <Dialog open={registrarDespachoOpen} onOpenChange={setRegistrarDespachoOpen}>

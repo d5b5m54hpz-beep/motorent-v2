@@ -73,7 +73,8 @@ export async function POST(
             (stockActual + cantidadNueva);
         }
 
-        // Update repuesto
+        // Update repuesto (solo costos, NO stock)
+        // El stock se actualiza en el workflow de recepción (finalizar)
         await tx.repuesto.update({
           where: { id: itemCosto.repuestoId },
           data: {
@@ -81,11 +82,11 @@ export async function POST(
             costoPromedioUsd: nuevoPromedioUsd,
             precioCompra: costoNuevoArs, // For backwards compatibility
             ultimoCostoUpdate: new Date(),
-            stock: stockActual + cantidadNueva, // Update stock
+            // stock NO se actualiza aquí, se actualiza en recepcion/finalizar
           },
         });
 
-        // Create history record
+        // Create history record (solo costos, NO cantidades)
         await tx.historialCostoRepuesto.create({
           data: {
             repuestoId: itemCosto.repuestoId,
@@ -94,8 +95,8 @@ export async function POST(
             costoAnteriorUsd,
             costoNuevoUsd: nuevoPromedioUsd,
             cantidadAnterior: stockActual,
-            cantidadNueva: stockActual + cantidadNueva,
-            motivo: "IMPORTACION",
+            cantidadNueva: stockActual, // Sin cambio de cantidad aquí
+            motivo: "COSTEO_IMPORTACION",
             referencia: id,
             tipoCambio: costos.tipoCambio,
             usuario: session.user?.email || null,
@@ -131,18 +132,7 @@ export async function POST(
           },
         });
 
-        // Create MovimientoStock
-        await tx.movimientoStock.create({
-          data: {
-            repuestoId: itemCosto.repuestoId,
-            tipo: "ENTRADA_COMPRA",
-            cantidad: cantidadNueva,
-            stockAnterior: stockActual,
-            stockNuevo: stockActual + cantidadNueva,
-            motivo: `Importación ${embarque.referencia}`,
-            usuario: session.user?.email || "sistema",
-          },
-        });
+        // MovimientoStock se crea en recepcion/finalizar, NO aquí
 
         cambios.push({
           repuestoId: itemCosto.repuestoId,
