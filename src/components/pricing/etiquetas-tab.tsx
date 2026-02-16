@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tag, FileDown, Printer, QrCode, Loader2 } from "lucide-react";
+import { Tag, FileDown, Printer, QrCode } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,6 @@ export function EtiquetasTab() {
   const [tipoEtiqueta, setTipoEtiqueta] = useState<"individual" | "bulto" | "master">("bulto");
   const [isLoading, setIsLoading] = useState(true);
   const [generando, setGenerando] = useState(false);
-  const [progreso, setProgreso] = useState(0);
 
   useEffect(() => {
     fetchEmbarques();
@@ -66,42 +65,11 @@ export function EtiquetasTab() {
       return;
     }
 
-    const embarque = embarques.find((e) => e.id === selectedEmbarque);
-    if (!embarque) throw new Error("Embarque no encontrado");
-
-    // Calculate total labels first
-    let totalLabels = 0;
-    if (tipoEtiqueta === "individual") {
-      totalLabels = embarque.items.reduce((sum: number, item: any) => sum + item.cantidad, 0);
-    } else if (tipoEtiqueta === "bulto") {
-      totalLabels = embarque.items.length;
-    } else {
-      totalLabels = 1;
-    }
-
-    // Warn if generating many labels
-    if (totalLabels > 500) {
-      const timeEstimate = Math.ceil(totalLabels / 100); // ~100 labels per second
-      const confirmed = window.confirm(
-        `⚠️ Vas a generar ${totalLabels.toLocaleString()} etiquetas.\n\n` +
-        `Tiempo estimado: ${timeEstimate} segundos\n\n` +
-        `El navegador puede congelarse durante la generación.\n\n` +
-        `¿Continuar?`
-      );
-      if (!confirmed) return;
-    }
-
     setGenerando(true);
-    setProgreso(0);
-
-    // Show toast for large generations
-    if (totalLabels > 500) {
-      toast.loading(`Generando ${totalLabels.toLocaleString()} etiquetas... Por favor espera`, {
-        duration: totalLabels * 10, // Auto-close based on estimated time
-      });
-    }
-
     try {
+      const embarque = embarques.find((e) => e.id === selectedEmbarque);
+      if (!embarque) throw new Error("Embarque no encontrado");
+
       // Prepare label data based on tipo
       let labelItems: any[] = [];
 
@@ -288,10 +256,7 @@ export function EtiquetasTab() {
               className="w-full"
             >
               {generando ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generando PDF... Por favor espera, no cierres esta ventana
-                </>
+                <>Generando PDF...</>
               ) : (
                 <>
                   <Printer className="mr-2 h-4 w-4" />
