@@ -8,9 +8,9 @@ const procesarItemSchema = z.object({
   cantidadRecibida: z.number().int().min(0),
   cantidadRechazada: z.number().int().min(0).default(0),
   cantidadFaltante: z.number().int().min(0).default(0),
-  ubicacionAsignada: z.string().optional(),
-  motivoRechazo: z.string().optional(),
-  observaciones: z.string().optional(),
+  ubicacionAsignada: z.string().nullable().optional(),
+  motivoRechazo: z.string().nullable().optional(),
+  observaciones: z.string().nullable().optional(),
 });
 
 // ─── POST: Procesar un item individual de la recepción ───────────────
