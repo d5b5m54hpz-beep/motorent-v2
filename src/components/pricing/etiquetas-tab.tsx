@@ -22,7 +22,7 @@ type EmbarqueItem = {
   id: string;
   embarque: {
     referencia: string;
-    proveedor: { nombre: string };
+    proveedor: { nombre: string } | null;
   };
   repuesto: {
     codigo: string;
@@ -48,10 +48,12 @@ export function EtiquetasTab() {
       const res = await fetch("/api/embarques");
       if (!res.ok) throw new Error("Error fetching embarques");
       const data = await res.json();
-      setEmbarques(data.embarques || []);
+      const allEmbarques = data.data || data.embarques || [];
+      setEmbarques(allEmbarques);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al cargar embarques");
+      setEmbarques([]);
     } finally {
       setIsLoading(false);
     }
