@@ -65,10 +65,31 @@ export function EtiquetasTab() {
       return;
     }
 
+    const embarque = embarques.find((e) => e.id === selectedEmbarque);
+    if (!embarque) {
+      toast.error("Embarque no encontrado");
+      return;
+    }
+
+    // Calculate total for large batch warning
+    let totalLabels = 0;
+    if (tipoEtiqueta === "individual") {
+      totalLabels = embarque.items.reduce((sum: number, item: any) => sum + item.cantidad, 0);
+    } else if (tipoEtiqueta === "bulto") {
+      totalLabels = embarque.items.length;
+    } else {
+      totalLabels = 1;
+    }
+
+    // Warn for very large batches
+    if (totalLabels > 1000) {
+      toast.warning(`⚠️ Generando ${totalLabels.toLocaleString()} etiquetas. Esto puede tardar varios minutos.`, {
+        duration: 5000,
+      });
+    }
+
     setGenerando(true);
     try {
-      const embarque = embarques.find((e) => e.id === selectedEmbarque);
-      if (!embarque) throw new Error("Embarque no encontrado");
 
       // Prepare label data based on tipo
       let labelItems: any[] = [];
