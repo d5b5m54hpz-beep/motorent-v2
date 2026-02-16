@@ -37,10 +37,11 @@ export function RecepcionesTab() {
     try {
       const res = await fetch("/api/embarques");
       if (!res.ok) throw new Error("Error fetching embarques");
-      const data = await res.json();
+      const json = await res.json();
 
       // Filter embarques that need reception
-      const pendientes = data.embarques.filter((e: any) =>
+      const allEmbarques = json.data || json.embarques || [];
+      const pendientes = allEmbarques.filter((e: any) =>
         ["EN_PUERTO", "EN_ADUANA", "DESPACHADO_PARCIAL", "EN_RECEPCION"].includes(e.estado)
       );
 
@@ -48,6 +49,7 @@ export function RecepcionesTab() {
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al cargar embarques para recepción");
+      setEmbarques([]); // Set empty array on error to prevent undefined
     } finally {
       setIsLoading(false);
     }
