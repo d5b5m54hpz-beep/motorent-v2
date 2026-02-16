@@ -12,7 +12,7 @@ import { RecepcionMercaderiaSheet } from "@/components/embarques/recepcion-merca
 type EmbarqueRecepcion = {
   id: string;
   referencia: string;
-  proveedor: { nombre: string };
+  proveedor: { nombre: string } | null;
   estado: string;
   items: Array<{
     id: string;
@@ -125,7 +125,7 @@ export function RecepcionesTab() {
                     {getEstadoBadge(embarque.estado)}
                   </div>
                   <CardDescription>
-                    Proveedor: <span className="font-medium">{embarque.proveedor.nombre}</span>
+                    Proveedor: <span className="font-medium">{embarque.proveedor?.nombre || "Sin proveedor"}</span>
                   </CardDescription>
                 </div>
                 <Button onClick={() => handleIniciarRecepcion(embarque)}>

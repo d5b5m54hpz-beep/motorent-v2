@@ -23,7 +23,7 @@ type TokenData = {
   embarque: {
     id: string;
     referencia: string;
-    proveedor: { nombre: string };
+    proveedor: { nombre: string } | null;
     estado: string;
   };
   activo: boolean;
@@ -71,7 +71,7 @@ export function PortalProveedorTab() {
 
   const filteredTokens = tokens.filter((t) =>
     t.embarque.referencia.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.embarque.proveedor.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+    (t.embarque.proveedor?.nombre || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isLoading) {
@@ -135,7 +135,7 @@ export function PortalProveedorTab() {
                   {filteredTokens.map((token) => (
                     <TableRow key={token.id}>
                       <TableCell className="font-medium">{token.embarque.referencia}</TableCell>
-                      <TableCell>{token.embarque.proveedor.nombre}</TableCell>
+                      <TableCell>{token.embarque.proveedor?.nombre || "Sin proveedor"}</TableCell>
                       <TableCell>
                         {token.activo ? (
                           <Badge variant="default">Activo</Badge>
