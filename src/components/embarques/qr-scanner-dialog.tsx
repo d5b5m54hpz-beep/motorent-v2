@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
 import { Camera, X, Upload, ImageIcon } from "lucide-react";
 import {
   Dialog,
@@ -23,7 +22,7 @@ type QRScannerDialogProps = {
 };
 
 export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogProps) {
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +44,7 @@ export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogP
   const startScanning = async () => {
     try {
       setError(null);
+      const { Html5Qrcode } = await import("html5-qrcode");
       const scanner = new Html5Qrcode("qr-reader");
       scannerRef.current = scanner;
 
@@ -96,6 +96,7 @@ export function QRScannerDialog({ open, onOpenChange, onScan }: QRScannerDialogP
     setError(null);
 
     try {
+      const { Html5Qrcode } = await import("html5-qrcode");
       const scanner = new Html5Qrcode("qr-file-reader");
       const decodedText = await scanner.scanFile(file, true);
 
