@@ -570,7 +570,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
               )}
             </div>
 
-            {showProveedorForm && (
+            {showProveedorForm && !proveedorDetectado && (
               <div className="border border-primary/20 rounded-lg p-4 space-y-3 bg-primary/5">
                 <h4 className="font-medium text-sm">Crear Proveedor Rápido</h4>
                 <div>
@@ -579,6 +579,7 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                     value={nuevoProveedor.nombre}
                     onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, nombre: e.target.value })}
                     placeholder="China Parts Co."
+                    autoFocus
                   />
                 </div>
                 <div>
@@ -781,11 +782,58 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
                       onClick={() => {
                         setNuevoProveedor({ nombre: proveedorDetectado || "", codigoCorto: "" });
                         setShowProveedorForm(true);
+                        // Scroll to form after state update
+                        setTimeout(() => {
+                          document.getElementById('proveedor-form')?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest'
+                          });
+                        }, 100);
                       }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Crear Proveedor "{proveedorDetectado}"
                     </Button>
+                  </div>
+                )}
+
+                {/* Formulario de crear proveedor (movido aquí para mejor visibilidad) */}
+                {showProveedorForm && proveedorDetectado && !proveedorMatchId && (
+                  <div id="proveedor-form" className="border border-teal-500 rounded-lg p-4 space-y-3 bg-teal-50/50 mt-3">
+                    <h4 className="font-medium text-sm">✨ Crear Nuevo Proveedor</h4>
+                    <div>
+                      <Label>Nombre *</Label>
+                      <Input
+                        value={nuevoProveedor.nombre}
+                        onChange={(e) => setNuevoProveedor({ ...nuevoProveedor, nombre: e.target.value })}
+                        placeholder="Nombre del proveedor"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <Label>Código Corto (para SKUs)</Label>
+                      <Input
+                        value={nuevoProveedor.codigoCorto}
+                        onChange={(e) =>
+                          setNuevoProveedor({ ...nuevoProveedor, codigoCorto: e.target.value })
+                        }
+                        placeholder="CH01"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" onClick={handleCrearProveedor} size="sm" className="bg-teal-500 hover:bg-teal-600">
+                        Crear y Usar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowProveedorForm(false)}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
