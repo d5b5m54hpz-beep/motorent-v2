@@ -106,19 +106,22 @@ export async function GET(req: NextRequest) {
 
 // POST /api/contratos — create contrato with pricing and payment generation
 export async function POST(req: NextRequest) {
-  try {
-    // Auth check - cualquier usuario autenticado puede crear contratos
-    // Need full session for CLIENTE auto-creation logic
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+  const { error: permError, userId } = await requirePermission(
+    OPERATIONS.rental.contract.create,
+    "create",
+    ["OPERADOR", "CLIENTE"]
+  );
+  if (permError) return permError;
 
-    // Buscar usuario por email
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, role: true, name: true, email: true },
-    });
+  try {
+    // Need full user for CLIENTE auto-creation logic (role, name, email)
+    const session = await auth();
+    const user = session?.user?.email
+      ? await prisma.user.findUnique({
+          where: { email: session.user.email },
+          select: { id: true, role: true, name: true, email: true },
+        })
+      : null;
 
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 401 });
@@ -272,7 +275,7 @@ export async function POST(req: NextRequest) {
       "Contrato",
       contrato.id,
       { clienteId, motoId, estado: "pendiente", montoTotal: calculo.montoTotal },
-      user.id
+      userId
     ).catch((err) => {
       console.error("Error emitting rental.contract.create event:", err);
     });

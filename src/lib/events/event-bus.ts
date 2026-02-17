@@ -36,6 +36,20 @@ type RegisteredHandler = {
 
 class EventBus {
   private handlers: RegisteredHandler[] = [];
+  private handlersInitialized = false;
+
+  /**
+   * Lazy-initialize all event handlers on first emit.
+   * Idempotent — safe to call multiple times.
+   */
+  private ensureHandlersRegistered(): void {
+    if (this.handlersInitialized) return;
+    this.handlersInitialized = true;
+
+    // Dynamic import to avoid circular dependencies at module load time
+    const { initializeEventHandlers } = require("./handlers");
+    initializeEventHandlers();
+  }
 
   /**
    * Register a handler for a specific operation ID or wildcard pattern.
@@ -84,6 +98,8 @@ class EventBus {
     userId?: string | null,
     parentEventId?: string | null
   ): Promise<BusinessEvent> {
+    this.ensureHandlersRegistered();
+
     // 1. Persist event
     const event = await prisma.businessEvent.create({
       data: {
@@ -129,6 +145,8 @@ class EventBus {
     userId?: string | null,
     parentEventId?: string | null
   ): Promise<BusinessEvent> {
+    this.ensureHandlersRegistered();
+
     const event = await prisma.businessEvent.create({
       data: {
         operationId,
