@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ const nombresAlerta: Record<string, string> = {
   general: "General",
 };
 
-export default function AlertasPage() {
+function AlertasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -353,5 +353,13 @@ export default function AlertasPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AlertasPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <AlertasContent />
+    </Suspense>
   );
 }
