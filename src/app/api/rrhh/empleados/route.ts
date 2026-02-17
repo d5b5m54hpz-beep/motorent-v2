@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { empleadoSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.hr.employee.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.hr.employee.create, "create", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -70,6 +71,8 @@ export async function POST(req: NextRequest) {
         fechaAltaAFIP: fechaAltaAFIP ? new Date(fechaAltaAFIP) : null,
       },
     });
+
+    eventBus.emit(OPERATIONS.hr.employee.create, "Empleado", empleado.id, { nombre: rest.nombre, cargo: rest.cargo, salario: rest.salarioBasico, fechaIngreso }, userId).catch(err => console.error("[Events] hr.employee.create error:", err));
 
     return NextResponse.json(empleado, { status: 201 });
   } catch (err: unknown) {

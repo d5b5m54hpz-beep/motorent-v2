@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { motoSchema } from "@/lib/validations";
 import * as XLSX from "xlsx";
 
@@ -12,7 +13,7 @@ type ParsedRow = {
 };
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.system.import.execute, "execute", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -68,9 +69,10 @@ export async function POST(req: NextRequest) {
           data: validated,
           valid: true,
         };
-      } catch (err: any) {
-        const errors = err.errors?.map((e: any) => `${e.path.join(".")}: ${e.message}`) || [
-          err.message,
+      } catch (err: unknown) {
+        const zodErr = err as { errors?: { path: string[]; message: string }[]; message?: string };
+        const errors = zodErr.errors?.map((e) => `${e.path.join(".")}: ${e.message}`) || [
+          zodErr.message || "Error desconocido",
         ];
         return {
           rowIndex: index + 2,
@@ -98,6 +100,8 @@ export async function POST(req: NextRequest) {
         data: validRows.map((r) => r.data),
         skipDuplicates: true,
       });
+
+      eventBus.emit(OPERATIONS.system.import.execute, "import", "bulk", { tipo: "motos", cantidadImportada: created.count }, userId!).catch(err => console.error("[Events] import motos error:", err));
 
       return NextResponse.json({
         success: true,

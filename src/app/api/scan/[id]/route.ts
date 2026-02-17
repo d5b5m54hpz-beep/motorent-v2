@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 export async function GET(
   req: NextRequest,
@@ -8,8 +9,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const session = await auth();
-    const autenticado = !!session?.user;
+    const { error: authError, userId } = await requirePermission(OPERATIONS.system.scan.view, "view", ["OPERADOR"]);
+    const autenticado = !authError;
 
     // Buscar en etiquetas de embarque
     const etiqueta = await prisma.etiquetaEmbarque.findUnique({

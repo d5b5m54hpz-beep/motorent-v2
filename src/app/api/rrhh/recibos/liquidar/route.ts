@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const liquidarSchema = z.object({
@@ -11,7 +12,7 @@ const liquidarSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "RRHH_MANAGER"]);
+  const { error, userId } = await requirePermission(OPERATIONS.hr.payroll.liquidate, "execute", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   try {
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     const recibos = [];
+    let montoTotal = 0;
 
     for (const empleado of empleados) {
       // Calculate presentismo (8.33% if no unjustified absences)
@@ -122,7 +124,10 @@ export async function POST(req: NextRequest) {
       });
 
       recibos.push(recibo);
+      montoTotal += netoAPagar;
     }
+
+    eventBus.emit(OPERATIONS.hr.payroll.liquidate, "ReciboSueldo", recibos[0]?.id ?? "batch", { periodo: `${mes}/${anio}`, empleados: empleados.length, montoTotal: Math.round(montoTotal) }, userId).catch(err => console.error("[Events] hr.payroll.liquidate error:", err));
 
     return NextResponse.json({ recibos, count: recibos.length }, { status: 201 });
   } catch (err: unknown) {

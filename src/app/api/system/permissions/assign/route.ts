@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const assignSchema = z.object({
@@ -15,7 +16,7 @@ const unassignSchema = z.object({
 
 // POST: Assign a profile to a user
 export async function POST(req: NextRequest) {
-  const { error, userId: adminId } = await requireRole(["ADMIN"]);
+  const { error, userId: adminId } = await requirePermission(OPERATIONS.system.config.update, "execute", []);
   if (error) return error;
 
   try {
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE: Remove a profile from a user
 export async function DELETE(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.system.config.update, "execute", []);
   if (error) return error;
 
   try {

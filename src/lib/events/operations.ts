@@ -67,11 +67,19 @@ export const OPERATIONS = {
   accounting: {
     entry: {
       create: "accounting.entry.create",
+      update: "accounting.entry.update",
+      view: "accounting.entry.view",
       close: "accounting.entry.close",
+    },
+    account: {
+      create: "accounting.account.create",
+      update: "accounting.account.update",
+      view: "accounting.account.view",
     },
     period: {
       close: "accounting.period.close",
       reopen: "accounting.period.reopen",
+      view: "accounting.period.view",
     },
     retention: {
       calculate: "accounting.retention.calculate",
@@ -87,6 +95,7 @@ export const OPERATIONS = {
     },
     report: {
       generate: "accounting.report.generate",
+      view: "accounting.report.view",
     },
     reconciliation: {
       execute: "accounting.reconciliation.execute",
@@ -234,19 +243,70 @@ export const OPERATIONS = {
     employee: {
       create: "hr.employee.create",
       update: "hr.employee.update",
+      view: "hr.employee.view",
       terminate: "hr.employee.terminate",
     },
     payroll: {
+      create: "hr.payroll.create",
+      liquidate: "hr.payroll.liquidate",
+      view: "hr.payroll.view",
       calculate: "hr.payroll.calculate",
       approve: "hr.payroll.approve",
     },
     absence: {
-      request: "hr.absence.request",
+      create: "hr.absence.create",
+      update: "hr.absence.update",
       approve: "hr.absence.approve",
+      view: "hr.absence.view",
+      request: "hr.absence.request",
     },
+  },
+  finance: {
+    cashflow: { view: "finance.cashflow.view" },
+    income_statement: { view: "finance.income_statement.view" },
+    indicators: { view: "finance.indicators.view" },
+    profitability: { view: "finance.profitability.view" },
+    summary: { view: "finance.summary.view" },
+  },
+  credit_note: {
+    create: "credit_note.create",
+    update: "credit_note.update",
+    view: "credit_note.view",
+  },
+  budget: {
+    create: "budget.create",
+    update: "budget.update",
+    view: "budget.view",
+  },
+  user: {
+    create: "user.create",
+    update: "user.update",
+    view: "user.view",
+    profile: {
+      view: "user.profile.view",
+      update: "user.profile.update",
+    },
+  },
+  alert: {
+    create: "alert.create",
+    update: "alert.update",
+    delete: "alert.delete",
+    view: "alert.view",
+    generate: "alert.generate",
+  },
+  dashboard: {
+    main: { view: "dashboard.main.view" },
+    commercial: { view: "dashboard.commercial.view" },
+    accounting: { view: "dashboard.accounting.view" },
+    finance: { view: "dashboard.finance.view" },
+    fleet: { view: "dashboard.fleet.view" },
+    executive: { view: "dashboard.executive.view" },
+    hr: { view: "dashboard.hr.view" },
+    system: { view: "dashboard.system.view" },
   },
   system: {
     config: {
+      view: "system.config.view",
       update: "system.config.update",
     },
     user: {
@@ -254,7 +314,28 @@ export const OPERATIONS = {
       update: "system.user.update",
     },
     diagnostic: {
+      view: "system.diagnostic.view",
+      execute: "system.diagnostic.execute",
       run: "system.diagnostic.run",
+    },
+    export: {
+      execute: "system.export.execute",
+    },
+    import: {
+      execute: "system.import.execute",
+    },
+    repair: {
+      execute: "system.repair.execute",
+    },
+    ai: {
+      chat: "system.ai.chat",
+      parse: "system.ai.parse",
+    },
+    upload: {
+      execute: "system.upload.execute",
+    },
+    scan: {
+      view: "system.scan.view",
     },
   },
 } as const;

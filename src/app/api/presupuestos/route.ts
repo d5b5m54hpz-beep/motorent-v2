@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { presupuestoSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.budget.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.budget.create, "create", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Datos inválidos", details: parsed.error.flatten().fieldErrors },
+        { error: "Datos invalidos", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
@@ -68,6 +69,8 @@ export async function POST(req: NextRequest) {
       update: { montoPresupuestado },
       create: { mes, anio, categoria, montoPresupuestado },
     });
+
+    eventBus.emit(OPERATIONS.budget.create, "PresupuestoMensual", presupuesto.id, { mes, anio, categoria, montoPresupuestado }, userId).catch(err => console.error("[Events] budget.create error:", err));
 
     return NextResponse.json(presupuesto, { status: 201 });
   } catch (err: unknown) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const ausenciaSchema = z.object({
@@ -27,7 +28,7 @@ const ausenciaSchema = z.object({
 });
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireRole(["ADMIN", "RRHH_MANAGER", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.hr.absence.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -57,12 +58,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireRole(["ADMIN", "RRHH_MANAGER"]);
+  // Peek at the body to detect if this is an approval action
+  const body = await req.json();
+  const isApproval = body.estado === "APROBADA" || body.estado === "RECHAZADA";
+
+  const { error, userId } = isApproval
+    ? await requirePermission(OPERATIONS.hr.absence.approve, "approve", ["OPERADOR"])
+    : await requirePermission(OPERATIONS.hr.absence.update, "execute", ["OPERADOR"]);
   if (error) return error;
 
   try {
     const { id } = await params;
-    const body = await req.json();
     const parsed = ausenciaSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -99,6 +105,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
 
+    if (isApproval) {
+      eventBus.emit(OPERATIONS.hr.absence.approve, "Ausencia", id, { estado, empleadoId, tipo }, userId).catch(err => console.error("[Events] hr.absence.approve error:", err));
+    } else {
+      eventBus.emit(OPERATIONS.hr.absence.update, "Ausencia", id, { empleadoId, tipo, fechaInicio, fechaFin }, userId).catch(err => console.error("[Events] hr.absence.update error:", err));
+    }
+
     return NextResponse.json(ausencia);
   } catch (err: unknown) {
     console.error("Error updating ausencia:", err);
@@ -107,12 +119,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireRole(["ADMIN", "RRHH_MANAGER"]);
+  const { error, userId } = await requirePermission(OPERATIONS.hr.absence.update, "execute", ["OPERADOR"]);
   if (error) return error;
 
   try {
     const { id } = await params;
     await prisma.ausencia.delete({ where: { id } });
+
+    eventBus.emit(OPERATIONS.hr.absence.update, "Ausencia", id, { action: "delete" }, userId).catch(err => console.error("[Events] hr.absence.delete error:", err));
+
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     console.error("Error deleting ausencia:", err);

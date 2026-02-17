@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "CONTADOR"]);
+  const { error } = await requirePermission(OPERATIONS.finance.income_statement.view, "view", ["CONTADOR", "OPERADOR"]);
   if (error) return error;
 
   try {

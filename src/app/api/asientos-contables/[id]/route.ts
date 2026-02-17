@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
 export async function GET(_req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.accounting.entry.view, "view", ["CONTADOR", "OPERADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -40,7 +41,7 @@ export async function GET(_req: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.accounting.entry.update, "execute", ["CONTADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -67,6 +68,8 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     }
 
     await prisma.asientoContable.delete({ where: { id } });
+
+    eventBus.emit(OPERATIONS.accounting.entry.update, "AsientoContable", id, { action: "delete" }, userId).catch(err => console.error("[Events] accounting.entry.update error:", err));
 
     return NextResponse.json({ message: "Asiento eliminado" });
   } catch (err: unknown) {

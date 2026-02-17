@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 // GET: List all operations, optionally filtered by family
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.system.config.view, "view", []);
   if (error) return error;
 
   try {

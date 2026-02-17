@@ -67,18 +67,27 @@ const OPERATION_CATALOG: OpDef[] = [
 
   // Accounting - Entry
   { code: "accounting.entry.create", description: "Crear asiento contable" },
+  { code: "accounting.entry.update", description: "Actualizar asiento contable" },
+  { code: "accounting.entry.view", description: "Ver asientos contables", isViewOnly: true },
   { code: "accounting.entry.close", description: "Cerrar asiento contable" },
+
+  // Accounting - Account
+  { code: "accounting.account.create", description: "Crear cuenta contable" },
+  { code: "accounting.account.update", description: "Actualizar cuenta contable" },
+  { code: "accounting.account.view", description: "Ver cuentas contables", isViewOnly: true },
 
   // Accounting - Period
   { code: "accounting.period.close", description: "Cerrar período contable", requiresApproval: true },
   { code: "accounting.period.reopen", description: "Reabrir período contable", requiresApproval: true },
+  { code: "accounting.period.view", description: "Ver períodos contables", isViewOnly: true },
 
-  // Accounting - Tax
+  // Accounting - Tax & Reports
   { code: "accounting.retention.calculate", description: "Calcular retenciones" },
   { code: "accounting.perception.calculate", description: "Calcular percepciones" },
   { code: "accounting.depreciation.execute", description: "Ejecutar depreciación" },
   { code: "accounting.tax.iva_position", description: "Posición IVA" },
   { code: "accounting.report.generate", description: "Generar reportes contables", isViewOnly: true },
+  { code: "accounting.report.view", description: "Ver reportes contables", isViewOnly: true },
   { code: "accounting.reconciliation.execute", description: "Ejecutar conciliación" },
 
   // Maintenance - Work Order
@@ -191,20 +200,82 @@ const OPERATION_CATALOG: OpDef[] = [
   { code: "workshop.update", description: "Actualizar taller" },
   { code: "workshop.view", description: "Ver talleres", isViewOnly: true },
 
-  // HR
+  // HR - Employee
   { code: "hr.employee.create", description: "Crear empleado" },
   { code: "hr.employee.update", description: "Actualizar empleado" },
+  { code: "hr.employee.view", description: "Ver empleados", isViewOnly: true },
   { code: "hr.employee.terminate", description: "Desvincular empleado" },
+
+  // HR - Payroll
+  { code: "hr.payroll.create", description: "Crear recibo de sueldo" },
+  { code: "hr.payroll.liquidate", description: "Liquidar sueldos" },
+  { code: "hr.payroll.view", description: "Ver recibos de sueldo", isViewOnly: true },
   { code: "hr.payroll.calculate", description: "Calcular liquidación de sueldos" },
   { code: "hr.payroll.approve", description: "Aprobar liquidación", requiresApproval: true },
+
+  // HR - Absence
+  { code: "hr.absence.create", description: "Crear ausencia" },
+  { code: "hr.absence.update", description: "Actualizar ausencia" },
+  { code: "hr.absence.approve", description: "Aprobar ausencia", requiresApproval: true },
+  { code: "hr.absence.view", description: "Ver ausencias", isViewOnly: true },
   { code: "hr.absence.request", description: "Solicitar ausencia" },
-  { code: "hr.absence.approve", description: "Aprobar ausencia" },
+
+  // Finance
+  { code: "finance.cashflow.view", description: "Ver flujo de caja", isViewOnly: true },
+  { code: "finance.income_statement.view", description: "Ver estado de resultados", isViewOnly: true },
+  { code: "finance.indicators.view", description: "Ver indicadores financieros", isViewOnly: true },
+  { code: "finance.profitability.view", description: "Ver rentabilidad", isViewOnly: true },
+  { code: "finance.summary.view", description: "Ver resumen financiero", isViewOnly: true },
+
+  // Credit Note
+  { code: "credit_note.create", description: "Crear nota de crédito" },
+  { code: "credit_note.update", description: "Actualizar nota de crédito" },
+  { code: "credit_note.view", description: "Ver notas de crédito", isViewOnly: true },
+
+  // Budget
+  { code: "budget.create", description: "Crear presupuesto" },
+  { code: "budget.update", description: "Actualizar presupuesto" },
+  { code: "budget.view", description: "Ver presupuestos", isViewOnly: true },
+
+  // User
+  { code: "user.create", description: "Crear usuario" },
+  { code: "user.update", description: "Actualizar usuario" },
+  { code: "user.view", description: "Ver usuarios", isViewOnly: true },
+  { code: "user.profile.view", description: "Ver perfil propio", isViewOnly: true },
+  { code: "user.profile.update", description: "Actualizar perfil propio" },
+
+  // Alert
+  { code: "alert.create", description: "Crear alerta" },
+  { code: "alert.update", description: "Actualizar alerta" },
+  { code: "alert.delete", description: "Eliminar alerta" },
+  { code: "alert.view", description: "Ver alertas", isViewOnly: true },
+  { code: "alert.generate", description: "Generar alertas automáticas" },
+
+  // Dashboard
+  { code: "dashboard.main.view", description: "Ver dashboard principal", isViewOnly: true },
+  { code: "dashboard.commercial.view", description: "Ver dashboard comercial", isViewOnly: true },
+  { code: "dashboard.accounting.view", description: "Ver dashboard contabilidad", isViewOnly: true },
+  { code: "dashboard.finance.view", description: "Ver dashboard finanzas", isViewOnly: true },
+  { code: "dashboard.fleet.view", description: "Ver dashboard flota", isViewOnly: true },
+  { code: "dashboard.executive.view", description: "Ver resumen ejecutivo", isViewOnly: true },
+  { code: "dashboard.hr.view", description: "Ver dashboard RRHH", isViewOnly: true },
+  { code: "dashboard.system.view", description: "Ver dashboard sistema", isViewOnly: true },
 
   // System
+  { code: "system.config.view", description: "Ver configuración del sistema", isViewOnly: true },
   { code: "system.config.update", description: "Actualizar configuración del sistema" },
-  { code: "system.user.create", description: "Crear usuario" },
-  { code: "system.user.update", description: "Actualizar usuario" },
-  { code: "system.diagnostic.run", description: "Ejecutar diagnóstico del sistema" },
+  { code: "system.user.create", description: "Crear usuario del sistema" },
+  { code: "system.user.update", description: "Actualizar usuario del sistema" },
+  { code: "system.diagnostic.view", description: "Ver diagnóstico del sistema", isViewOnly: true },
+  { code: "system.diagnostic.execute", description: "Ejecutar diagnóstico del sistema" },
+  { code: "system.diagnostic.run", description: "Ejecutar diagnóstico completo" },
+  { code: "system.export.execute", description: "Exportar datos del sistema" },
+  { code: "system.import.execute", description: "Importar datos al sistema" },
+  { code: "system.repair.execute", description: "Reparar datos del sistema" },
+  { code: "system.ai.chat", description: "Chat con asistente IA" },
+  { code: "system.ai.parse", description: "Parsear documentos con IA" },
+  { code: "system.upload.execute", description: "Subir archivos" },
+  { code: "system.scan.view", description: "Ver escaneos/documentos", isViewOnly: true },
 ];
 
 function parseCode(code: string): { family: string; entity: string; action: string } {
@@ -253,13 +324,25 @@ const SYSTEM_PROFILES: ProfileDef[] = [
       { pattern: "pricing.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "mechanic.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "workshop.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "dashboard.main.*", canView: true },
+      { pattern: "dashboard.fleet.*", canView: true },
+      { pattern: "dashboard.executive.*", canView: true },
+      { pattern: "alert.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "user.profile.*", canView: true, canExecute: true },
+      { pattern: "budget.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "system.export.*", canView: true, canExecute: true },
+      { pattern: "system.import.*", canView: true, canExecute: true },
+      { pattern: "system.upload.*", canExecute: true },
+      { pattern: "system.ai.*", canExecute: true },
     ],
   },
   {
     name: "Contador",
-    description: "Acceso completo a contabilidad, vista de facturas, pagos, gastos e inventario",
+    description: "Acceso completo a contabilidad, finanzas, vista de facturas, pagos, gastos e inventario",
     grants: [
       { pattern: "accounting.*", canView: true, canCreate: true, canExecute: true, canApprove: true },
+      { pattern: "finance.*", canView: true },
+      { pattern: "credit_note.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "invoice.*", canView: true, canApprove: true },
       { pattern: "payment.*", canView: true, canApprove: true },
       { pattern: "inventory.*", canView: true },
@@ -267,6 +350,13 @@ const SYSTEM_PROFILES: ProfileDef[] = [
       { pattern: "supplier.*", canView: true },
       { pattern: "expense.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "pricing.parts.*", canView: true },
+      { pattern: "hr.payroll.*", canView: true },
+      { pattern: "dashboard.accounting.*", canView: true },
+      { pattern: "dashboard.finance.*", canView: true },
+      { pattern: "user.profile.*", canView: true, canExecute: true },
+      { pattern: "alert.*", canView: true },
+      { pattern: "system.export.*", canView: true, canExecute: true },
+      { pattern: "system.ai.*", canExecute: true },
     ],
   },
   {
@@ -275,6 +365,10 @@ const SYSTEM_PROFILES: ProfileDef[] = [
     grants: [
       { pattern: "hr.*", canView: true, canCreate: true, canExecute: true, canApprove: true },
       { pattern: "accounting.entry.*", canView: true },
+      { pattern: "dashboard.hr.*", canView: true },
+      { pattern: "dashboard.main.*", canView: true },
+      { pattern: "user.profile.*", canView: true, canExecute: true },
+      { pattern: "alert.*", canView: true },
     ],
   },
   {
@@ -285,17 +379,29 @@ const SYSTEM_PROFILES: ProfileDef[] = [
       { pattern: "fleet.*", canView: true },
       { pattern: "payment.*", canView: true, canCreate: true },
       { pattern: "invoice.sale.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "dashboard.commercial.*", canView: true },
+      { pattern: "dashboard.main.*", canView: true },
+      { pattern: "budget.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "user.profile.*", canView: true, canExecute: true },
+      { pattern: "alert.*", canView: true },
     ],
   },
   {
     name: "Mecánico",
     description: "Órdenes de trabajo, turnos, check-in/out, vista de motos y repuestos",
     grants: [
-      { pattern: "maintenance.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "maintenance.workorder.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "maintenance.checkin.*", canExecute: true },
+      { pattern: "maintenance.checkout.*", canExecute: true },
+      { pattern: "maintenance.appointment.*", canView: true },
+      { pattern: "maintenance.plan.*", canView: true },
       { pattern: "fleet.moto.*", canView: true },
       { pattern: "inventory.part.*", canView: true },
       { pattern: "mechanic.*", canView: true },
       { pattern: "workshop.*", canView: true },
+      { pattern: "user.profile.*", canView: true, canExecute: true },
+      { pattern: "alert.*", canView: true },
+      { pattern: "system.upload.*", canExecute: true },
     ],
   },
   {
@@ -305,11 +411,13 @@ const SYSTEM_PROFILES: ProfileDef[] = [
       { pattern: "rental.contract.*", canView: true },
       { pattern: "payment.*", canView: true, canCreate: true },
       { pattern: "invoice.sale.*", canView: true },
+      { pattern: "alert.*", canView: true },
+      { pattern: "user.profile.*", canView: true, canExecute: true },
     ],
   },
   {
     name: "Auditor",
-    description: "Vista de solo lectura de todas las operaciones",
+    description: "Vista de solo lectura de todas las operaciones del sistema",
     grants: [
       { pattern: "*", canView: true },
     ],

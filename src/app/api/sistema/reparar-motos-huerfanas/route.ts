@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 /**
  * Repara motos en estado ALQUILADA sin contrato activo
  * Las devuelve a estado DISPONIBLE
  */
 export async function POST(req: NextRequest) {
-  const { error, userId } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.system.repair.execute, "execute", []);
   if (error) return error;
 
   try {

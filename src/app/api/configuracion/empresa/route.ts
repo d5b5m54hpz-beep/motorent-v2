@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -17,9 +18,10 @@ const configuracionEmpresaSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  try {
-    await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.system.config.view, "view", ["OPERADOR"]);
+  if (error) return error;
 
+  try {
     let config = await prisma.configuracionEmpresa.findUnique({
       where: { id: "default" },
     });
@@ -38,17 +40,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: config });
   } catch (error: unknown) {
     console.error("Error fetching configuracion empresa:", error);
-    if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
     return NextResponse.json({ error: "Error al obtener configuración" }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
-  try {
-    await requireRole(["ADMIN"]);
+  const { error: authError } = await requirePermission(OPERATIONS.system.config.update, "execute", []);
+  if (authError) return authError;
 
+  try {
     const body = await req.json();
     const validation = configuracionEmpresaSchema.safeParse(body);
 
@@ -98,9 +98,6 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ data: config });
   } catch (error: unknown) {
     console.error("Error updating configuracion empresa:", error);
-    if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
     return NextResponse.json({ error: "Error al actualizar configuración" }, { status: 500 });
   }
 }

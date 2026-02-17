@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
@@ -28,7 +29,7 @@ const ocrFacturaSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.system.ai.parse, "execute", ["OPERADOR"]);
   if (error) return error;
 
   try {

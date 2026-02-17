@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import * as XLSX from "xlsx";
 
 export async function GET() {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.system.import.execute, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {

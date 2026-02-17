@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { generateSecret, generateURI, verifySync } from "otplib";
 import QRCode from "qrcode";
 
 // POST: Generate 2FA secret + QR code
 export async function POST() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.user.profile.update, "execute", ["OPERADOR", "CLIENTE", "CONTADOR"]);
+  if (error) return error;
 
   try {
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -21,7 +20,7 @@ export async function POST() {
     }
 
     if (user.totpEnabled) {
-      return NextResponse.json({ error: "2FA ya está activado" }, { status: 400 });
+      return NextResponse.json({ error: "2FA ya esta activado" }, { status: 400 });
     }
 
     // Generate secret
@@ -53,20 +52,18 @@ export async function POST() {
 
 // PUT: Verify code and enable 2FA
 export async function PUT(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.user.profile.update, "execute", ["OPERADOR", "CLIENTE", "CONTADOR"]);
+  if (error) return error;
 
   try {
     const { code } = await req.json();
 
     if (!code || typeof code !== "string") {
-      return NextResponse.json({ error: "Código requerido" }, { status: 400 });
+      return NextResponse.json({ error: "Codigo requerido" }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     });
 
     if (!user || !user.totpSecret) {
@@ -80,7 +77,7 @@ export async function PUT(req: NextRequest) {
     });
 
     if (!valid) {
-      return NextResponse.json({ error: "Código inválido" }, { status: 400 });
+      return NextResponse.json({ error: "Codigo invalido" }, { status: 400 });
     }
 
     // Enable 2FA
@@ -98,24 +95,22 @@ export async function PUT(req: NextRequest) {
 
 // DELETE: Disable 2FA
 export async function DELETE(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.user.profile.update, "execute", ["OPERADOR", "CLIENTE", "CONTADOR"]);
+  if (error) return error;
 
   try {
     const { code } = await req.json();
 
     if (!code || typeof code !== "string") {
-      return NextResponse.json({ error: "Código requerido para desactivar" }, { status: 400 });
+      return NextResponse.json({ error: "Codigo requerido para desactivar" }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     });
 
     if (!user || !user.totpSecret || !user.totpEnabled) {
-      return NextResponse.json({ error: "2FA no está activado" }, { status: 400 });
+      return NextResponse.json({ error: "2FA no esta activado" }, { status: 400 });
     }
 
     // Verify the code before disabling
@@ -125,7 +120,7 @@ export async function DELETE(req: NextRequest) {
     });
 
     if (!valid) {
-      return NextResponse.json({ error: "Código inválido" }, { status: 400 });
+      return NextResponse.json({ error: "Codigo invalido" }, { status: 400 });
     }
 
     await prisma.user.update({

@@ -1,6 +1,8 @@
 import { streamText, stepCountIs, convertToModelMessages, tool } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
+import { auth } from "@/lib/auth";
 import { toolRegistry, getSystemPromptForRole, type UserRole } from "@/lib/ai";
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -23,15 +25,12 @@ function checkRateLimit(userId: string): boolean {
 }
 
 export async function POST(req: Request) {
-  const { error, userId, role } = await requireRole([
-    "ADMIN",
-    "OPERADOR",
-    "CONTADOR",
-    "RRHH_MANAGER",
-    "COMERCIAL",
-    "CLIENTE",
-  ]);
+  const { error, userId } = await requirePermission(OPERATIONS.system.ai.chat, "execute", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
+
+  // Get role from session for AI tool selection
+  const session = await auth();
+  const role = session?.user?.role;
 
   if (!checkRateLimit(userId!)) {
     return new Response(

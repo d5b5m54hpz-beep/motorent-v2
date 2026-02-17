@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { OPERATIONS } from '@/lib/events';
 import { uploadToR2 } from '@/lib/r2';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  }
+  const { error } = await requirePermission(OPERATIONS.system.upload.execute, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   const formData = await request.formData();
   const file = formData.get('file') as File;

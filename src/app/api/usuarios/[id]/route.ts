@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { updateUsuarioSchema } from "@/lib/validations";
 import bcrypt from "bcryptjs";
@@ -9,10 +10,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 /**
  * GET /api/usuarios/[id]
  * Obtener detalle de un usuario
- * Solo accesible para ADMIN
  */
 export async function GET(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.user.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -50,11 +50,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 /**
  * PUT /api/usuarios/[id]
- * Actualizar usuario (nombre, rol, contraseña)
- * Solo accesible para ADMIN
+ * Actualizar usuario (nombre, rol, contrasena)
+ * Sensitive operation - NO fallback roles
  */
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const { error, userId } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.user.update, "execute", []);
   if (error) return error;
 
   const { id } = await context.params;
@@ -65,7 +65,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Datos inválidos", details: parsed.error.format() },
+        { error: "Datos invalidos", details: parsed.error.format() },
         { status: 400 }
       );
     }
@@ -85,7 +85,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // Prevenir que el usuario se cambie el rol a sí mismo
+    // Prevenir que el usuario se cambie el rol a si mismo
     if (id === userId && parsed.data.role && parsed.data.role !== usuario.role) {
       return NextResponse.json(
         { error: "No puedes cambiar tu propio rol" },
@@ -104,7 +104,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       updateData.role = parsed.data.role;
     }
 
-    // Si se proporciona contraseña, hashearla
+    // Si se proporciona contrasena, hashearla
     if (parsed.data.password) {
       updateData.password = await bcrypt.hash(parsed.data.password, 10);
     }
@@ -123,6 +123,8 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       },
     });
 
+    eventBus.emit(OPERATIONS.user.update, "User", id, { name: parsed.data.name, role: parsed.data.role }, userId).catch(err => console.error("[Events] user.update error:", err));
+
     return NextResponse.json(usuarioActualizado);
   } catch (error: unknown) {
     console.error("Error in PUT /api/usuarios/[id]:", error);
@@ -134,16 +136,16 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 /**
  * DELETE /api/usuarios/[id]
  * Eliminar/desactivar un usuario
- * Solo accesible para ADMIN
+ * Sensitive operation - NO fallback roles
  */
 export async function DELETE(req: NextRequest, context: RouteContext) {
-  const { error, userId } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.user.update, "execute", []);
   if (error) return error;
 
   const { id } = await context.params;
 
   try {
-    // Prevenir que el usuario se elimine a sí mismo
+    // Prevenir que el usuario se elimine a si mismo
     if (id === userId) {
       return NextResponse.json(
         { error: "No puedes eliminar tu propia cuenta" },
@@ -166,11 +168,13 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // Eliminar el usuario y todas sus relaciones (en transacción)
+    // Eliminar el usuario y todas sus relaciones (en transaccion)
     await prisma.$transaction([
       prisma.cliente.deleteMany({ where: { userId: id } }),
       prisma.user.delete({ where: { id } }),
     ]);
+
+    eventBus.emit(OPERATIONS.user.update, "User", id, { action: "delete", role: usuario.role }, userId).catch(err => console.error("[Events] user.delete error:", err));
 
     return NextResponse.json({ message: "Usuario eliminado correctamente" });
   } catch (error: unknown) {

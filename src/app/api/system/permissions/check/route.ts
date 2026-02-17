@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { hasPermission, getUserPermissions, type PermissionType } from "@/lib/auth/permissions";
 
 // GET: Check if a user has a specific permission, or list all user permissions
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.system.config.view, "view", []);
   if (error) return error;
 
   try {

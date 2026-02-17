@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 /**
- * Calcula amortización de toda la flota según método lineal AFIP
- * Vida útil: 5 años (60 meses)
- * Cuota mensual = (Valor Compra - Valor Residual) / Vida Útil en meses
+ * Calcula amortizacion de toda la flota segun metodo lineal AFIP
+ * Vida util: 5 anios (60 meses)
+ * Cuota mensual = (Valor Compra - Valor Residual) / Vida Util en meses
  */
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "CONTADOR"]);
+  const { error } = await requirePermission(OPERATIONS.fleet.moto.view, "view", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   try {
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
       const vidaUtilAnios = moto.vidaUtilAnios || 5; // AFIP default
       const vidaUtilMeses = vidaUtilAnios * 12;
 
-      // Fecha de inicio de amortización
+      // Fecha de inicio de amortizacion
       const fechaInicio = moto.fechaCompra || moto.createdAt;
 
       // Meses transcurridos desde la compra
@@ -56,19 +57,19 @@ export async function GET(req: NextRequest) {
         )
       );
 
-      // Cuota de amortización mensual (método lineal)
+      // Cuota de amortizacion mensual (metodo lineal)
       const cuotaMensual = (valorCompra - valorResidual) / vidaUtilMeses;
 
-      // Amortización acumulada (no puede exceder el valor amortizable)
+      // Amortizacion acumulada (no puede exceder el valor amortizable)
       const amortizacionAcumulada = Math.min(
         cuotaMensual * mesesTranscurridos,
         valorCompra - valorResidual
       );
 
-      // Valor en libros (valor compra - amortización acumulada)
+      // Valor en libros (valor compra - amortizacion acumulada)
       const valorLibros = valorCompra - amortizacionAcumulada;
 
-      // Meses restantes de vida útil
+      // Meses restantes de vida util
       const mesesRestantes = Math.max(0, vidaUtilMeses - mesesTranscurridos);
       const aniosRestantes = mesesRestantes / 12;
 
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
           ? (amortizacionAcumulada / (valorCompra - valorResidual)) * 100
           : 0;
 
-      // Estado de amortización
+      // Estado de amortizacion
       let estadoAmortizacion: "NUEVA" | "EN_PROCESO" | "TOTALMENTE_AMORTIZADA" = "EN_PROCESO";
       if (mesesTranscurridos === 0) {
         estadoAmortizacion = "NUEVA";
@@ -163,7 +164,7 @@ export async function GET(req: NextRequest) {
       amortizaciones,
     });
   } catch (err: unknown) {
-    console.error("Error calculando amortización:", err);
+    console.error("Error calculando amortizacion:", err);
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }

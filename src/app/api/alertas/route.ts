@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -11,11 +12,10 @@ const createAlertaSchema = z.object({
 
 /**
  * GET /api/alertas
- * Lista de alertas con paginación y filtros
- * Accesible para ADMIN y OPERADOR
+ * Lista de alertas con paginacion y filtros
  */
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.alert.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -67,10 +67,9 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/alertas
  * Crear una nueva alerta manualmente
- * Accesible para ADMIN y OPERADOR
  */
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.alert.create, "create", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -79,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Datos inválidos", details: parsed.error.format() },
+        { error: "Datos invalidos", details: parsed.error.format() },
         { status: 400 }
       );
     }
@@ -94,6 +93,8 @@ export async function POST(req: NextRequest) {
         leida: false,
       },
     });
+
+    eventBus.emit(OPERATIONS.alert.create, "Alerta", alerta.id, { tipo, mensaje }, userId).catch(err => console.error("[Events] alert.create error:", err));
 
     return NextResponse.json(alerta, { status: 201 });
   } catch (error: unknown) {

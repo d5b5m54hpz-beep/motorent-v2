@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const ausenciaSchema = z.object({
@@ -27,7 +28,7 @@ const ausenciaSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "RRHH_MANAGER", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.hr.absence.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -96,7 +97,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "RRHH_MANAGER"]);
+  const { error, userId } = await requirePermission(OPERATIONS.hr.absence.create, "create", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -141,6 +142,8 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    eventBus.emit(OPERATIONS.hr.absence.create, "Ausencia", ausencia.id, { empleadoId, tipo, fechaDesde: fechaInicio, fechaHasta: fechaFin }, userId).catch(err => console.error("[Events] hr.absence.create error:", err));
 
     return NextResponse.json(ausencia, { status: 201 });
   } catch (err: unknown) {

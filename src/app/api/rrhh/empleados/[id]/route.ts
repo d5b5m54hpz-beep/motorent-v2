@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { empleadoSchema } from "@/lib/validations";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.hr.employee.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -31,7 +32,7 @@ export async function GET(_req: NextRequest, context: RouteContext) {
 }
 
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.hr.employee.update, "execute", ["OPERADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -60,6 +61,8 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       },
     });
 
+    eventBus.emit(OPERATIONS.hr.employee.update, "Empleado", id, { nombre: rest.nombre, cargo: rest.cargo, salario: rest.salarioBasico }, userId).catch(err => console.error("[Events] hr.employee.update error:", err));
+
     return NextResponse.json(empleado);
   } catch (err: unknown) {
     console.error("Error updating empleado:", err);
@@ -68,7 +71,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.hr.employee.terminate, "execute", ["OPERADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -79,6 +82,8 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
       where: { id },
       data: { estado: "BAJA", fechaEgreso: new Date() },
     });
+
+    eventBus.emit(OPERATIONS.hr.employee.terminate, "Empleado", id, { action: "baja" }, userId).catch(err => console.error("[Events] hr.employee.terminate error:", err));
 
     return NextResponse.json({ message: "Empleado dado de baja correctamente" });
   } catch (err: unknown) {

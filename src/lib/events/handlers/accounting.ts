@@ -999,6 +999,213 @@ export async function handleWorkOrderCompleteAccounting(ctx: EventContext): Prom
   }
 }
 
+// ─── 14. Credit Note Created → Asiento reversión parcial (ventas + IVA) ─────
+
+const REMUNERACIONES_A_PAGAR = { codigo: "2.1.04", nombre: "Remuneraciones a Pagar", tipo: "PASIVO" as const };
+const RETENCIONES_A_DEPOSITAR = { codigo: "2.1.05", nombre: "Retenciones a Depositar", tipo: "PASIVO" as const };
+const CONTRIBUCIONES_A_DEPOSITAR = { codigo: "2.1.06", nombre: "Contribuciones a Depositar", tipo: "PASIVO" as const };
+const CARGAS_SOCIALES = { codigo: "5.3.02", nombre: "Cargas Sociales Empleador", tipo: "EGRESO" as const };
+
+export async function handleCreditNoteCreatedAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "credit_note.create") return;
+
+  try {
+    const nota = await prisma.notaCredito.findUnique({
+      where: { id: ctx.entityId },
+      select: { numero: true, monto: true, montoNeto: true, montoIva: true, motivo: true, cliente: { select: { nombre: true } } },
+    });
+
+    if (!nota || nota.monto === 0) return;
+
+    const montoNeto = nota.montoNeto ?? nota.monto / 1.21;
+    const montoIva = nota.montoIva ?? nota.monto - montoNeto;
+
+    const ventasId = await getOrCreateAccount(
+      ACCOUNTS.INGRESOS_ALQUILER.codigo,
+      ACCOUNTS.INGRESOS_ALQUILER.nombre,
+      ACCOUNTS.INGRESOS_ALQUILER.tipo
+    );
+    const ivaDebitoId = await getOrCreateAccount(
+      ACCOUNTS.IVA_DEBITO_FISCAL.codigo,
+      ACCOUNTS.IVA_DEBITO_FISCAL.nombre,
+      ACCOUNTS.IVA_DEBITO_FISCAL.tipo
+    );
+    const cuentasPorCobrarId = await getOrCreateAccount(
+      ACCOUNTS.CUENTAS_POR_COBRAR.codigo,
+      ACCOUNTS.CUENTAS_POR_COBRAR.nombre,
+      ACCOUNTS.CUENTAS_POR_COBRAR.tipo
+    );
+
+    const lineas: Array<{ orden: number; cuentaId: string; debe: number; haber: number; descripcion: string }> = [];
+    let orden = 1;
+
+    // DEBITO: Reverse ventas (partial)
+    lineas.push({
+      orden: orden++,
+      cuentaId: ventasId,
+      debe: montoNeto,
+      haber: 0,
+      descripcion: `Reversión ventas - NC ${nota.numero}`,
+    });
+
+    // DEBITO: Reverse IVA débito fiscal
+    if (montoIva > 0) {
+      lineas.push({
+        orden: orden++,
+        cuentaId: ivaDebitoId,
+        debe: montoIva,
+        haber: 0,
+        descripcion: `Reversión IVA DF - NC ${nota.numero}`,
+      });
+    }
+
+    // CREDITO: Cuentas por cobrar (total)
+    lineas.push({
+      orden: orden,
+      cuentaId: cuentasPorCobrarId,
+      debe: 0,
+      haber: nota.monto,
+      descripcion: `${nota.cliente?.nombre ?? "Cliente"} - NC ${nota.numero}`,
+    });
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "AJUSTE",
+        descripcion: `Nota de Crédito ${nota.numero} - ${nota.motivo}`,
+        totalDebe: nota.monto,
+        totalHaber: nota.monto,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento credit_note.create`,
+        lineas: { create: lineas },
+      },
+    });
+
+    console.log(`[Accounting] Asiento AJUSTE creado para credit_note.create - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleCreditNoteCreatedAccounting error:", err);
+  }
+}
+
+// ─── 15. Payroll Liquidate → Asiento sueldos (bruto, cargas, retenciones) ────
+
+export async function handlePayrollLiquidateAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "hr.payroll.liquidate") return;
+
+  try {
+    const periodo = ctx.payload?.periodo as string | undefined;
+    const montoTotal = Number(ctx.payload?.montoTotal ?? 0);
+    if (montoTotal === 0) return;
+
+    // Sum all recibos from this liquidation event
+    // Use the payload data which contains aggregated totals from the liquidar endpoint
+    const totalBruto = Number(ctx.payload?.totalBruto ?? montoTotal);
+    const totalDeducciones = Number(ctx.payload?.totalDeducciones ?? 0);
+    const totalAportesPatronales = Number(ctx.payload?.totalAportesPatronales ?? 0);
+    const totalNeto = Number(ctx.payload?.totalNeto ?? totalBruto - totalDeducciones);
+
+    const sueldosId = await getOrCreateAccount(
+      CATEGORIA_TO_CUENTA["SUELDOS"].codigo,
+      CATEGORIA_TO_CUENTA["SUELDOS"].nombre,
+      CATEGORIA_TO_CUENTA["SUELDOS"].tipo
+    );
+    const cargasSocialesId = await getOrCreateAccount(
+      CARGAS_SOCIALES.codigo,
+      CARGAS_SOCIALES.nombre,
+      CARGAS_SOCIALES.tipo
+    );
+    const remuneracionesId = await getOrCreateAccount(
+      REMUNERACIONES_A_PAGAR.codigo,
+      REMUNERACIONES_A_PAGAR.nombre,
+      REMUNERACIONES_A_PAGAR.tipo
+    );
+    const retencionesId = await getOrCreateAccount(
+      RETENCIONES_A_DEPOSITAR.codigo,
+      RETENCIONES_A_DEPOSITAR.nombre,
+      RETENCIONES_A_DEPOSITAR.tipo
+    );
+    const contribucionesId = await getOrCreateAccount(
+      CONTRIBUCIONES_A_DEPOSITAR.codigo,
+      CONTRIBUCIONES_A_DEPOSITAR.nombre,
+      CONTRIBUCIONES_A_DEPOSITAR.tipo
+    );
+
+    const totalDebe = totalBruto + totalAportesPatronales;
+    const totalHaber = totalNeto + totalDeducciones + totalAportesPatronales;
+
+    const lineas: Array<{ orden: number; cuentaId: string; debe: number; haber: number; descripcion: string }> = [];
+    let orden = 1;
+
+    // DEBITO: Sueldos y Jornales (bruto)
+    lineas.push({
+      orden: orden++,
+      cuentaId: sueldosId,
+      debe: totalBruto,
+      haber: 0,
+      descripcion: `Sueldos brutos - Período ${periodo ?? "N/A"}`,
+    });
+
+    // DEBITO: Cargas Sociales Empleador
+    if (totalAportesPatronales > 0) {
+      lineas.push({
+        orden: orden++,
+        cuentaId: cargasSocialesId,
+        debe: totalAportesPatronales,
+        haber: 0,
+        descripcion: `Contribuciones patronales - Período ${periodo ?? "N/A"}`,
+      });
+    }
+
+    // CREDITO: Remuneraciones a Pagar (neto)
+    lineas.push({
+      orden: orden++,
+      cuentaId: remuneracionesId,
+      debe: 0,
+      haber: totalNeto,
+      descripcion: `Neto a pagar empleados`,
+    });
+
+    // CREDITO: Retenciones a Depositar (aportes empleado)
+    if (totalDeducciones > 0) {
+      lineas.push({
+        orden: orden++,
+        cuentaId: retencionesId,
+        debe: 0,
+        haber: totalDeducciones,
+        descripcion: `Retenciones empleados (jubilación, OS, sindicato, etc.)`,
+      });
+    }
+
+    // CREDITO: Contribuciones a Depositar (cargas patronales)
+    if (totalAportesPatronales > 0) {
+      lineas.push({
+        orden: orden,
+        cuentaId: contribucionesId,
+        debe: 0,
+        haber: totalAportesPatronales,
+        descripcion: `Contribuciones patronales a depositar`,
+      });
+    }
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "COMPRA",
+        descripcion: `Liquidación sueldos - Período ${periodo ?? "N/A"}`,
+        totalDebe,
+        totalHaber,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento hr.payroll.liquidate - ${ctx.payload?.empleados ?? 0} empleados`,
+        lineas: { create: lineas },
+      },
+    });
+
+    console.log(`[Accounting] Asiento COMPRA creado para hr.payroll.liquidate - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handlePayrollLiquidateAccounting error:", err);
+  }
+}
+
 // ─── Registration ───────────────────────────────────────────────────────────
 
 export function registerAccountingHandlers(): void {
@@ -1052,6 +1259,16 @@ export function registerAccountingHandlers(): void {
 
   // Maintenance events
   eventBus.registerHandler("maintenance.workorder.complete", handleWorkOrderCompleteAccounting, {
+    priority: 50,
+  });
+
+  // Credit note events
+  eventBus.registerHandler("credit_note.create", handleCreditNoteCreatedAccounting, {
+    priority: 50,
+  });
+
+  // Payroll events
+  eventBus.registerHandler("hr.payroll.liquidate", handlePayrollLiquidateAccounting, {
     priority: 50,
   });
 }

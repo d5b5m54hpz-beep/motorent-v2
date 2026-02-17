@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const lineaAsientoSchema = z.object({
@@ -19,7 +20,7 @@ const asientoContableSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.accounting.entry.view, "view", ["CONTADOR", "OPERADOR"]);
   if (error) return error;
 
   try {
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.accounting.entry.create, "create", ["CONTADOR"]);
   if (error) return error;
 
   try {
@@ -136,6 +137,8 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    eventBus.emit(OPERATIONS.accounting.entry.create, "AsientoContable", asiento.id, { fecha, descripcion, lineas: lineas.length }, userId).catch(err => console.error("[Events] accounting.entry.create error:", err));
 
     return NextResponse.json(asiento, { status: 201 });
   } catch (err: unknown) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 
@@ -11,18 +12,16 @@ const actualizarPerfilSchema = z.object({
 
 const cambiarPasswordSchema = z.object({
   currentPassword: z.string().optional(),
-  newPassword: z.string().min(6, "Mínimo 6 caracteres"),
+  newPassword: z.string().min(6, "Minimo 6 caracteres"),
 });
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.user.profile.view, "view", ["OPERADOR", "CLIENTE", "CONTADOR"]);
+  if (error) return error;
 
   try {
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
       select: {
         id: true,
         name: true,
@@ -48,10 +47,8 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.user.profile.update, "execute", ["OPERADOR", "CLIENTE", "CONTADOR"]);
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -61,13 +58,13 @@ export async function PUT(req: NextRequest) {
       const parsed = cambiarPasswordSchema.safeParse(body);
       if (!parsed.success) {
         return NextResponse.json(
-          { error: "Datos inválidos", details: parsed.error.flatten().fieldErrors },
+          { error: "Datos invalidos", details: parsed.error.flatten().fieldErrors },
           { status: 400 }
         );
       }
 
       const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
+        where: { id: userId },
       });
 
       if (!user) {
@@ -77,21 +74,21 @@ export async function PUT(req: NextRequest) {
       // If user has password, verify current password
       if (user.password) {
         if (!parsed.data.currentPassword) {
-          return NextResponse.json({ error: "Contraseña actual requerida" }, { status: 400 });
+          return NextResponse.json({ error: "Contrasena actual requerida" }, { status: 400 });
         }
         const valid = await bcrypt.compare(parsed.data.currentPassword, user.password);
         if (!valid) {
-          return NextResponse.json({ error: "Contraseña actual incorrecta" }, { status: 400 });
+          return NextResponse.json({ error: "Contrasena actual incorrecta" }, { status: 400 });
         }
       }
 
       const hashed = await bcrypt.hash(parsed.data.newPassword, 10);
       await prisma.user.update({
-        where: { email: session.user.email },
+        where: { id: userId },
         data: { password: hashed },
       });
 
-      return NextResponse.json({ message: "Contraseña actualizada" });
+      return NextResponse.json({ message: "Contrasena actualizada" });
     }
 
     // Image update
@@ -102,7 +99,7 @@ export async function PUT(req: NextRequest) {
       }
 
       const user = await prisma.user.update({
-        where: { email: session.user.email },
+        where: { id: userId },
         data: { image: imageUrl },
         select: { id: true, name: true, email: true, image: true, role: true },
       });
@@ -114,7 +111,7 @@ export async function PUT(req: NextRequest) {
     const parsed = actualizarPerfilSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Datos inválidos", details: parsed.error.flatten().fieldErrors },
+        { error: "Datos invalidos", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
@@ -122,7 +119,7 @@ export async function PUT(req: NextRequest) {
     const { nombre, telefono } = parsed.data;
 
     const user = await prisma.user.update({
-      where: { email: session.user.email },
+      where: { id: userId },
       data: {
         name: nombre,
         phone: telefono ?? undefined,

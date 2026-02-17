@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * PUT /api/alertas/[id]
- * Marcar una alerta como leída
- * Accesible para ADMIN y OPERADOR
+ * Marcar una alerta como leida
  */
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.alert.update, "execute", ["OPERADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -20,6 +20,8 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       where: { id },
       data: { leida: true },
     });
+
+    eventBus.emit(OPERATIONS.alert.update, "Alerta", id, { leida: true }, userId).catch(err => console.error("[Events] alert.update error:", err));
 
     return NextResponse.json(alerta);
   } catch (error: unknown) {
@@ -37,10 +39,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 /**
  * DELETE /api/alertas/[id]
  * Eliminar una alerta
- * Accesible para ADMIN y OPERADOR
  */
 export async function DELETE(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.alert.delete, "execute", ["OPERADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -49,6 +50,8 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     await prisma.alerta.delete({
       where: { id },
     });
+
+    eventBus.emit(OPERATIONS.alert.delete, "Alerta", id, { action: "delete" }, userId).catch(err => console.error("[Events] alert.delete error:", err));
 
     return NextResponse.json({ message: "Alerta eliminada correctamente" });
   } catch (error: unknown) {

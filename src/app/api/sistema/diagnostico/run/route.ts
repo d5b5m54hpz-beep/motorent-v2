@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { ejecutarDiagnosticoCompleto } from "@/lib/diagnostico";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
-  const { error, userId } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.system.diagnostic.execute, "execute", []);
   if (error) return error;
 
   try {

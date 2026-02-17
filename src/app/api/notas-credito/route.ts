@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { notaCreditoSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR", "CONTADOR"]);
+  const { error } = await requirePermission(OPERATIONS.credit_note.view, "view", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   try {
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error, userId } = await requireRole(["ADMIN", "OPERADOR", "CONTADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.credit_note.create, "create", ["CONTADOR"]);
   if (error) return error;
 
   try {
@@ -108,6 +109,8 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    eventBus.emit(OPERATIONS.credit_note.create, "NotaCredito", notaCredito.id, { facturaOriginalId: rest.facturaOriginalId, monto: rest.monto, motivo: rest.motivo }, userId).catch(err => console.error("[Events] credit_note.create error:", err));
 
     return NextResponse.json({ data: notaCredito }, { status: 201 });
   } catch (err: unknown) {

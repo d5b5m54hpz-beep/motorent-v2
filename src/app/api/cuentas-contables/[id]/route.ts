@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { cuentaContableSchema } from "@/lib/validations";
 
 type RouteContext = {
@@ -11,7 +12,7 @@ export async function GET(
   _req: NextRequest,
   context: RouteContext
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.accounting.account.view, "view", ["CONTADOR", "OPERADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -36,7 +37,7 @@ export async function PUT(
   req: NextRequest,
   context: RouteContext
 ) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.accounting.account.update, "execute", ["CONTADOR"]);
   if (error) return error;
 
   const { id } = await context.params;
@@ -90,6 +91,8 @@ export async function PUT(
       },
     });
 
+    eventBus.emit(OPERATIONS.accounting.account.update, "CuentaContable", id, { codigo, nombre }, userId).catch(err => console.error("[Events] accounting.account.update error:", err));
+
     return NextResponse.json(cuenta);
   } catch (err: unknown) {
     console.error("Error updating cuenta contable:", err);
@@ -101,8 +104,8 @@ export async function DELETE(
   _req: NextRequest,
   context: RouteContext
 ) {
-  const { error } = await requireRole(["ADMIN"]);
-  if (error) return error;
+  const { error: deleteError, userId: deleteUserId } = await requirePermission(OPERATIONS.accounting.account.update, "execute", ["CONTADOR"]);
+  if (deleteError) return deleteError;
 
   const { id } = await context.params;
 
@@ -128,6 +131,8 @@ export async function DELETE(
     }
 
     await prisma.cuentaContable.delete({ where: { id } });
+
+    eventBus.emit(OPERATIONS.accounting.account.update, "CuentaContable", id, { action: "delete" }, deleteUserId).catch(err => console.error("[Events] accounting.account.update error:", err));
 
     return NextResponse.json({ message: "Cuenta eliminada correctamente" });
   } catch (err: unknown) {

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 // GET: List all permission profiles with grant counts
 export async function GET() {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.system.config.view, "view", []);
   if (error) return error;
 
   try {
@@ -37,7 +38,7 @@ const createProfileSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.system.config.update, "execute", []);
   if (error) return error;
 
   try {

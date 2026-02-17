@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { createUsuarioSchema } from "@/lib/validations";
 import bcrypt from "bcryptjs";
 
 /**
  * GET /api/usuarios
- * Lista de usuarios (ADMIN y OPERADOR) con paginación y búsqueda
- * Solo accesible para ADMIN
+ * Lista de usuarios (ADMIN y OPERADOR) con paginacion y busqueda
+ * Solo accesible para ADMIN (no fallback roles)
  */
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error } = await requirePermission(OPERATIONS.user.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -27,12 +28,12 @@ export async function GET(req: NextRequest) {
       role: { in: ["ADMIN", "OPERADOR"] },
     };
 
-    // Filtro por rol específico
+    // Filtro por rol especifico
     if (role && (role === "ADMIN" || role === "OPERADOR")) {
       where.role = role;
     }
 
-    // Búsqueda por nombre o email
+    // Busqueda por nombre o email
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
@@ -76,10 +77,10 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/usuarios
  * Crea un nuevo usuario (ADMIN o OPERADOR)
- * Solo accesible para ADMIN
+ * Sensitive operation - NO fallback roles, only explicit permission or ADMIN
  */
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.user.create, "create", []);
   if (error) return error;
 
   try {
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Datos inválidos", details: parsed.error.format() },
+        { error: "Datos invalidos", details: parsed.error.format() },
         { status: 400 }
       );
     }
@@ -102,12 +103,12 @@ export async function POST(req: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "El email ya está registrado" },
+        { error: "El email ya esta registrado" },
         { status: 409 }
       );
     }
 
-    // Hash de la contraseña
+    // Hash de la contrasena
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Crear usuario con provider "credentials"
@@ -129,6 +130,8 @@ export async function POST(req: NextRequest) {
         updatedAt: true,
       },
     });
+
+    eventBus.emit(OPERATIONS.user.create, "User", usuario.id, { email, name, role }, userId).catch(err => console.error("[Events] user.create error:", err));
 
     return NextResponse.json(usuario, { status: 201 });
   } catch (error: unknown) {

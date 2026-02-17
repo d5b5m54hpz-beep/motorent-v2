@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 
 /**
  * POST /api/alertas/generar
- * Genera alertas automáticas basadas en reglas de negocio:
+ * Genera alertas automaticas basadas en reglas de negocio:
  * - Pagos vencidos
- * - Contratos próximos a vencer (7 días)
+ * - Contratos proximos a vencer (7 dias)
  * - Licencias vencidas
- *
- * Accesible para ADMIN y OPERADOR
  */
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.alert.generate, "execute", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
         await prisma.alerta.create({
           data: {
             tipo: "pago_vencido",
-            mensaje: `Pago vencido hace ${diasVencido} día${diasVencido !== 1 ? "s" : ""} - ${clienteNombre} - ${motoInfo} - Monto: $${pago.monto.toLocaleString()}`,
+            mensaje: `Pago vencido hace ${diasVencido} dia${diasVencido !== 1 ? "s" : ""} - ${clienteNombre} - ${motoInfo} - Monto: $${pago.monto.toLocaleString()}`,
             pagoId: pago.id,
             contratoId: pago.contratoId,
             metadata: {
@@ -72,7 +71,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Contratos próximos a vencer (7 días)
+    // 2. Contratos proximos a vencer (7 dias)
     const contratosPorVencer = await prisma.contrato.findMany({
       where: {
         estado: "activo",
@@ -104,7 +103,7 @@ export async function POST(req: NextRequest) {
         await prisma.alerta.create({
           data: {
             tipo: "contrato_por_vencer",
-            mensaje: `Contrato vence en ${diasRestantes} día${diasRestantes !== 1 ? "s" : ""} - ${clienteNombre} - ${motoInfo}`,
+            mensaje: `Contrato vence en ${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} - ${clienteNombre} - ${motoInfo}`,
             contratoId: contrato.id,
             metadata: {
               clienteNombre,
@@ -131,15 +130,15 @@ export async function POST(req: NextRequest) {
     });
 
     for (const cliente of licenciasVencidas) {
-      // Para licencias vencidas, verificamos si ya existe una alerta reciente (últimos 30 días)
-      // ya que no tenemos relación directa cliente-alerta
+      // Para licencias vencidas, verificamos si ya existe una alerta reciente (ultimos 30 dias)
+      // ya que no tenemos relacion directa cliente-alerta
       const treintaDiasAtras = new Date(now);
       treintaDiasAtras.setDate(treintaDiasAtras.getDate() - 30);
 
       const alertaExistente = await prisma.alerta.findFirst({
         where: {
           tipo: "licencia_vencida",
-          mensaje: { contains: cliente.email }, // Buscar por email único del cliente
+          mensaje: { contains: cliente.email }, // Buscar por email unico del cliente
           createdAt: { gte: treintaDiasAtras },
         },
       });
@@ -151,7 +150,7 @@ export async function POST(req: NextRequest) {
         await prisma.alerta.create({
           data: {
             tipo: "licencia_vencida",
-            mensaje: `Licencia vencida hace ${diasVencido} día${diasVencido !== 1 ? "s" : ""} - ${clienteNombre} (${cliente.email})`,
+            mensaje: `Licencia vencida hace ${diasVencido} dia${diasVencido !== 1 ? "s" : ""} - ${clienteNombre} (${cliente.email})`,
             metadata: {
               clienteId: cliente.id,
               clienteNombre,
@@ -165,6 +164,8 @@ export async function POST(req: NextRequest) {
         generadas++;
       }
     }
+
+    eventBus.emit(OPERATIONS.alert.generate, "Alerta", "batch", { generadas }, userId).catch(err => console.error("[Events] alert.generate error:", err));
 
     return NextResponse.json({
       success: true,

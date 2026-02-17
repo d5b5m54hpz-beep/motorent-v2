@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "RRHH_MANAGER", "VIEWER"]);
+  const { error } = await requirePermission(OPERATIONS.dashboard.hr.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {
