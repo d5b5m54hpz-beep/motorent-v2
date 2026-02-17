@@ -33,6 +33,7 @@ model User {
   historialEstadosMotos   HistorialEstadoMoto[]
   notasCreditoCreadas     NotaCredito[]
   recepcionesMercaderia   RecepcionMercaderiaEmbarque[]
+  businessEvents          BusinessEvent[]
 }
 
 enum Role {
@@ -2169,4 +2170,30 @@ model LoteCambioPrecio {
 
   usuario         String
   createdAt       DateTime @default(now())
+}
+
+// ─── Event Bus ──────────────────────────────────────────────────────────────
+
+model BusinessEvent {
+  id            String    @id @default(cuid())
+  operationId   String    // "payment.approve", "rental.contract.create"
+  entityType    String    // "Payment", "Contrato", "Factura"
+  entityId      String    // ID de la entidad afectada
+  payload       Json      // Datos del evento (snapshot de la entidad)
+  metadata      Json?     // Info adicional (IP, user agent, etc)
+  userId        String?   // Quien disparó el evento (null = sistema)
+  parentEventId String?   // Para eventos que son consecuencia de otro
+  status        String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  error         String?   // Si un handler falló (JSON array de errores)
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  parentEvent   BusinessEvent?  @relation("EventChain", fields: [parentEventId], references: [id])
+  childEvents   BusinessEvent[] @relation("EventChain")
+  user          User?           @relation(fields: [userId], references: [id])
+
+  @@index([operationId])
+  @@index([entityType, entityId])
+  @@index([status])
+  @@index([createdAt])
 }
