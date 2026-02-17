@@ -10,7 +10,7 @@ const actualizarPerfilSchema = z.object({
 });
 
 const cambiarPasswordSchema = z.object({
-  currentPassword: z.string().min(1),
+  currentPassword: z.string().optional(),
   newPassword: z.string().min(6, "Mínimo 6 caracteres"),
 });
 
@@ -74,8 +74,11 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
       }
 
-      // If user has password, verify current
+      // If user has password, verify current password
       if (user.password) {
+        if (!parsed.data.currentPassword) {
+          return NextResponse.json({ error: "Contraseña actual requerida" }, { status: 400 });
+        }
         const valid = await bcrypt.compare(parsed.data.currentPassword, user.password);
         if (!valid) {
           return NextResponse.json({ error: "Contraseña actual incorrecta" }, { status: 400 });
