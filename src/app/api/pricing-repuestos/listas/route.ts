@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(OPERATIONS.pricing.parts.list.view, "view", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const listas = await prisma.listaPrecio.findMany({
@@ -26,14 +25,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.pricing.parts.list.create, "create", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const body = await req.json();
     const lista = await prisma.listaPrecio.create({ data: body });
+
+    eventBus.emit(OPERATIONS.pricing.parts.list.create, "ListaPrecio", lista.id, { nombre: body.nombre, codigo: body.codigo }, userId).catch(err => console.error("Error emitting pricing.parts.list.create event:", err));
+
     return NextResponse.json(lista);
   } catch (err: unknown) {
     console.error("Error creating lista:", err);

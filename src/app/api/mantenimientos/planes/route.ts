@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/mantenimientos/planes — Listar planes con tareas
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.maintenance.plan.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const planes = await prisma.planMantenimiento.findMany({
       where: { activo: true },

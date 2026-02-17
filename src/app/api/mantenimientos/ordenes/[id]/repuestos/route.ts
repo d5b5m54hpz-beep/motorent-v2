@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/mantenimientos/ordenes/[id]/repuestos — Listar repuestos de la OT
@@ -8,10 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.maintenance.workorder.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await params;
 
@@ -47,10 +46,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.workorder.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const { id: ordenTrabajoId } = await params;
     const body = await req.json();
@@ -92,7 +89,7 @@ export async function POST(
       );
     }
 
-    // 4. 🔥 INTEGRACIÓN CON MOTOR DE PRICING 🔥
+    // 4. INTEGRACION CON MOTOR DE PRICING
     // Si hay rider, usar pricing preferencial. Si no, usar lista interna.
     let precioUnitario = 0;
     let listaId: string | null = null;
@@ -198,6 +195,8 @@ export async function POST(
         stockNuevo: repuesto.stock - cantidadFinal,
       },
     });
+
+    eventBus.emit(OPERATIONS.maintenance.workorder.update, "OrdenTrabajo", ordenTrabajoId, { repuestoId, cantidadPlanificada, cantidadUsada: cantidadFinal, repuestoOTId: repuestoOT.id }, userId).catch(err => console.error("Error emitting maintenance.workorder.update event:", err));
 
     return NextResponse.json({ data: repuestoOT }, { status: 201 });
   } catch (error: unknown) {

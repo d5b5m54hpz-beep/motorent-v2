@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/mecanicos — Listar mecánicos
+// GET /api/mecanicos — Listar mecanicos
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.mechanic.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { searchParams } = new URL(req.url);
     const tallerId = searchParams.get('tallerId');
@@ -40,19 +39,17 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     console.error('Error fetching mecanicos:', error);
     return NextResponse.json(
-      { error: 'Error al obtener mecánicos', details: error instanceof Error ? error.message : 'Unknown' },
+      { error: 'Error al obtener mecanicos', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }
 }
 
-// POST /api/mecanicos — Crear mecánico
+// POST /api/mecanicos — Crear mecanico
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.mechanic.create, "create", ["OPERADOR"]);
+    if (error) return error;
 
     const body = await req.json();
     const { nombre, telefono, email, especialidad, tallerId, tarifaHora } = body;
@@ -76,11 +73,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    eventBus.emit(OPERATIONS.mechanic.create, "Mecanico", mecanico.id, { nombre, telefono, email, especialidad, tallerId, tarifaHora }, userId).catch(err => console.error("Error emitting mechanic.create event:", err));
+
     return NextResponse.json({ data: mecanico }, { status: 201 });
   } catch (error: unknown) {
     console.error('Error creating mecanico:', error);
     return NextResponse.json(
-      { error: 'Error al crear mecánico', details: error instanceof Error ? error.message : 'Unknown' },
+      { error: 'Error al crear mecanico', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }

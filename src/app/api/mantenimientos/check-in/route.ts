@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // POST /api/mantenimientos/check-in — Realizar check-in y crear OT
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.checkin.execute, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const body = await req.json();
     const { codigoQR, kmActual, observacionesRecepcion } = body;
@@ -100,7 +99,7 @@ export async function POST(req: NextRequest) {
       data: {
         qrEscaneado: true,
         qrEscaneadoAt: new Date(),
-        qrEscaneadoPor: session.user.id,
+        qrEscaneadoPor: userId,
         estado: 'EN_PROCESO',
         ordenTrabajoId: ordenTrabajo.id,
       },
@@ -121,9 +120,11 @@ export async function POST(req: NextRequest) {
         ordenTrabajoId: ordenTrabajo.id,
         estadoNuevo: 'EN_EJECUCION',
         accion: 'Check-in',
-        realizadoPor: session.user.id,
+        realizadoPor: userId,
       },
     });
+
+    eventBus.emit(OPERATIONS.maintenance.checkin.execute, "OrdenTrabajo", ordenTrabajo.id, { codigoQR, kmActual, tipoService, motoId: cita.motoId, citaId: cita.id }, userId).catch(err => console.error("Error emitting maintenance.checkin.execute event:", err));
 
     return NextResponse.json({
       data: {

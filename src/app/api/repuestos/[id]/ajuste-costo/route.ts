@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.part.update,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -73,7 +76,7 @@ export async function POST(
           motivo: "AJUSTE_MANUAL",
           referencia: referencia || motivo,
           tipoCambio: tipoCambio || null,
-          usuario: session.user?.email || null,
+          usuario: userId || null,
         },
       });
 
@@ -84,6 +87,17 @@ export async function POST(
       costoAnteriorArs > 0
         ? ((costoNuevoArs - costoAnteriorArs) / costoAnteriorArs) * 100
         : 0;
+
+    // Emit cost adjustment event
+    eventBus.emit(
+      OPERATIONS.inventory.part.update,
+      "Repuesto",
+      id,
+      { nombre: repuesto.nombre, costoAnterior: costoAnteriorArs, costoNuevo: costoNuevoArs, motivo },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.part.update event:", err);
+    });
 
     return NextResponse.json({
       success: true,

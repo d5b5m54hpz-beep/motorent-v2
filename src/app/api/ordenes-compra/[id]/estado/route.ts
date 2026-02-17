@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -11,10 +12,12 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.purchase_order.update,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -58,7 +61,7 @@ export async function PUT(
       where: { id },
       data: {
         estado,
-        aprobadoPor: estado === "PENDIENTE" ? session.user.email : undefined,
+        aprobadoPor: estado === "PENDIENTE" ? userId : undefined,
       },
       include: {
         proveedor: { select: { id: true, nombre: true } },
@@ -68,6 +71,17 @@ export async function PUT(
           },
         },
       },
+    });
+
+    // Emit state change event
+    eventBus.emit(
+      OPERATIONS.inventory.purchase_order.update,
+      "OrdenCompra",
+      id,
+      { estadoAnterior: existing.estado, estadoNuevo: estado },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.purchase_order.update event:", err);
     });
 
     return NextResponse.json(oc);

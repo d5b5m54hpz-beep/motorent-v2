@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { repuestoSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(
+    OPERATIONS.inventory.part.view,
+    "view",
+    ["OPERADOR", "CONTADOR"]
+  );
+  if (error) return error;
 
   try {
     const url = new URL(req.url);
@@ -148,10 +151,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.part.create,
+    "create",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -188,12 +193,23 @@ export async function POST(req: NextRequest) {
             stockAnterior: 0,
             stockNuevo: stockValue,
             motivo: "Stock inicial",
-            usuario: session.user.email || undefined,
+            usuario: userId || undefined,
           },
         });
       }
 
       return newRepuesto;
+    });
+
+    // Emit creation event
+    eventBus.emit(
+      OPERATIONS.inventory.part.create,
+      "Repuesto",
+      repuesto.id,
+      { nombre: rest.nombre, codigo: rest.codigo, cantidad: stockValue, costoUnitario: rest.precioCompra },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.part.create event:", err);
     });
 
     return NextResponse.json(repuesto, { status: 201 });

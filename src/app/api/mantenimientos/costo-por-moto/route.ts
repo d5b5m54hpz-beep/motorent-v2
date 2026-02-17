@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/mantenimientos/costo-por-moto — Cost per motorcycle analysis
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.maintenance.workorder.view, "view", ["OPERADOR", "CONTADOR"]);
+    if (error) return error;
 
     const searchParams = req.nextUrl.searchParams;
     const motoId = searchParams.get('motoId');

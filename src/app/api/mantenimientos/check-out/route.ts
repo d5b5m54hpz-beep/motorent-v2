@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // POST /api/mantenimientos/check-out — Realizar check-out y cerrar OT
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.checkout.execute, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const body = await req.json();
     const {
@@ -86,9 +85,11 @@ export async function POST(req: NextRequest) {
         estadoAnterior: 'EN_EJECUCION',
         estadoNuevo: 'COMPLETADA',
         accion: 'Check-out',
-        realizadoPor: session.user.id,
+        realizadoPor: userId,
       },
     });
+
+    eventBus.emit(OPERATIONS.maintenance.checkout.execute, "OrdenTrabajo", ordenTrabajoId, { kmAlEgreso, costoTotal, motoId: orden.motoId }, userId).catch(err => console.error("Error emitting maintenance.checkout.execute event:", err));
 
     return NextResponse.json({
       data: {

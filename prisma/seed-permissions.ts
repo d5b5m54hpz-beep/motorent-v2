@@ -81,22 +81,115 @@ const OPERATION_CATALOG: OpDef[] = [
   { code: "accounting.report.generate", description: "Generar reportes contables", isViewOnly: true },
   { code: "accounting.reconciliation.execute", description: "Ejecutar conciliación" },
 
-  // Maintenance
-  { code: "maintenance.appointment.create", description: "Crear turno de mantenimiento" },
-  { code: "maintenance.appointment.complete", description: "Completar turno de mantenimiento" },
+  // Maintenance - Work Order
   { code: "maintenance.workorder.create", description: "Crear orden de trabajo" },
+  { code: "maintenance.workorder.update", description: "Actualizar orden de trabajo" },
   { code: "maintenance.workorder.complete", description: "Completar orden de trabajo" },
+  { code: "maintenance.workorder.assign", description: "Asignar mecánico a orden de trabajo" },
+  { code: "maintenance.workorder.view", description: "Ver órdenes de trabajo", isViewOnly: true },
 
-  // Inventory
+  // Maintenance - Appointment
+  { code: "maintenance.appointment.create", description: "Crear turno de mantenimiento" },
+  { code: "maintenance.appointment.update", description: "Actualizar turno de mantenimiento" },
+  { code: "maintenance.appointment.cancel", description: "Cancelar turno de mantenimiento" },
+  { code: "maintenance.appointment.complete", description: "Completar turno de mantenimiento" },
+  { code: "maintenance.appointment.view", description: "Ver turnos de mantenimiento", isViewOnly: true },
+
+  // Maintenance - Check-in/out / Plan
+  { code: "maintenance.checkin.execute", description: "Ejecutar check-in de moto" },
+  { code: "maintenance.checkout.execute", description: "Ejecutar check-out de moto" },
+  { code: "maintenance.plan.view", description: "Ver planes de mantenimiento", isViewOnly: true },
+
+  // Inventory - Part
   { code: "inventory.part.create", description: "Crear repuesto" },
   { code: "inventory.part.update", description: "Actualizar repuesto" },
-  { code: "inventory.stock.adjust", description: "Ajustar stock" },
-  { code: "inventory.purchase_order.create", description: "Crear orden de compra" },
-  { code: "inventory.purchase_order.approve", description: "Aprobar orden de compra", requiresApproval: true },
+  { code: "inventory.part.delete", description: "Eliminar repuesto" },
+  { code: "inventory.part.view", description: "Ver repuestos", isViewOnly: true },
+  { code: "inventory.part.adjust_stock", description: "Ajustar stock de repuesto" },
+  { code: "inventory.part.import_bulk", description: "Importación masiva de repuestos" },
+  { code: "inventory.part.export", description: "Exportar repuestos", isViewOnly: true },
 
-  // Import
-  { code: "import.shipment.create", description: "Crear embarque" },
-  { code: "import.shipment.finalize_cost", description: "Finalizar costeo de embarque" },
+  // Inventory - Movement
+  { code: "inventory.movement.create", description: "Registrar movimiento de stock" },
+  { code: "inventory.movement.view", description: "Ver movimientos de stock", isViewOnly: true },
+
+  // Inventory - Location
+  { code: "inventory.location.create", description: "Crear ubicación de depósito" },
+  { code: "inventory.location.update", description: "Actualizar ubicación de depósito" },
+  { code: "inventory.location.delete", description: "Eliminar ubicación de depósito" },
+  { code: "inventory.location.view", description: "Ver ubicaciones de depósito", isViewOnly: true },
+
+  // Inventory - Purchase Order
+  { code: "inventory.purchase_order.create", description: "Crear orden de compra" },
+  { code: "inventory.purchase_order.update", description: "Actualizar orden de compra" },
+  { code: "inventory.purchase_order.approve", description: "Aprobar orden de compra", requiresApproval: true },
+  { code: "inventory.purchase_order.view", description: "Ver órdenes de compra", isViewOnly: true },
+
+  // Inventory - Reception
+  { code: "inventory.reception.create", description: "Crear recepción de mercadería" },
+  { code: "inventory.reception.process_item", description: "Procesar item de recepción" },
+  { code: "inventory.reception.finalize", description: "Finalizar recepción" },
+  { code: "inventory.reception.view", description: "Ver recepciones", isViewOnly: true },
+
+  // Import Shipment
+  { code: "import_shipment.create", description: "Crear embarque de importación" },
+  { code: "import_shipment.update", description: "Actualizar embarque" },
+  { code: "import_shipment.view", description: "Ver embarques", isViewOnly: true },
+  { code: "import_shipment.calculate_costs", description: "Calcular costos de embarque" },
+  { code: "import_shipment.confirm_costs", description: "Confirmar costos de embarque", requiresApproval: true },
+  { code: "import_shipment.dispatch.create", description: "Crear despacho aduanero" },
+  { code: "import_shipment.dispatch.view", description: "Ver despachos", isViewOnly: true },
+  { code: "import_shipment.reception.create", description: "Crear recepción de embarque" },
+  { code: "import_shipment.reception.process_item", description: "Procesar item de recepción de embarque" },
+  { code: "import_shipment.reception.finalize", description: "Finalizar recepción de embarque" },
+  { code: "import_shipment.generate_supplier_link", description: "Generar link para proveedor" },
+
+  // Supplier
+  { code: "supplier.create", description: "Crear proveedor" },
+  { code: "supplier.update", description: "Actualizar proveedor" },
+  { code: "supplier.view", description: "Ver proveedores", isViewOnly: true },
+  { code: "supplier.portal.view", description: "Ver portal de proveedor", isViewOnly: true },
+  { code: "supplier.portal.confirm", description: "Confirmar desde portal proveedor" },
+  { code: "supplier.portal.labels", description: "Gestionar etiquetas de proveedor" },
+
+  // Expense
+  { code: "expense.create", description: "Registrar gasto" },
+  { code: "expense.update", description: "Actualizar gasto" },
+  { code: "expense.view", description: "Ver gastos", isViewOnly: true },
+
+  // Pricing - Rental
+  { code: "pricing.rental.view", description: "Ver precios de alquiler", isViewOnly: true },
+  { code: "pricing.rental.update", description: "Actualizar precios de alquiler" },
+
+  // Pricing - Parts
+  { code: "pricing.parts.view", description: "Ver precios de repuestos", isViewOnly: true },
+  { code: "pricing.parts.bulk_update", description: "Actualización masiva de precios" },
+  { code: "pricing.parts.apply_suggestion", description: "Aplicar sugerencia de precio" },
+  { code: "pricing.parts.list.create", description: "Crear lista de precios" },
+  { code: "pricing.parts.list.update", description: "Actualizar lista de precios" },
+  { code: "pricing.parts.list.view", description: "Ver listas de precios", isViewOnly: true },
+  { code: "pricing.parts.rule_discount.create", description: "Crear regla de descuento" },
+  { code: "pricing.parts.rule_discount.view", description: "Ver reglas de descuento", isViewOnly: true },
+  { code: "pricing.parts.rule_markup.create", description: "Crear regla de markup" },
+  { code: "pricing.parts.rule_markup.view", description: "Ver reglas de markup", isViewOnly: true },
+  { code: "pricing.parts.batch.create", description: "Crear lote de actualización de precios" },
+  { code: "pricing.parts.batch.view", description: "Ver lotes de actualización", isViewOnly: true },
+  { code: "pricing.parts.rollback", description: "Rollback de precios" },
+  { code: "pricing.parts.resolve", description: "Resolver conflictos de precios" },
+  { code: "pricing.parts.category.create", description: "Crear categoría de precios" },
+  { code: "pricing.parts.category.view", description: "Ver categorías de precios", isViewOnly: true },
+  { code: "pricing.parts.customer_group.create", description: "Crear grupo de clientes" },
+  { code: "pricing.parts.customer_group.view", description: "Ver grupos de clientes", isViewOnly: true },
+
+  // Mechanic
+  { code: "mechanic.create", description: "Crear mecánico" },
+  { code: "mechanic.update", description: "Actualizar mecánico" },
+  { code: "mechanic.view", description: "Ver mecánicos", isViewOnly: true },
+
+  // Workshop
+  { code: "workshop.create", description: "Crear taller" },
+  { code: "workshop.update", description: "Actualizar taller" },
+  { code: "workshop.view", description: "Ver talleres", isViewOnly: true },
 
   // HR
   { code: "hr.employee.create", description: "Crear empleado" },
@@ -146,25 +239,34 @@ const SYSTEM_PROFILES: ProfileDef[] = [
   },
   {
     name: "Operador Flota",
-    description: "Gestión de flota, alquileres, mantenimiento y pagos básicos",
+    description: "Gestión de flota, alquileres, mantenimiento, inventario y pagos",
     grants: [
       { pattern: "fleet.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "rental.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "maintenance.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "payment.*", canView: true, canCreate: true },
       { pattern: "invoice.sale.*", canView: true },
-      { pattern: "inventory.*", canView: true },
+      { pattern: "inventory.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "import_shipment.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "supplier.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "expense.*", canView: true, canCreate: true },
+      { pattern: "pricing.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "mechanic.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "workshop.*", canView: true, canCreate: true, canExecute: true },
     ],
   },
   {
     name: "Contador",
-    description: "Acceso completo a contabilidad, vista de facturas y pagos",
+    description: "Acceso completo a contabilidad, vista de facturas, pagos, gastos e inventario",
     grants: [
       { pattern: "accounting.*", canView: true, canCreate: true, canExecute: true, canApprove: true },
       { pattern: "invoice.*", canView: true, canApprove: true },
       { pattern: "payment.*", canView: true, canApprove: true },
       { pattern: "inventory.*", canView: true },
-      { pattern: "import.*", canView: true },
+      { pattern: "import_shipment.*", canView: true },
+      { pattern: "supplier.*", canView: true },
+      { pattern: "expense.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "pricing.parts.*", canView: true },
     ],
   },
   {
@@ -187,11 +289,13 @@ const SYSTEM_PROFILES: ProfileDef[] = [
   },
   {
     name: "Mecánico",
-    description: "Órdenes de trabajo, vista de motos y repuestos",
+    description: "Órdenes de trabajo, turnos, check-in/out, vista de motos y repuestos",
     grants: [
-      { pattern: "maintenance.workorder.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "maintenance.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "fleet.moto.*", canView: true },
       { pattern: "inventory.part.*", canView: true },
+      { pattern: "mechanic.*", canView: true },
+      { pattern: "workshop.*", canView: true },
     ],
   },
   {

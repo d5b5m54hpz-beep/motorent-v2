@@ -93,33 +93,142 @@ export const OPERATIONS = {
     },
   },
   maintenance: {
-    appointment: {
-      create: "maintenance.appointment.create",
-      complete: "maintenance.appointment.complete",
-    },
     workorder: {
       create: "maintenance.workorder.create",
+      update: "maintenance.workorder.update",
       complete: "maintenance.workorder.complete",
+      assign: "maintenance.workorder.assign",
+      view: "maintenance.workorder.view",
+    },
+    appointment: {
+      create: "maintenance.appointment.create",
+      update: "maintenance.appointment.update",
+      cancel: "maintenance.appointment.cancel",
+      complete: "maintenance.appointment.complete",
+      view: "maintenance.appointment.view",
+    },
+    checkin: {
+      execute: "maintenance.checkin.execute",
+    },
+    checkout: {
+      execute: "maintenance.checkout.execute",
+    },
+    plan: {
+      view: "maintenance.plan.view",
     },
   },
   inventory: {
     part: {
       create: "inventory.part.create",
       update: "inventory.part.update",
+      delete: "inventory.part.delete",
+      view: "inventory.part.view",
+      adjust_stock: "inventory.part.adjust_stock",
+      import_bulk: "inventory.part.import_bulk",
+      export: "inventory.part.export",
     },
-    stock: {
-      adjust: "inventory.stock.adjust",
+    movement: {
+      create: "inventory.movement.create",
+      view: "inventory.movement.view",
+    },
+    location: {
+      create: "inventory.location.create",
+      update: "inventory.location.update",
+      delete: "inventory.location.delete",
+      view: "inventory.location.view",
     },
     purchase_order: {
       create: "inventory.purchase_order.create",
+      update: "inventory.purchase_order.update",
       approve: "inventory.purchase_order.approve",
+      view: "inventory.purchase_order.view",
+    },
+    reception: {
+      create: "inventory.reception.create",
+      process_item: "inventory.reception.process_item",
+      finalize: "inventory.reception.finalize",
+      view: "inventory.reception.view",
     },
   },
-  import_: {
-    shipment: {
-      create: "import.shipment.create",
-      finalize_cost: "import.shipment.finalize_cost",
+  import_shipment: {
+    create: "import_shipment.create",
+    update: "import_shipment.update",
+    view: "import_shipment.view",
+    calculate_costs: "import_shipment.calculate_costs",
+    confirm_costs: "import_shipment.confirm_costs",
+    dispatch: {
+      create: "import_shipment.dispatch.create",
+      view: "import_shipment.dispatch.view",
     },
+    reception: {
+      create: "import_shipment.reception.create",
+      process_item: "import_shipment.reception.process_item",
+      finalize: "import_shipment.reception.finalize",
+    },
+    generate_supplier_link: "import_shipment.generate_supplier_link",
+  },
+  supplier: {
+    create: "supplier.create",
+    update: "supplier.update",
+    view: "supplier.view",
+    portal: {
+      view: "supplier.portal.view",
+      confirm: "supplier.portal.confirm",
+      labels: "supplier.portal.labels",
+    },
+  },
+  expense: {
+    create: "expense.create",
+    update: "expense.update",
+    view: "expense.view",
+  },
+  pricing: {
+    rental: {
+      view: "pricing.rental.view",
+      update: "pricing.rental.update",
+    },
+    parts: {
+      view: "pricing.parts.view",
+      bulk_update: "pricing.parts.bulk_update",
+      apply_suggestion: "pricing.parts.apply_suggestion",
+      list: {
+        create: "pricing.parts.list.create",
+        update: "pricing.parts.list.update",
+        view: "pricing.parts.list.view",
+      },
+      rule_discount: {
+        create: "pricing.parts.rule_discount.create",
+        view: "pricing.parts.rule_discount.view",
+      },
+      rule_markup: {
+        create: "pricing.parts.rule_markup.create",
+        view: "pricing.parts.rule_markup.view",
+      },
+      batch: {
+        create: "pricing.parts.batch.create",
+        view: "pricing.parts.batch.view",
+      },
+      rollback: "pricing.parts.rollback",
+      resolve: "pricing.parts.resolve",
+      category: {
+        create: "pricing.parts.category.create",
+        view: "pricing.parts.category.view",
+      },
+      customer_group: {
+        create: "pricing.parts.customer_group.create",
+        view: "pricing.parts.customer_group.view",
+      },
+    },
+  },
+  mechanic: {
+    create: "mechanic.create",
+    update: "mechanic.update",
+    view: "mechanic.view",
+  },
+  workshop: {
+    create: "workshop.create",
+    update: "workshop.update",
+    view: "workshop.view",
   },
   hr: {
     employee: {

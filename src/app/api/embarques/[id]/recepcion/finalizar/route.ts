@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 // ─── POST: Finalizar recepción y actualizar stock ────────────────────
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.import_shipment.reception.finalize, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const { id } = await params;
@@ -89,7 +88,7 @@ export async function POST(
               stockAnterior,
               stockNuevo,
               motivo: `Recepción embarque ${recepcion.embarque.referencia}`,
-              usuario: session.user.email || "sistema",
+              usuario: userId || "sistema",
               referencia: id,
             },
           });
@@ -105,7 +104,7 @@ export async function POST(
               stockAnterior: 0,
               stockNuevo: 0,
               motivo: `Items rechazados embarque ${recepcion.embarque.referencia}: ${item.motivoRechazo || "Sin especificar"}`,
-              usuario: session.user.email || "sistema",
+              usuario: userId || "sistema",
               referencia: id,
             },
           });
@@ -149,12 +148,23 @@ export async function POST(
       },
     });
 
+    const itemsRecibidos = recepcion.items.reduce((sum, i) => sum + i.cantidadRecibida, 0);
+    const discrepancias = recepcion.items.filter(i => i.cantidadRechazada > 0 || i.cantidadFaltante > 0).length;
+
+    eventBus.emit(
+      OPERATIONS.import_shipment.reception.finalize,
+      "Embarque",
+      id,
+      { itemsRecibidos, discrepancias },
+      userId
+    ).catch(err => console.error("Error emitting import_shipment.reception.finalize event:", err));
+
     return NextResponse.json({
       success: true,
       message: "Recepción finalizada y stock actualizado correctamente",
       recepcion: recepcionCompleta,
       itemsProcesados: recepcion.items.length,
-      stockActualizado: recepcion.items.reduce((sum, i) => sum + i.cantidadRecibida, 0),
+      stockActualizado: itemsRecibidos,
     });
   } catch (error: unknown) {
     console.error("Error finalizando recepcion:", error);

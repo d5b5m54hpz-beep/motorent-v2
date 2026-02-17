@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(
+    OPERATIONS.inventory.part.view,
+    "view",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const headers = [
     "nombre",

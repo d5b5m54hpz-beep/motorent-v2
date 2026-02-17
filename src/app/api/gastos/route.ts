@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { gastoSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.expense.view, "view", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   try {
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.expense.create, "create", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   try {
@@ -97,6 +98,8 @@ export async function POST(req: NextRequest) {
         proveedor: { select: { id: true, nombre: true } },
       },
     });
+
+    eventBus.emit(OPERATIONS.expense.create, "Gasto", gasto.id, { categoria: rest.categoria, monto: rest.monto, proveedor: proveedorId, comprobante: rest.comprobante }, userId).catch(err => console.error("Error emitting expense.create event:", err));
 
     return NextResponse.json(gasto, { status: 201 });
   } catch (err: unknown) {

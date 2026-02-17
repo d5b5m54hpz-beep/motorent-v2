@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 type RouteContext = {
@@ -9,10 +10,8 @@ type RouteContext = {
 // GET /api/mantenimientos/ordenes/[id] — Detalle completo de OT
 export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.maintenance.workorder.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
 
@@ -62,11 +61,6 @@ export async function GET(req: NextRequest, context: RouteContext) {
 // PUT /api/mantenimientos/ordenes/[id] — Actualizar OT
 export async function PUT(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
-
     const { id } = await context.params;
     const body = await req.json();
 
@@ -81,6 +75,24 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       costoOtros,
       kmAlEgreso,
     } = body;
+
+    // Detect state transitions to choose the right permission
+    const estadoLower = typeof estado === 'string' ? estado.toLowerCase() : '';
+    let permResult;
+
+    if (estadoLower === 'completado' || estadoLower === 'completada') {
+      // Completing a work order
+      permResult = await requirePermission(OPERATIONS.maintenance.workorder.complete, "execute", ["OPERADOR"]);
+    } else if (mecanicoId !== undefined) {
+      // Assigning a mechanic
+      permResult = await requirePermission(OPERATIONS.maintenance.workorder.assign, "execute", ["OPERADOR"]);
+    } else {
+      // General update
+      permResult = await requirePermission(OPERATIONS.maintenance.workorder.update, "execute", ["OPERADOR"]);
+    }
+
+    if (permResult.error) return permResult.error;
+    const userId = permResult.userId;
 
     const updateData: any = {};
 
@@ -109,6 +121,15 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       where: { id },
       data: updateData,
     });
+
+    // Emit the appropriate event based on transition type
+    if (estadoLower === 'completado' || estadoLower === 'completada') {
+      eventBus.emit(OPERATIONS.maintenance.workorder.complete, "OrdenTrabajo", id, { costoTotal: updateData.costoTotal, estado }, userId).catch(err => console.error("Error emitting maintenance.workorder.complete event:", err));
+    } else if (mecanicoId !== undefined) {
+      eventBus.emit(OPERATIONS.maintenance.workorder.assign, "OrdenTrabajo", id, { mecanicoId }, userId).catch(err => console.error("Error emitting maintenance.workorder.assign event:", err));
+    } else {
+      eventBus.emit(OPERATIONS.maintenance.workorder.update, "OrdenTrabajo", id, body, userId).catch(err => console.error("Error emitting maintenance.workorder.update event:", err));
+    }
 
     return NextResponse.json({ data: ordenActualizada });
   } catch (error: unknown) {

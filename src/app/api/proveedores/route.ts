@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { proveedorSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.supplier.view, "view", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   try {
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.supplier.create, "create", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -84,6 +85,8 @@ export async function POST(req: NextRequest) {
     const proveedor = await prisma.proveedor.create({
       data: parsed.data,
     });
+
+    eventBus.emit(OPERATIONS.supplier.create, "Proveedor", proveedor.id, { nombre: parsed.data.nombre, cuit: parsed.data.cuit, rubro: parsed.data.rubro }, userId).catch(err => console.error("Error emitting supplier.create event:", err));
 
     return NextResponse.json(proveedor, { status: 201 });
   } catch (error: unknown) {

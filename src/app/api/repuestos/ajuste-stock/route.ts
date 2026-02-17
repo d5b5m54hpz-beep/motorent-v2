@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { ajusteStockSchema } from "@/lib/validations";
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.part.adjust_stock,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -64,11 +67,22 @@ export async function POST(req: NextRequest) {
           stockAnterior,
           stockNuevo,
           motivo,
-          usuario: session.user.email || undefined,
+          usuario: userId || undefined,
         },
       });
 
       return updated;
+    });
+
+    // Emit stock adjustment event
+    eventBus.emit(
+      OPERATIONS.inventory.part.adjust_stock,
+      "Repuesto",
+      repuestoId,
+      { repuestoId, cantidadAnterior: stockAnterior, cantidadNueva: stockNuevo, motivo },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.part.adjust_stock event:", err);
     });
 
     return NextResponse.json(repuestoActualizado);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { pricingSchema } from "@/lib/validations";
 
@@ -9,7 +10,7 @@ import { pricingSchema } from "@/lib/validations";
  * Accesible para ADMIN y OPERADOR
  */
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.pricing.rental.view, "view", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
  * Solo accesible para ADMIN
  */
 export async function PUT(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.pricing.rental.update, "execute", ["OPERADOR"]);
   if (error) return error;
 
   try {
@@ -84,6 +85,8 @@ export async function PUT(req: NextRequest) {
         descuentoMeses12,
       },
     });
+
+    eventBus.emit(OPERATIONS.pricing.rental.update, "PricingConfig", "default", { precioBaseMensual, descuentoSemanal, descuentoMeses3, descuentoMeses6, descuentoMeses9, descuentoMeses12 }, userId).catch(err => console.error("Error emitting pricing.rental.update event:", err));
 
     return NextResponse.json(pricingConfig);
   } catch (error: unknown) {

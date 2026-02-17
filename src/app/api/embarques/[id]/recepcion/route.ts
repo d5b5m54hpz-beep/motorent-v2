@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 // ─── GET: Obtener estado de recepción de un embarque ─────────────────
@@ -8,10 +9,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(OPERATIONS.import_shipment.view, "view", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const { id } = await params;
@@ -71,10 +70,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.import_shipment.reception.create, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const { id } = await params;
@@ -129,7 +126,7 @@ export async function POST(
       const nuevaRecepcion = await tx.recepcionMercaderiaEmbarque.create({
         data: {
           embarqueId: id,
-          usuarioId: session.user.id,
+          usuarioId: userId!,
           totalItemsEsperados: embarque.items.length,
           totalItemsRecibidos: 0,
           totalItemsRechazados: 0,
@@ -186,6 +183,14 @@ export async function POST(
         },
       },
     });
+
+    eventBus.emit(
+      OPERATIONS.import_shipment.reception.create,
+      "Embarque",
+      id,
+      { recepcionId: recepcion.id, totalItemsEsperados: embarque.items.length },
+      userId
+    ).catch(err => console.error("Error emitting import_shipment.reception.create event:", err));
 
     return NextResponse.json(recepcionCompleta, { status: 201 });
   } catch (error: unknown) {

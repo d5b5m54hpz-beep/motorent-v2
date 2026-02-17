@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(
+    OPERATIONS.inventory.part.view,
+    "view",
+    ["OPERADOR", "CONTADOR"]
+  );
+  if (error) return error;
 
   const { searchParams } = req.nextUrl;
   const page = parseInt(searchParams.get("page") || "1");
@@ -14,7 +17,7 @@ export async function GET(req: NextRequest) {
   const repuestoId = searchParams.get("repuestoId");
 
   try {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (repuestoId) where.repuestoId = repuestoId;
 
     const [data, total] = await Promise.all([

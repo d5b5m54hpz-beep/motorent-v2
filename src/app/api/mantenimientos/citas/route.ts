@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/mantenimientos/citas — Listar citas con filtros
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.maintenance.appointment.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { searchParams } = new URL(req.url);
     const estado = searchParams.get('estado');
@@ -60,10 +59,8 @@ export async function GET(req: NextRequest) {
 // POST /api/mantenimientos/citas — Crear cita manual (admin)
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.appointment.create, "create", ["OPERADOR"]);
+    if (error) return error;
 
     const body = await req.json();
     const { motoId, riderId, fechaProgramada, lugarId } = body;
@@ -87,6 +84,8 @@ export async function POST(req: NextRequest) {
         lugar: true,
       },
     });
+
+    eventBus.emit(OPERATIONS.maintenance.appointment.create, "CitaMantenimiento", cita.id, { motoId, riderId, fechaProgramada, lugarId }, userId).catch(err => console.error("Error emitting maintenance.appointment.create event:", err));
 
     return NextResponse.json({ data: cita }, { status: 201 });
   } catch (error: unknown) {

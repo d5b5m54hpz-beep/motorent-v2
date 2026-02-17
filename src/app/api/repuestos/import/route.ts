@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { importRepuestoSchema } from "@/lib/validations";
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.part.import_bulk,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -62,7 +65,7 @@ export async function POST(req: NextRequest) {
                     stockAnterior: existing.stock,
                     stockNuevo: stockValue,
                     motivo: "Importación CSV",
-                    usuario: session.user.email || undefined,
+                    usuario: userId || undefined,
                   },
                 });
 
@@ -89,7 +92,7 @@ export async function POST(req: NextRequest) {
                     stockAnterior: 0,
                     stockNuevo: stockValue,
                     motivo: "Importación CSV",
-                    usuario: session.user.email || undefined,
+                    usuario: userId || undefined,
                   },
                 });
               }
@@ -112,7 +115,7 @@ export async function POST(req: NextRequest) {
                   stockAnterior: 0,
                   stockNuevo: stockValue,
                   motivo: "Importación CSV",
-                  usuario: session.user.email || undefined,
+                  usuario: userId || undefined,
                 },
               });
             }
@@ -127,6 +130,17 @@ export async function POST(req: NextRequest) {
         });
       }
     }
+
+    // Emit bulk import event
+    eventBus.emit(
+      OPERATIONS.inventory.part.import_bulk,
+      "Repuesto",
+      "bulk",
+      { cantidadImportada: creados + actualizados, errores: errores.length },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.part.import_bulk event:", err);
+    });
 
     return NextResponse.json({ creados, actualizados, errores });
   } catch (error: unknown) {

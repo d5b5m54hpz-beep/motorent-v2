@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-// GET /api/mecanicos/[id] — Obtener detalle de un mecánico
+// GET /api/mecanicos/[id] — Obtener detalle de un mecanico
 export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.mechanic.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
 
@@ -29,26 +28,24 @@ export async function GET(req: NextRequest, context: RouteContext) {
     });
 
     if (!mecanico) {
-      return NextResponse.json({ error: 'Mecánico no encontrado' }, { status: 404 });
+      return NextResponse.json({ error: 'Mecanico no encontrado' }, { status: 404 });
     }
 
     return NextResponse.json({ data: mecanico });
   } catch (error: unknown) {
     console.error('Error fetching mecanico:', error);
     return NextResponse.json(
-      { error: 'Error al obtener mecánico', details: error instanceof Error ? error.message : 'Unknown' },
+      { error: 'Error al obtener mecanico', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/mecanicos/[id] — Actualizar mecánico
+// PUT /api/mecanicos/[id] — Actualizar mecanico
 export async function PUT(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.mechanic.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
     const body = await req.json();
@@ -71,23 +68,23 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       },
     });
 
+    eventBus.emit(OPERATIONS.mechanic.update, "Mecanico", id, { nombre, telefono, email, especialidad, tallerId, activo, tarifaHora }, userId).catch(err => console.error("Error emitting mechanic.update event:", err));
+
     return NextResponse.json({ data: mecanico });
   } catch (error: unknown) {
     console.error('Error updating mecanico:', error);
     return NextResponse.json(
-      { error: 'Error al actualizar mecánico', details: error instanceof Error ? error.message : 'Unknown' },
+      { error: 'Error al actualizar mecanico', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/mecanicos/[id] — Eliminar (soft delete) mecánico
+// DELETE /api/mecanicos/[id] — Eliminar (soft delete) mecanico
 export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.mechanic.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
 
@@ -97,11 +94,13 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       data: { activo: false },
     });
 
-    return NextResponse.json({ data: mecanico, message: 'Mecánico marcado como inactivo' });
+    eventBus.emit(OPERATIONS.mechanic.update, "Mecanico", id, { activo: false, action: "soft_delete" }, userId).catch(err => console.error("Error emitting mechanic.update event:", err));
+
+    return NextResponse.json({ data: mecanico, message: 'Mecanico marcado como inactivo' });
   } catch (error: unknown) {
     console.error('Error deleting mecanico:', error);
     return NextResponse.json(
-      { error: 'Error al eliminar mecánico', details: error instanceof Error ? error.message : 'Unknown' },
+      { error: 'Error al eliminar mecanico', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }

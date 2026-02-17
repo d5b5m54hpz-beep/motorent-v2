@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.pricing.parts.list.update, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   const { id } = await params;
 
@@ -19,6 +18,9 @@ export async function PUT(
       where: { id },
       data: body,
     });
+
+    eventBus.emit(OPERATIONS.pricing.parts.list.update, "ListaPrecio", id, { nombre: body.nombre }, userId).catch(err => console.error("Error emitting pricing.parts.list.update event:", err));
+
     return NextResponse.json(lista);
   } catch (err: unknown) {
     console.error("Error updating lista:", err);
@@ -30,15 +32,16 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.pricing.parts.list.update, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   const { id } = await params;
 
   try {
     await prisma.listaPrecio.delete({ where: { id } });
+
+    eventBus.emit(OPERATIONS.pricing.parts.list.update, "ListaPrecio", id, { action: "delete" }, userId).catch(err => console.error("Error emitting pricing.parts.list.update (delete) event:", err));
+
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     console.error("Error deleting lista:", err);

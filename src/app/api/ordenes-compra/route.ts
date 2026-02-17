@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { ordenCompraSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(
+    OPERATIONS.inventory.purchase_order.view,
+    "view",
+    ["OPERADOR", "CONTADOR"]
+  );
+  if (error) return error;
 
   try {
     const url = new URL(req.url);
@@ -70,10 +73,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.purchase_order.create,
+    "create",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -116,7 +121,7 @@ export async function POST(req: NextRequest) {
           iva,
           total,
           notas,
-          creadoPor: session.user.email || undefined,
+          creadoPor: userId || undefined,
         },
       });
 
@@ -144,6 +149,17 @@ export async function POST(req: NextRequest) {
           },
         },
       });
+    });
+
+    // Emit purchase order creation event
+    eventBus.emit(
+      OPERATIONS.inventory.purchase_order.create,
+      "OrdenCompra",
+      ordenCompra?.id || "unknown",
+      { proveedorId, items: items.length, montoTotal: total },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.purchase_order.create event:", err);
     });
 
     return NextResponse.json(ordenCompra, { status: 201 });

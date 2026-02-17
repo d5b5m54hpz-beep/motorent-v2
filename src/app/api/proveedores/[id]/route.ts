@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { proveedorSchema } from "@/lib/validations";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.supplier.view, "view", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   const { id } = await params;
@@ -33,7 +34,7 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.supplier.update, "execute", ["OPERADOR"]);
   if (error) return error;
 
   const { id } = await params;
@@ -62,6 +63,8 @@ export async function PUT(
       data: parsed.data,
     });
 
+    eventBus.emit(OPERATIONS.supplier.update, "Proveedor", id, { nombre: parsed.data.nombre, cuit: parsed.data.cuit }, userId).catch(err => console.error("Error emitting supplier.update event:", err));
+
     return NextResponse.json(proveedor);
   } catch (error: unknown) {
     console.error("Error updating proveedor:", error);
@@ -76,7 +79,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.supplier.update, "execute");
   if (error) return error;
 
   const { id } = await params;
@@ -104,6 +107,8 @@ export async function DELETE(
   }
 
   await prisma.proveedor.delete({ where: { id } });
+
+  eventBus.emit(OPERATIONS.supplier.update, "Proveedor", id, { action: "delete", nombre: existing.nombre }, userId).catch(err => console.error("Error emitting supplier.update (delete) event:", err));
 
   return NextResponse.json({ ok: true });
 }

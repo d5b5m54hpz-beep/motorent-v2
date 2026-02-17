@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(OPERATIONS.pricing.parts.customer_group.view, "view", ["OPERADOR"]);
+  if (error) return error;
 
   const { id } = await params;
 
@@ -39,10 +38,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.pricing.parts.customer_group.create, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   const { id } = await params;
 
@@ -75,6 +72,8 @@ export async function POST(
         },
       },
     });
+
+    eventBus.emit(OPERATIONS.pricing.parts.customer_group.create, "MiembroGrupoCliente", miembro.id, { grupoId: id, clienteId }, userId).catch(err => console.error("Error emitting pricing.parts.customer_group.create event:", err));
 
     return NextResponse.json(miembro);
   } catch (err: unknown) {

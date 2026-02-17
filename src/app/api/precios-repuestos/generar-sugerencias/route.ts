@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 export async function POST() {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(OPERATIONS.pricing.parts.view, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     // ─── 1. OBTENER REPUESTOS CON PRECIOS ─────────────────────────

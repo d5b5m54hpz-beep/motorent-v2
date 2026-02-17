@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { gastoSchema } from "@/lib/validations";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(OPERATIONS.expense.view, "view", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   const { id } = await params;
@@ -31,7 +32,7 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(OPERATIONS.expense.update, "execute", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
 
   const { id } = await params;
@@ -68,6 +69,8 @@ export async function PUT(
       },
     });
 
+    eventBus.emit(OPERATIONS.expense.update, "Gasto", id, { categoria: rest.categoria, monto: rest.monto }, userId).catch(err => console.error("Error emitting expense.update event:", err));
+
     return NextResponse.json(gasto);
   } catch (err: unknown) {
     console.error("Error updating gasto:", err);
@@ -79,7 +82,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(OPERATIONS.expense.update, "execute");
   if (error) return error;
 
   const { id } = await params;
@@ -90,6 +93,8 @@ export async function DELETE(
   }
 
   await prisma.gasto.delete({ where: { id } });
+
+  eventBus.emit(OPERATIONS.expense.update, "Gasto", id, { action: "delete", concepto: existing.concepto }, userId).catch(err => console.error("Error emitting expense.update (delete) event:", err));
 
   return NextResponse.json({ ok: true });
 }

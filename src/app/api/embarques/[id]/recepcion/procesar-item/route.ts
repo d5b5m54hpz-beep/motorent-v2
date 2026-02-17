@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const procesarItemSchema = z.object({
@@ -18,10 +19,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.import_shipment.reception.process_item, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const { id } = await params;
@@ -106,7 +105,7 @@ export async function POST(
           ubicacionAsignada,
           motivoRechazo,
           observaciones,
-          procesadoPor: session.user.email,
+          procesadoPor: userId,
           fechaProcesado: new Date(),
         },
         include: {
@@ -152,6 +151,14 @@ export async function POST(
 
       return itemActualizado;
     });
+
+    eventBus.emit(
+      OPERATIONS.import_shipment.reception.process_item,
+      "Embarque",
+      id,
+      { itemRecepcionId, cantidadRecibida, cantidadRechazada, cantidadFaltante, estadoItem },
+      userId
+    ).catch(err => console.error("Error emitting import_shipment.reception.process_item event:", err));
 
     return NextResponse.json(result);
   } catch (error: unknown) {

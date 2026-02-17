@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // Configuration
@@ -34,10 +35,8 @@ type RepuestoForecast = {
 // GET /api/mantenimientos/pronostico-repuestos — Intelligent spare parts forecast
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.inventory.part.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const searchParams = req.nextUrl.searchParams;
     const meses = Math.min(parseInt(searchParams.get('meses') || '3'), 6);
@@ -184,7 +183,7 @@ export async function GET(req: NextRequest) {
 
         let tipoService: string | null = null;
 
-        // Mayor supersedes Intermedio supersedes Básico
+        // Mayor supersedes Intermedio supersedes Basico
         if (kmAcumuladoDesdeMayor >= 20000) {
           tipoService = 'MAYOR';
           kmAcumuladoDesdeMayor = 0;
@@ -348,14 +347,14 @@ export async function GET(req: NextRequest) {
         alertasCriticas.push({
           tipo: 'STOCK_CRITICO',
           sku: rep.sku,
-          mensaje: `${rep.nombre}: SIN STOCK. Se necesitan ${Math.ceil(rep.cantidadTotal)} unidades en los próximos ${meses} meses.`,
+          mensaje: `${rep.nombre}: SIN STOCK. Se necesitan ${Math.ceil(rep.cantidadTotal)} unidades en los proximos ${meses} meses.`,
         });
       } else if (rep.alertaReorden) {
         const diasStock = consumoDiario > 0 ? Math.floor(rep.stockActual / consumoDiario) : 999;
         alertasCriticas.push({
           tipo: diasStock < rep.leadTimeDias ? 'LEAD_TIME' : 'STOCK_BAJO',
           sku: rep.sku,
-          mensaje: `${rep.nombre}: stock para ${diasStock} días. ${rep.leadTimeDias > 30 ? 'Proveedor importación, pedir AHORA.' : `Pedir antes del ${rep.fechaLimitePedido}.`}`,
+          mensaje: `${rep.nombre}: stock para ${diasStock} dias. ${rep.leadTimeDias > 30 ? 'Proveedor importacion, pedir AHORA.' : `Pedir antes del ${rep.fechaLimitePedido}.`}`,
         });
       }
 
@@ -403,7 +402,7 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     console.error('Error calculating forecast:', error);
     return NextResponse.json(
-      { error: 'Error al calcular pronóstico', details: error instanceof Error ? error.message : 'Unknown' },
+      { error: 'Error al calcular pronostico', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
     );
   }

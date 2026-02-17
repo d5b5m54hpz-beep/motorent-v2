@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // PUT /api/mantenimientos/ordenes/[id]/repuestos/[repuestoOTId] — Actualizar cantidad usada
@@ -8,12 +9,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; repuestoOTId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.workorder.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
-    const { repuestoOTId } = await params;
+    const { id, repuestoOTId } = await params;
     const body = await req.json();
     const { cantidadUsada } = body;
 
@@ -83,6 +82,8 @@ export async function PUT(
       });
     }
 
+    eventBus.emit(OPERATIONS.maintenance.workorder.update, "OrdenTrabajo", id, { repuestoOTId, cantidadUsada, diferenciaStock }, userId).catch(err => console.error("Error emitting maintenance.workorder.update event:", err));
+
     return NextResponse.json({ data: updated });
   } catch (error: unknown) {
     console.error('Error updating repuesto OT:', error);
@@ -99,12 +100,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; repuestoOTId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.workorder.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
-    const { repuestoOTId } = await params;
+    const { id, repuestoOTId } = await params;
 
     // 1. Obtener el repuesto
     const repuestoOT = await prisma.repuestoOrdenTrabajo.findUnique({
@@ -139,6 +138,8 @@ export async function DELETE(
     await prisma.repuestoOrdenTrabajo.delete({
       where: { id: repuestoOTId },
     });
+
+    eventBus.emit(OPERATIONS.maintenance.workorder.update, "OrdenTrabajo", id, { repuestoOTId, action: "delete", repuestoId: repuestoOT.repuestoId }, userId).catch(err => console.error("Error emitting maintenance.workorder.update event:", err));
 
     return NextResponse.json({ ok: true, mensaje: 'Repuesto eliminado y stock devuelto' });
   } catch (error: unknown) {

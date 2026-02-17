@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/mantenimientos/ordenes — Listar OTs con filtros
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.maintenance.workorder.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { searchParams } = new URL(req.url);
     const estado = searchParams.get('estado');
@@ -75,10 +74,8 @@ export async function GET(req: NextRequest) {
 // POST /api/mantenimientos/ordenes — Crear OT manual
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.workorder.create, "create", ["OPERADOR"]);
+    if (error) return error;
 
     const body = await req.json();
     const { motoId, tipoOT, descripcion, kmAlIngreso } = body;
@@ -111,6 +108,8 @@ export async function POST(req: NextRequest) {
         moto: true,
       },
     });
+
+    eventBus.emit(OPERATIONS.maintenance.workorder.create, "OrdenTrabajo", orden.id, { motoId, tipoOT, descripcion, kmAlIngreso }, userId).catch(err => console.error("Error emitting maintenance.workorder.create event:", err));
 
     return NextResponse.json({ data: orden }, { status: 201 });
   } catch (error: unknown) {

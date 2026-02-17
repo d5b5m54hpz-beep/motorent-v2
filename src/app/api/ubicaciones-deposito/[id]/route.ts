@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { ubicacionDepositoSchema } from "@/lib/validations";
 
@@ -7,10 +8,12 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.location.update,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -64,6 +67,17 @@ export async function PUT(
       },
     });
 
+    // Emit location update event
+    eventBus.emit(
+      OPERATIONS.inventory.location.update,
+      "UbicacionDeposito",
+      id,
+      { codigo, estante, fila, posicion, nombre },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.location.update event:", err);
+    });
+
     return NextResponse.json(ubicacion);
   } catch (error: unknown) {
     console.error("Error updating ubicacion:", error);
@@ -78,10 +92,12 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.location.delete,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -110,6 +126,17 @@ export async function DELETE(
   }
 
   await prisma.ubicacionDeposito.delete({ where: { id } });
+
+  // Emit location delete event
+  eventBus.emit(
+    OPERATIONS.inventory.location.delete,
+    "UbicacionDeposito",
+    id,
+    { codigo: ubicacion.codigo },
+    userId
+  ).catch((err) => {
+    console.error("Error emitting inventory.location.delete event:", err);
+  });
 
   return NextResponse.json({ ok: true });
 }

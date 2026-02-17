@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { repuestoSchema } from "@/lib/validations";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(
+    OPERATIONS.inventory.part.view,
+    "view",
+    ["OPERADOR", "CONTADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -35,10 +38,12 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.part.update,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -87,12 +92,23 @@ export async function PUT(
             stockAnterior: existing.stock,
             stockNuevo: newStock,
             motivo: "Ajuste manual desde edición",
-            usuario: session.user.email || undefined,
+            usuario: userId || undefined,
           },
         });
       }
 
       return updated;
+    });
+
+    // Emit update event
+    eventBus.emit(
+      OPERATIONS.inventory.part.update,
+      "Repuesto",
+      id,
+      { nombre: rest.nombre, codigo: rest.codigo },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.part.update event:", err);
     });
 
     return NextResponse.json(repuesto);
@@ -109,10 +125,12 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.part.delete,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -125,6 +143,17 @@ export async function DELETE(
   }
 
   await prisma.repuesto.delete({ where: { id } });
+
+  // Emit delete event
+  eventBus.emit(
+    OPERATIONS.inventory.part.delete,
+    "Repuesto",
+    id,
+    { nombre: existing.nombre, codigo: existing.codigo },
+    userId
+  ).catch((err) => {
+    console.error("Error emitting inventory.part.delete event:", err);
+  });
 
   return NextResponse.json({ ok: true });
 }

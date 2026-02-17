@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/talleres — Listar talleres
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.workshop.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { searchParams } = new URL(req.url);
     const tipo = searchParams.get('tipo');
@@ -50,10 +49,8 @@ export async function GET(req: NextRequest) {
 // POST /api/talleres — Crear taller
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.workshop.create, "create", ["OPERADOR"]);
+    if (error) return error;
 
     const body = await req.json();
     const {
@@ -86,6 +83,8 @@ export async function POST(req: NextRequest) {
         activo: true,
       },
     });
+
+    eventBus.emit(OPERATIONS.workshop.create, "Taller", taller.id, { nombre, direccion, telefono, email, tipo }, userId).catch(err => console.error("Error emitting workshop.create event:", err));
 
     return NextResponse.json({ data: taller }, { status: 201 });
   } catch (error: unknown) {

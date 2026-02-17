@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const aplicarSugerenciaSchema = z.object({
@@ -10,10 +11,8 @@ const aplicarSugerenciaSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.pricing.parts.apply_suggestion, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -69,10 +68,12 @@ export async function POST(req: NextRequest) {
           motivo: motivo || "Aplicación de sugerencia del sistema",
           costoAlMomento: repuesto.costoPromedioArs,
           margenAlMomento: margenNuevo,
-          usuario: session.user.email || session.user.name || "Sistema",
+          usuario: userId || "Sistema",
         },
       });
     });
+
+    eventBus.emit(OPERATIONS.pricing.parts.apply_suggestion, "Repuesto", repuestoId, { nombre: repuesto.nombre, precioAnterior, precioNuevo: nuevoPrecio }, userId).catch(err => console.error("Error emitting pricing.parts.apply_suggestion event:", err));
 
     return NextResponse.json({
       success: true,

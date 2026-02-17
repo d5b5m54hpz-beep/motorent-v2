@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(OPERATIONS.import_shipment.view, "view", ["OPERADOR", "CONTADOR"]);
+  if (error) return error;
 
   const { id } = await params;
 
@@ -42,10 +41,8 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.import_shipment.update, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   const { id } = await params;
 
@@ -112,6 +109,14 @@ export async function PUT(
       },
     });
 
+    eventBus.emit(
+      OPERATIONS.import_shipment.update,
+      "Embarque",
+      id,
+      { fleteUsd, seguroUsd, cifUsd, numeroContenedor },
+      userId
+    ).catch(err => console.error("Error emitting import_shipment.update event:", err));
+
     return NextResponse.json(updated);
   } catch (err: unknown) {
     console.error("Error updating embarque:", err);
@@ -126,10 +131,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.import_shipment.update, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   const { id } = await params;
 

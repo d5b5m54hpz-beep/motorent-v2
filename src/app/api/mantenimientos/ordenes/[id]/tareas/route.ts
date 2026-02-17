@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 type RouteContext = {
@@ -9,10 +10,8 @@ type RouteContext = {
 // PATCH /api/mantenimientos/ordenes/[id]/tareas — Toggle tarea completada
 export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.workorder.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
     const body = await req.json();
@@ -39,6 +38,8 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
         completadaAt: completada ? new Date() : null,
       },
     });
+
+    eventBus.emit(OPERATIONS.maintenance.workorder.update, "OrdenTrabajo", id, { tareaId, completada }, userId).catch(err => console.error("Error emitting maintenance.workorder.update event:", err));
 
     return NextResponse.json({ data: tarea });
   } catch (error: unknown) {

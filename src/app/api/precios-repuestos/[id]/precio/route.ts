@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const actualizarPrecioSchema = z.object({
@@ -12,10 +13,8 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.pricing.parts.bulk_update, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const { id } = await params;
@@ -73,10 +72,12 @@ export async function PUT(
           motivo: motivo || "Edición manual desde lista de precios",
           costoAlMomento: repuesto.costoPromedioArs,
           margenAlMomento: margenNuevo,
-          usuario: session.user.email || session.user.name || "Usuario",
+          usuario: userId || "Usuario",
         },
       });
     });
+
+    eventBus.emit(OPERATIONS.pricing.parts.bulk_update, "Repuesto", id, { nombre: repuesto.nombre, precioAnterior, precioNuevo: precio }, userId).catch(err => console.error("Error emitting pricing.parts.bulk_update event:", err));
 
     return NextResponse.json({
       success: true,

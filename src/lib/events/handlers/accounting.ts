@@ -516,6 +516,489 @@ export async function handleInvoicePurchaseApprovedAccounting(ctx: EventContext)
   }
 }
 
+// ─── 7. Expense Created → Asiento COMPRA (gasto operativo) ──────────────────
+
+export async function handleExpenseCreatedAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "expense.create") return;
+
+  try {
+    const gasto = await prisma.gasto.findUnique({
+      where: { id: ctx.entityId },
+      include: { proveedor: { select: { nombre: true } } },
+    });
+
+    if (!gasto) return;
+
+    const categoriaCuenta = CATEGORIA_TO_CUENTA[gasto.categoria] ?? CATEGORIA_TO_CUENTA["OTRO"];
+    const gastoAccountId = await getOrCreateAccount(
+      categoriaCuenta.codigo,
+      categoriaCuenta.nombre,
+      categoriaCuenta.tipo
+    );
+    const cajaId = await getOrCreateAccount(
+      ACCOUNTS.CAJA.codigo,
+      ACCOUNTS.CAJA.nombre,
+      ACCOUNTS.CAJA.tipo
+    );
+
+    const monto = gasto.monto;
+    const descripcion = `Gasto: ${gasto.concepto} - ${gasto.proveedor?.nombre ?? "Sin proveedor"}`;
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: gasto.fecha,
+        tipo: "COMPRA",
+        descripcion,
+        totalDebe: monto,
+        totalHaber: monto,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento expense.create - Gasto ${ctx.entityId.slice(0, 8)}`,
+        lineas: {
+          create: [
+            {
+              orden: 1,
+              cuentaId: gastoAccountId,
+              debe: monto,
+              haber: 0,
+              descripcion: `${gasto.categoria} - ${gasto.concepto}`,
+            },
+            {
+              orden: 2,
+              cuentaId: cajaId,
+              debe: 0,
+              haber: monto,
+              descripcion: `Salida por gasto: ${gasto.concepto}`,
+            },
+          ],
+        },
+      },
+    });
+
+    console.log(`[Accounting] Asiento COMPRA creado para expense.create - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleExpenseCreatedAccounting error:", err);
+  }
+}
+
+// ─── 8. Stock Adjustment → Asiento AJUSTE (si hay diferencia de valor) ──────
+
+const INVENTARIO_ACCOUNT = { codigo: "1.1.05", nombre: "Inventario / Repuestos", tipo: "ACTIVO" as const };
+const DIFERENCIA_INVENTARIO = { codigo: "5.7.02", nombre: "Diferencia de Inventario", tipo: "EGRESO" as const };
+const MERCADERIA_EN_TRANSITO = { codigo: "1.1.06", nombre: "Mercadería en Tránsito", tipo: "ACTIVO" as const };
+const PROVEEDORES_EXTERIOR = { codigo: "2.1.03", nombre: "Proveedores del Exterior", tipo: "PASIVO" as const };
+
+export async function handleStockAdjustmentAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "inventory.part.adjust_stock") return;
+
+  try {
+    const cantAnterior = Number(ctx.payload?.cantidadAnterior ?? 0);
+    const cantNueva = Number(ctx.payload?.cantidadNueva ?? 0);
+    const diff = cantNueva - cantAnterior;
+    if (diff === 0) return;
+
+    // Get repuesto to calculate value difference
+    const repuesto = await prisma.repuesto.findUnique({
+      where: { id: ctx.payload?.repuestoId as string ?? ctx.entityId },
+      select: { precioCompra: true, nombre: true },
+    });
+
+    if (!repuesto || repuesto.precioCompra === 0) return;
+
+    const valorDiff = Math.abs(diff) * repuesto.precioCompra;
+
+    const inventarioId = await getOrCreateAccount(
+      INVENTARIO_ACCOUNT.codigo,
+      INVENTARIO_ACCOUNT.nombre,
+      INVENTARIO_ACCOUNT.tipo
+    );
+    const diferenciaId = await getOrCreateAccount(
+      DIFERENCIA_INVENTARIO.codigo,
+      DIFERENCIA_INVENTARIO.nombre,
+      DIFERENCIA_INVENTARIO.tipo
+    );
+
+    const lineas = diff > 0
+      ? [
+          { orden: 1, cuentaId: inventarioId, debe: valorDiff, haber: 0, descripcion: `Ajuste positivo: +${diff} ${repuesto.nombre}` },
+          { orden: 2, cuentaId: diferenciaId, debe: 0, haber: valorDiff, descripcion: `Diferencia de inventario` },
+        ]
+      : [
+          { orden: 1, cuentaId: diferenciaId, debe: valorDiff, haber: 0, descripcion: `Diferencia de inventario` },
+          { orden: 2, cuentaId: inventarioId, debe: 0, haber: valorDiff, descripcion: `Ajuste negativo: ${diff} ${repuesto.nombre}` },
+        ];
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "AJUSTE",
+        descripcion: `Ajuste stock: ${repuesto.nombre} (${cantAnterior} → ${cantNueva})`,
+        totalDebe: valorDiff,
+        totalHaber: valorDiff,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento inventory.part.adjust_stock`,
+        lineas: { create: lineas },
+      },
+    });
+
+    console.log(`[Accounting] Asiento AJUSTE creado para inventory.part.adjust_stock - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleStockAdjustmentAccounting error:", err);
+  }
+}
+
+// ─── 9. Reception Created → Asiento COMPRA (inventario recibido) ────────────
+
+export async function handleReceptionCreatedAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "inventory.reception.create") return;
+
+  try {
+    const recepcion = await prisma.recepcionMercaderia.findUnique({
+      where: { id: ctx.entityId },
+      include: {
+        ordenCompra: {
+          select: { total: true, proveedor: { select: { nombre: true } } },
+        },
+      },
+    });
+
+    if (!recepcion || !recepcion.ordenCompra) return;
+
+    const monto = recepcion.ordenCompra.total;
+    if (!monto || monto === 0) return;
+
+    const inventarioId = await getOrCreateAccount(
+      INVENTARIO_ACCOUNT.codigo,
+      INVENTARIO_ACCOUNT.nombre,
+      INVENTARIO_ACCOUNT.tipo
+    );
+    const proveedoresId = await getOrCreateAccount(
+      ACCOUNTS.PROVEEDORES.codigo,
+      ACCOUNTS.PROVEEDORES.nombre,
+      ACCOUNTS.PROVEEDORES.tipo
+    );
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "COMPRA",
+        descripcion: `Recepción mercadería - ${recepcion.ordenCompra.proveedor?.nombre ?? "Proveedor"}`,
+        totalDebe: monto,
+        totalHaber: monto,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento inventory.reception.create - Recepción ${ctx.entityId.slice(0, 8)}`,
+        lineas: {
+          create: [
+            {
+              orden: 1,
+              cuentaId: inventarioId,
+              debe: monto,
+              haber: 0,
+              descripcion: `Ingreso inventario por recepción`,
+            },
+            {
+              orden: 2,
+              cuentaId: proveedoresId,
+              debe: 0,
+              haber: monto,
+              descripcion: `Cuentas por pagar proveedor`,
+            },
+          ],
+        },
+      },
+    });
+
+    console.log(`[Accounting] Asiento COMPRA creado para inventory.reception.create - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleReceptionCreatedAccounting error:", err);
+  }
+}
+
+// ─── 10. Import Confirm Costs → Asiento COMPRA (mercadería en tránsito) ─────
+
+export async function handleImportConfirmCostsAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "import_shipment.confirm_costs") return;
+
+  try {
+    const embarque = await prisma.embarqueImportacion.findUnique({
+      where: { id: ctx.entityId },
+      select: {
+        referencia: true,
+        totalFobUsd: true,
+        tipoCambioArsUsd: true,
+        proveedor: { select: { nombre: true } },
+      },
+    });
+
+    if (!embarque || !embarque.tipoCambioArsUsd) return;
+
+    const montoArs = embarque.totalFobUsd * embarque.tipoCambioArsUsd;
+    if (montoArs === 0) return;
+
+    const transitoId = await getOrCreateAccount(
+      MERCADERIA_EN_TRANSITO.codigo,
+      MERCADERIA_EN_TRANSITO.nombre,
+      MERCADERIA_EN_TRANSITO.tipo
+    );
+    const provExtId = await getOrCreateAccount(
+      PROVEEDORES_EXTERIOR.codigo,
+      PROVEEDORES_EXTERIOR.nombre,
+      PROVEEDORES_EXTERIOR.tipo
+    );
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "COMPRA",
+        descripcion: `Embarque ${embarque.referencia} - FOB confirmado`,
+        totalDebe: montoArs,
+        totalHaber: montoArs,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento import_shipment.confirm_costs - FOB USD ${embarque.totalFobUsd} × TC ${embarque.tipoCambioArsUsd}`,
+        lineas: {
+          create: [
+            {
+              orden: 1,
+              cuentaId: transitoId,
+              debe: montoArs,
+              haber: 0,
+              descripcion: `Mercadería en tránsito - ${embarque.proveedor?.nombre ?? "Exterior"}`,
+            },
+            {
+              orden: 2,
+              cuentaId: provExtId,
+              debe: 0,
+              haber: montoArs,
+              descripcion: `Proveedores del exterior`,
+            },
+          ],
+        },
+      },
+    });
+
+    console.log(`[Accounting] Asiento COMPRA creado para import_shipment.confirm_costs - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleImportConfirmCostsAccounting error:", err);
+  }
+}
+
+// ─── 11. Import Dispatch Created → Asiento (aranceles + gastos + IVA) ───────
+
+export async function handleImportDispatchAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "import_shipment.dispatch.create") return;
+
+  try {
+    const aranceles = Number(ctx.payload?.aranceles ?? 0);
+    const ivaImportacion = Number(ctx.payload?.ivaImportacion ?? 0);
+    const gastosDespacho = Number(ctx.payload?.despachante ?? 0);
+
+    const totalGastos = aranceles + gastosDespacho;
+    const totalDebe = totalGastos + ivaImportacion;
+    if (totalDebe === 0) return;
+
+    const transitoId = await getOrCreateAccount(
+      MERCADERIA_EN_TRANSITO.codigo,
+      MERCADERIA_EN_TRANSITO.nombre,
+      MERCADERIA_EN_TRANSITO.tipo
+    );
+    const ivaCreditoId = await getOrCreateAccount(
+      ACCOUNTS.IVA_CREDITO_FISCAL.codigo,
+      ACCOUNTS.IVA_CREDITO_FISCAL.nombre,
+      ACCOUNTS.IVA_CREDITO_FISCAL.tipo
+    );
+    const cajaId = await getOrCreateAccount(
+      ACCOUNTS.CAJA.codigo,
+      ACCOUNTS.CAJA.nombre,
+      ACCOUNTS.CAJA.tipo
+    );
+
+    const lineas: Array<{ orden: number; cuentaId: string; debe: number; haber: number; descripcion: string }> = [];
+    let orden = 1;
+
+    if (totalGastos > 0) {
+      lineas.push({
+        orden: orden++,
+        cuentaId: transitoId,
+        debe: totalGastos,
+        haber: 0,
+        descripcion: `Aranceles ($${aranceles}) + Gastos despacho ($${gastosDespacho})`,
+      });
+    }
+
+    if (ivaImportacion > 0) {
+      lineas.push({
+        orden: orden++,
+        cuentaId: ivaCreditoId,
+        debe: ivaImportacion,
+        haber: 0,
+        descripcion: `IVA Importación (crédito fiscal)`,
+      });
+    }
+
+    lineas.push({
+      orden: orden,
+      cuentaId: cajaId,
+      debe: 0,
+      haber: totalDebe,
+      descripcion: `Pago despacho aduanero`,
+    });
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "COMPRA",
+        descripcion: `Despacho aduanero - Embarque ${ctx.entityId.slice(0, 8)}`,
+        totalDebe,
+        totalHaber: totalDebe,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento import_shipment.dispatch.create`,
+        lineas: { create: lineas },
+      },
+    });
+
+    console.log(`[Accounting] Asiento COMPRA creado para import_shipment.dispatch.create - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleImportDispatchAccounting error:", err);
+  }
+}
+
+// ─── 12. Import Reception Finalize → Reclasificación tránsito → inventario ──
+
+export async function handleImportReceptionFinalizeAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "import_shipment.reception.finalize") return;
+
+  try {
+    const embarque = await prisma.embarqueImportacion.findUnique({
+      where: { id: ctx.entityId },
+      select: {
+        referencia: true,
+        costoTotalNoRecuperable: true,
+        totalFobUsd: true,
+        tipoCambioArsUsd: true,
+      },
+    });
+
+    if (!embarque) return;
+
+    // Total value to reclassify: FOB in ARS + non-recoverable costs
+    const fobArs = (embarque.totalFobUsd ?? 0) * (embarque.tipoCambioArsUsd ?? 1);
+    const monto = fobArs + (embarque.costoTotalNoRecuperable ?? 0);
+    if (monto === 0) return;
+
+    const inventarioId = await getOrCreateAccount(
+      INVENTARIO_ACCOUNT.codigo,
+      INVENTARIO_ACCOUNT.nombre,
+      INVENTARIO_ACCOUNT.tipo
+    );
+    const transitoId = await getOrCreateAccount(
+      MERCADERIA_EN_TRANSITO.codigo,
+      MERCADERIA_EN_TRANSITO.nombre,
+      MERCADERIA_EN_TRANSITO.tipo
+    );
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "AJUSTE",
+        descripcion: `Reclasificación embarque ${embarque.referencia} → Inventario`,
+        totalDebe: monto,
+        totalHaber: monto,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento import_shipment.reception.finalize`,
+        lineas: {
+          create: [
+            {
+              orden: 1,
+              cuentaId: inventarioId,
+              debe: monto,
+              haber: 0,
+              descripcion: `Ingreso inventario desde embarque ${embarque.referencia}`,
+            },
+            {
+              orden: 2,
+              cuentaId: transitoId,
+              debe: 0,
+              haber: monto,
+              descripcion: `Reclasificación mercadería en tránsito`,
+            },
+          ],
+        },
+      },
+    });
+
+    console.log(`[Accounting] Asiento AJUSTE creado para import_shipment.reception.finalize - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleImportReceptionFinalizeAccounting error:", err);
+  }
+}
+
+// ─── 13. Maintenance Work Order Complete → Asiento (gasto mantenimiento) ────
+
+export async function handleWorkOrderCompleteAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "maintenance.workorder.complete") return;
+
+  try {
+    const orden = await prisma.ordenTrabajo.findUnique({
+      where: { id: ctx.entityId },
+      select: {
+        numero: true,
+        costoTotal: true,
+        costoRepuestos: true,
+        costoManoObra: true,
+        moto: { select: { marca: true, modelo: true, patente: true } },
+      },
+    });
+
+    if (!orden || orden.costoTotal === 0) return;
+
+    const gastoMantenimientoId = await getOrCreateAccount(
+      CATEGORIA_TO_CUENTA["MANTENIMIENTO"].codigo,
+      CATEGORIA_TO_CUENTA["MANTENIMIENTO"].nombre,
+      CATEGORIA_TO_CUENTA["MANTENIMIENTO"].tipo
+    );
+    const cajaId = await getOrCreateAccount(
+      ACCOUNTS.CAJA.codigo,
+      ACCOUNTS.CAJA.nombre,
+      ACCOUNTS.CAJA.tipo
+    );
+
+    const monto = orden.costoTotal;
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "COMPRA",
+        descripcion: `OT ${orden.numero} completada - ${orden.moto.marca} ${orden.moto.modelo} (${orden.moto.patente})`,
+        totalDebe: monto,
+        totalHaber: monto,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento maintenance.workorder.complete - Repuestos: $${orden.costoRepuestos}, Mano obra: $${orden.costoManoObra}`,
+        lineas: {
+          create: [
+            {
+              orden: 1,
+              cuentaId: gastoMantenimientoId,
+              debe: monto,
+              haber: 0,
+              descripcion: `Mantenimiento ${orden.numero}`,
+            },
+            {
+              orden: 2,
+              cuentaId: cajaId,
+              debe: 0,
+              haber: monto,
+              descripcion: `Pago mantenimiento`,
+            },
+          ],
+        },
+      },
+    });
+
+    console.log(`[Accounting] Asiento COMPRA creado para maintenance.workorder.complete - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleWorkOrderCompleteAccounting error:", err);
+  }
+}
+
 // ─── Registration ───────────────────────────────────────────────────────────
 
 export function registerAccountingHandlers(): void {
@@ -540,6 +1023,35 @@ export function registerAccountingHandlers(): void {
     priority: 50,
   });
   eventBus.registerHandler("invoice.purchase.approve", handleInvoicePurchaseApprovedAccounting, {
+    priority: 50,
+  });
+
+  // Expense events
+  eventBus.registerHandler("expense.create", handleExpenseCreatedAccounting, {
+    priority: 50,
+  });
+
+  // Inventory events
+  eventBus.registerHandler("inventory.part.adjust_stock", handleStockAdjustmentAccounting, {
+    priority: 50,
+  });
+  eventBus.registerHandler("inventory.reception.create", handleReceptionCreatedAccounting, {
+    priority: 50,
+  });
+
+  // Import shipment events
+  eventBus.registerHandler("import_shipment.confirm_costs", handleImportConfirmCostsAccounting, {
+    priority: 50,
+  });
+  eventBus.registerHandler("import_shipment.dispatch.create", handleImportDispatchAccounting, {
+    priority: 50,
+  });
+  eventBus.registerHandler("import_shipment.reception.finalize", handleImportReceptionFinalizeAccounting, {
+    priority: 50,
+  });
+
+  // Maintenance events
+  eventBus.registerHandler("maintenance.workorder.complete", handleWorkOrderCompleteAccounting, {
     priority: 50,
   });
 }

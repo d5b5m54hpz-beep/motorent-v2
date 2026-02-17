@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 type RouteContext = {
@@ -9,10 +10,8 @@ type RouteContext = {
 // GET /api/mantenimientos/citas/[id] — Detalle de cita
 export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.maintenance.appointment.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
 
@@ -43,10 +42,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
 // PUT /api/mantenimientos/citas/[id] — Actualizar cita (reprogramar, confirmar, etc.)
 export async function PUT(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.maintenance.appointment.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
     const body = await req.json();
@@ -102,6 +99,8 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         lugar: true,
       },
     });
+
+    eventBus.emit(OPERATIONS.maintenance.appointment.update, "CitaMantenimiento", id, { accion, nuevaFecha, motivo }, userId).catch(err => console.error("Error emitting maintenance.appointment.update event:", err));
 
     return NextResponse.json({ data: citaActualizada });
   } catch (error: unknown) {

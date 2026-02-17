@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.import_shipment.calculate_costs, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   const { id } = await params;
 
@@ -196,6 +195,14 @@ export async function POST(
       ...cat,
       porcentaje: Number(((cat.costoTotal / costoTotalNoRecuperable) * 100).toFixed(1)),
     }));
+
+    eventBus.emit(
+      OPERATIONS.import_shipment.calculate_costs,
+      "Embarque",
+      id,
+      { cifUsd, costoTotalNoRecuperable, desembolsoTotal, tipoCambioArsUsd, metodoAsignacion },
+      userId
+    ).catch(err => console.error("Error emitting import_shipment.calculate_costs event:", err));
 
     return NextResponse.json({
       embarqueId: id,

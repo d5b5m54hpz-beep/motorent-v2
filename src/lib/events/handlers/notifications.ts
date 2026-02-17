@@ -167,18 +167,218 @@ export async function handleClientApproved(ctx: EventContext): Promise<void> {
   }
 }
 
-// ─── Payment Notification (existing placeholder, enhanced) ──────────────────
+// ─── Payment Notification ────────────────────────────────────────────────────
 export async function handlePaymentNotification(ctx: EventContext): Promise<void> {
-  console.log(
-    `[Notifications] Payment ${ctx.operationId} → entity ${ctx.entityType}:${ctx.entityId}`
-  );
+  if (!ctx.operationId.startsWith("payment.")) return;
+
+  try {
+    const pago = await prisma.pago.findUnique({
+      where: { id: ctx.entityId },
+      select: { monto: true, metodo: true, contratoId: true },
+    });
+
+    if (!pago) return;
+
+    const action = ctx.operationId === "payment.approve"
+      ? "aprobado"
+      : ctx.operationId === "payment.reject"
+        ? "rechazado"
+        : ctx.operationId === "payment.refund"
+          ? "reembolsado"
+          : null;
+
+    if (!action) return;
+
+    await prisma.alerta.create({
+      data: {
+        tipo: action === "reembolsado" ? "URGENTE" : "PAGO",
+        mensaje: `Pago ${action}: $${pago.monto.toLocaleString("es-AR")} (${pago.metodo ?? "N/A"}) - Contrato #${pago.contratoId.slice(0, 8)}`,
+        pagoId: ctx.entityId,
+        metadata: {
+          operationId: ctx.operationId,
+          monto: pago.monto,
+          metodo: pago.metodo,
+        },
+      },
+    });
+
+    console.log(`[Notifications] Payment ${action}: ${ctx.entityId}`);
+  } catch (err) {
+    console.error("[Notifications] handlePaymentNotification error:", err);
+  }
 }
 
-// ─── Maintenance Notification (existing placeholder) ────────────────────────
-export async function handleMaintenanceNotification(ctx: EventContext): Promise<void> {
-  console.log(
-    `[Notifications] Maintenance ${ctx.operationId} → entity ${ctx.entityType}:${ctx.entityId}`
-  );
+// ─── Maintenance Work Order Created → Alerta mecánico ───────────────────────
+export async function handleWorkOrderCreatedNotification(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "maintenance.workorder.create") return;
+
+  try {
+    const orden = await prisma.ordenTrabajo.findUnique({
+      where: { id: ctx.entityId },
+      select: {
+        numero: true,
+        tipoOT: true,
+        prioridad: true,
+        moto: { select: { marca: true, modelo: true, patente: true } },
+        mecanico: { select: { nombre: true } },
+      },
+    });
+
+    if (!orden) return;
+
+    const tipo = orden.prioridad === "ALTA" || orden.prioridad === "URGENTE" ? "URGENTE" : "MANTENIMIENTO";
+
+    await prisma.alerta.create({
+      data: {
+        tipo,
+        mensaje: `Nueva OT ${orden.numero} (${orden.tipoOT}) - ${orden.moto.marca} ${orden.moto.modelo} (${orden.moto.patente})${orden.mecanico ? ` → ${orden.mecanico.nombre}` : ""}`,
+        metadata: {
+          ordenTrabajoId: ctx.entityId,
+          tipoOT: orden.tipoOT,
+          prioridad: orden.prioridad,
+          mecanicoAsignado: orden.mecanico?.nombre ?? null,
+        },
+      },
+    });
+
+    console.log(`[Notifications] Work order created: ${orden.numero}`);
+  } catch (err) {
+    console.error("[Notifications] handleWorkOrderCreatedNotification error:", err);
+  }
+}
+
+// ─── Maintenance Work Order Complete → Alerta moto disponible ───────────────
+export async function handleWorkOrderCompleteNotification(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "maintenance.workorder.complete") return;
+
+  try {
+    const orden = await prisma.ordenTrabajo.findUnique({
+      where: { id: ctx.entityId },
+      select: {
+        numero: true,
+        costoTotal: true,
+        moto: { select: { marca: true, modelo: true, patente: true } },
+      },
+    });
+
+    if (!orden) return;
+
+    await prisma.alerta.create({
+      data: {
+        tipo: "MANTENIMIENTO",
+        mensaje: `OT ${orden.numero} completada - ${orden.moto.marca} ${orden.moto.modelo} (${orden.moto.patente}) disponible. Costo: $${orden.costoTotal.toLocaleString("es-AR")}`,
+        metadata: {
+          ordenTrabajoId: ctx.entityId,
+          costoTotal: orden.costoTotal,
+          motoPatente: orden.moto.patente,
+        },
+      },
+    });
+
+    console.log(`[Notifications] Work order completed: ${orden.numero}`);
+  } catch (err) {
+    console.error("[Notifications] handleWorkOrderCompleteNotification error:", err);
+  }
+}
+
+// ─── Stock Adjustment → Alerta si bajo mínimo ──────────────────────────────
+export async function handleStockAlertNotification(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "inventory.part.adjust_stock") return;
+
+  try {
+    const repuestoId = (ctx.payload?.repuestoId as string) ?? ctx.entityId;
+    const repuesto = await prisma.repuesto.findUnique({
+      where: { id: repuestoId },
+      select: { nombre: true, stock: true, stockMinimo: true, codigo: true },
+    });
+
+    if (!repuesto) return;
+
+    if (repuesto.stock < repuesto.stockMinimo) {
+      await prisma.alerta.create({
+        data: {
+          tipo: "URGENTE",
+          mensaje: `STOCK BAJO: ${repuesto.nombre} (${repuesto.codigo ?? "S/C"}) — Stock actual: ${repuesto.stock}, Mínimo: ${repuesto.stockMinimo}. Requiere reposición.`,
+          metadata: {
+            repuestoId,
+            stockActual: repuesto.stock,
+            stockMinimo: repuesto.stockMinimo,
+          },
+        },
+      });
+
+      console.log(`[Notifications] Low stock alert: ${repuesto.nombre} (${repuesto.stock}/${repuesto.stockMinimo})`);
+    }
+  } catch (err) {
+    console.error("[Notifications] handleStockAlertNotification error:", err);
+  }
+}
+
+// ─── Import Reception Finalize → Alerta embarque completo ───────────────────
+export async function handleImportReceptionNotification(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "import_shipment.reception.finalize") return;
+
+  try {
+    const embarque = await prisma.embarqueImportacion.findUnique({
+      where: { id: ctx.entityId },
+      select: {
+        referencia: true,
+        proveedor: { select: { nombre: true } },
+      },
+    });
+
+    if (!embarque) return;
+
+    await prisma.alerta.create({
+      data: {
+        tipo: "IMPORTACION",
+        mensaje: `Embarque ${embarque.referencia} recibido completo — ${embarque.proveedor?.nombre ?? "Proveedor exterior"}. Items verificados y disponibles en inventario.`,
+        metadata: {
+          embarqueId: ctx.entityId,
+          referencia: embarque.referencia,
+          itemsRecibidos: ctx.payload?.itemsRecibidos ?? null,
+          discrepancias: ctx.payload?.discrepancias ?? null,
+        },
+      },
+    });
+
+    console.log(`[Notifications] Import reception finalized: ${embarque.referencia}`);
+  } catch (err) {
+    console.error("[Notifications] handleImportReceptionNotification error:", err);
+  }
+}
+
+// ─── Expense Created → Alerta si monto alto ────────────────────────────────
+export async function handleExpenseAlertNotification(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "expense.create") return;
+
+  try {
+    const UMBRAL_GASTO = 500000; // $500.000 ARS
+
+    const gasto = await prisma.gasto.findUnique({
+      where: { id: ctx.entityId },
+      select: { concepto: true, monto: true, categoria: true },
+    });
+
+    if (!gasto || gasto.monto < UMBRAL_GASTO) return;
+
+    await prisma.alerta.create({
+      data: {
+        tipo: "URGENTE",
+        mensaje: `GASTO ALTO: $${gasto.monto.toLocaleString("es-AR")} — ${gasto.concepto} (${gasto.categoria}). Requiere revisión/aprobación.`,
+        metadata: {
+          gastoId: ctx.entityId,
+          monto: gasto.monto,
+          categoria: gasto.categoria,
+          umbral: UMBRAL_GASTO,
+        },
+      },
+    });
+
+    console.log(`[Notifications] High expense alert: $${gasto.monto} (threshold: $${UMBRAL_GASTO})`);
+  } catch (err) {
+    console.error("[Notifications] handleExpenseAlertNotification error:", err);
+  }
 }
 
 // ─── Registration ───────────────────────────────────────────────────────────
@@ -207,7 +407,25 @@ export function registerNotificationHandlers(): void {
   });
 
   // Maintenance events
-  eventBus.registerHandler("maintenance.*", handleMaintenanceNotification, {
+  eventBus.registerHandler("maintenance.workorder.create", handleWorkOrderCreatedNotification, {
+    priority: 200,
+  });
+  eventBus.registerHandler("maintenance.workorder.complete", handleWorkOrderCompleteNotification, {
+    priority: 200,
+  });
+
+  // Inventory events — stock alerts
+  eventBus.registerHandler("inventory.part.adjust_stock", handleStockAlertNotification, {
+    priority: 200,
+  });
+
+  // Import shipment events
+  eventBus.registerHandler("import_shipment.reception.finalize", handleImportReceptionNotification, {
+    priority: 200,
+  });
+
+  // Expense events — high amount alerts
+  eventBus.registerHandler("expense.create", handleExpenseAlertNotification, {
     priority: 200,
   });
 }

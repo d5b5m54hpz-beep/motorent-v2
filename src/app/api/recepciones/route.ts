@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { recepcionSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(
+    OPERATIONS.inventory.reception.view,
+    "view",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   try {
     const url = new URL(req.url);
@@ -56,10 +59,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.reception.create,
+    "create",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -90,7 +95,7 @@ export async function POST(req: NextRequest) {
           numero,
           ordenCompraId: ordenCompraId || null,
           fechaRecepcion: new Date(),
-          recibidoPor: session.user.email || undefined,
+          recibidoPor: userId || undefined,
           notas,
         },
       });
@@ -123,7 +128,7 @@ export async function POST(req: NextRequest) {
               ? `Recepción ${numero} de OC`
               : `Recepción ${numero} (ingreso directo)`,
             referencia: ordenCompraId || undefined,
-            usuario: session.user.email || undefined,
+            usuario: userId || undefined,
           },
         });
 
@@ -202,6 +207,17 @@ export async function POST(req: NextRequest) {
           },
         },
       });
+    });
+
+    // Emit reception creation event
+    eventBus.emit(
+      OPERATIONS.inventory.reception.create,
+      "RecepcionMercaderia",
+      recepcion?.id || "unknown",
+      { ordenCompraId, items: items.length, cantidades: items.map((i: { repuestoId: string; cantidadRecibida?: number }) => ({ repuestoId: i.repuestoId, cantidad: i.cantidadRecibida || 0 })) },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.reception.create event:", err);
     });
 
     return NextResponse.json(recepcion, { status: 201 });

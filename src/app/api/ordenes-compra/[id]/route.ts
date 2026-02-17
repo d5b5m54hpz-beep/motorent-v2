@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { ordenCompraSchema } from "@/lib/validations";
 
@@ -7,10 +8,12 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(
+    OPERATIONS.inventory.purchase_order.view,
+    "view",
+    ["OPERADOR", "CONTADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -53,10 +56,12 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.purchase_order.update,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -138,6 +143,17 @@ export async function PUT(
       });
     });
 
+    // Emit update event
+    eventBus.emit(
+      OPERATIONS.inventory.purchase_order.update,
+      "OrdenCompra",
+      id,
+      { proveedorId, items: items.length, montoTotal: total },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.purchase_order.update event:", err);
+    });
+
     return NextResponse.json(oc);
   } catch (error: unknown) {
     console.error("Error updating orden de compra:", error);
@@ -152,10 +168,12 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.purchase_order.update,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   const { id } = await params;
 
@@ -175,6 +193,17 @@ export async function DELETE(
   }
 
   await prisma.ordenCompra.delete({ where: { id } });
+
+  // Emit delete event
+  eventBus.emit(
+    OPERATIONS.inventory.purchase_order.update,
+    "OrdenCompra",
+    id,
+    { numero: existing.numero, action: "delete" },
+    userId
+  ).catch((err) => {
+    console.error("Error emitting inventory.purchase_order.update (delete) event:", err);
+  });
 
   return NextResponse.json({ ok: true });
 }

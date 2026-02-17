@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(OPERATIONS.import_shipment.view, "view", ["OPERADOR", "CONTADOR"]);
+  if (error) return error;
 
   const { searchParams } = req.nextUrl;
   const page = parseInt(searchParams.get("page") || "1");
@@ -58,14 +57,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.import_shipment.create, "create", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const body = await req.json();
-    console.log("📦 Creating embarque with body:", JSON.stringify(body, null, 2));
+    console.log("Creating embarque with body:", JSON.stringify(body, null, 2));
 
     const {
       proveedorId,
@@ -131,7 +128,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log("✅ Embarque created successfully:", embarque.id);
+    console.log("Embarque created successfully:", embarque.id);
+
+    eventBus.emit(
+      OPERATIONS.import_shipment.create,
+      "Embarque",
+      embarque.id,
+      { proveedorId, items, totalFobUsd, metodoFlete },
+      userId
+    ).catch(err => console.error("Error emitting import_shipment.create event:", err));
 
     return NextResponse.json(embarque);
   } catch (err: unknown) {

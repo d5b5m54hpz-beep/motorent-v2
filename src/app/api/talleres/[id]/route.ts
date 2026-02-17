@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
 
 type RouteContext = {
@@ -9,10 +10,8 @@ type RouteContext = {
 // GET /api/talleres/[id] — Obtener detalle de un taller
 export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const { error } = await requirePermission(OPERATIONS.workshop.view, "view", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
 
@@ -48,10 +47,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
 // PUT /api/talleres/[id] — Actualizar taller
 export async function PUT(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'OPERADOR')) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.workshop.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
     const body = await req.json();
@@ -85,6 +82,8 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       },
     });
 
+    eventBus.emit(OPERATIONS.workshop.update, "Taller", id, { nombre, direccion, telefono, email, tipo, activo }, userId).catch(err => console.error("Error emitting workshop.update event:", err));
+
     return NextResponse.json({ data: taller });
   } catch (error: unknown) {
     console.error('Error updating taller:', error);
@@ -98,10 +97,8 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 // DELETE /api/talleres/[id] — Eliminar (soft delete) taller
 export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
-    const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const { error, userId } = await requirePermission(OPERATIONS.workshop.update, "execute", ["OPERADOR"]);
+    if (error) return error;
 
     const { id } = await context.params;
 
@@ -110,6 +107,8 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       where: { id },
       data: { activo: false },
     });
+
+    eventBus.emit(OPERATIONS.workshop.update, "Taller", id, { activo: false, action: "soft_delete" }, userId).catch(err => console.error("Error emitting workshop.update event:", err));
 
     return NextResponse.json({ data: taller, message: 'Taller marcado como inactivo' });
   } catch (error: unknown) {

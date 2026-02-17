@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { ubicacionDepositoSchema } from "@/lib/validations";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error } = await requirePermission(
+    OPERATIONS.inventory.location.view,
+    "view",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   try {
     const ubicaciones = await prisma.ubicacionDeposito.findMany({
@@ -38,10 +41,12 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.inventory.location.create,
+    "create",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -78,6 +83,17 @@ export async function POST(req: NextRequest) {
         nombre,
         notas,
       },
+    });
+
+    // Emit location creation event
+    eventBus.emit(
+      OPERATIONS.inventory.location.create,
+      "UbicacionDeposito",
+      ubicacion.id,
+      { codigo, estante, fila, posicion, nombre },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting inventory.location.create event:", err);
     });
 
     return NextResponse.json(ubicacion, { status: 201 });

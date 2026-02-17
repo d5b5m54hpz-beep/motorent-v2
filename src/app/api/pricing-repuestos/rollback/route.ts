@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { randomUUID } from "crypto";
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  const { error, userId } = await requirePermission(OPERATIONS.pricing.parts.rollback, "execute", ["OPERADOR"]);
+  if (error) return error;
 
   try {
     const body = await req.json();
@@ -81,7 +80,7 @@ export async function POST(req: NextRequest) {
             motivo: `Rollback de lote: ${lote.descripcion}`,
             loteId: rollbackLoteId,
             costoAlMomento: hist.costoAlMomento,
-            usuario: session.user?.email || "sistema",
+            usuario: userId || "sistema",
           },
         });
       }
@@ -104,12 +103,14 @@ export async function POST(req: NextRequest) {
           cantidadItems: historial.length,
           parametros: { loteOriginal: loteId },
           aplicado: true,
-          usuario: session.user?.email || "sistema",
+          usuario: userId || "sistema",
         },
       });
 
       return { rollbackLoteId, cantidadItems: historial.length };
     });
+
+    eventBus.emit(OPERATIONS.pricing.parts.rollback, "LoteCambioPrecio", loteId, { loteId, motivo: `Rollback: ${lote.descripcion}`, cantidadItems: resultado.cantidadItems }, userId).catch(err => console.error("Error emitting pricing.parts.rollback event:", err));
 
     return NextResponse.json({
       success: true,
