@@ -2371,3 +2371,36 @@ model AnalisisFinanciero {
 
   @@unique([tipo, periodo])
 }
+
+// ─── Event Monitoring & System Health ─────────────────────────────────────────
+
+model EventMetric {
+  id               String   @id @default(cuid())
+  periodo          String   // "2026-02-18" or "2026-02-18T14" (hourly)
+  granularidad     String   // HORA | DIA | SEMANA | MES
+  operationId      String
+  totalEventos     Int      @default(0)
+  exitosos         Int      @default(0)
+  fallidos         Int      @default(0)
+  tiempoPromedioMs Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([periodo, granularidad, operationId])
+  @@index([granularidad, periodo])
+}
+
+model SystemHealth {
+  id               String   @id @default(cuid())
+  timestamp        DateTime @default(now())
+  eventBusStatus   String   // HEALTHY | DEGRADED | DOWN
+  dbLatencyMs      Int
+  handlersActivos  Int
+  eventsPendientes Int
+  eventsUltima1h   Int
+  erroresUltima1h  Int
+  memoryUsageMb    Float?
+  metricas         Json?
+
+  @@index([timestamp])
+}

@@ -360,6 +360,11 @@ export const OPERATIONS = {
       view: "system.scan.view",
     },
   },
+  monitor: {
+    events: { view: "monitor.events.view" },
+    health: { view: "monitor.health.view", check: "monitor.health.check" },
+    metrics: { view: "monitor.metrics.view" },
+  },
   anomaly: {
     view: "anomaly.view",
     update: "anomaly.update",

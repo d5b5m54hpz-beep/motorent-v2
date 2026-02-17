@@ -298,6 +298,12 @@ const OPERATION_CATALOG: OpDef[] = [
   { code: "anomaly.discard", description: "Descartar anomalía" },
   { code: "anomaly.analysis.run", description: "Ejecutar análisis financiero" },
   { code: "anomaly.analysis.view", description: "Ver historial de análisis", isViewOnly: true },
+
+  // Monitor
+  { code: "monitor.events.view", description: "Ver eventos del sistema en tiempo real", isViewOnly: true },
+  { code: "monitor.health.view", description: "Ver estado de salud del sistema", isViewOnly: true },
+  { code: "monitor.health.check", description: "Ejecutar chequeo de salud del sistema" },
+  { code: "monitor.metrics.view", description: "Ver métricas de eventos", isViewOnly: true },
 ];
 
 function parseCode(code: string): { family: string; entity: string; action: string } {
@@ -357,6 +363,7 @@ const SYSTEM_PROFILES: ProfileDef[] = [
       { pattern: "system.upload.*", canExecute: true },
       { pattern: "system.ai.*", canExecute: true },
       { pattern: "anomaly.*", canView: true, canExecute: true },
+      { pattern: "monitor.*", canView: true },
     ],
   },
   {
@@ -382,6 +389,7 @@ const SYSTEM_PROFILES: ProfileDef[] = [
       { pattern: "system.export.*", canView: true, canExecute: true },
       { pattern: "system.ai.*", canExecute: true },
       { pattern: "anomaly.*", canView: true, canCreate: true, canExecute: true },
+      { pattern: "monitor.*", canView: true, canExecute: true },
     ],
   },
   {
