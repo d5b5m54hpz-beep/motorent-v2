@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { error, userId } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.rental.contract.exercise_purchase,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {
@@ -89,6 +94,17 @@ export async function POST(
         motivo: `VENTA POR OPCIÓN A COMPRA - Contrato ${id} - Cliente: ${contrato.cliente.user.name}`,
         usuarioId: userId || undefined,
       },
+    });
+
+    // Emit exercise purchase event
+    eventBus.emit(
+      OPERATIONS.rental.contract.exercise_purchase,
+      "Contrato",
+      id,
+      { motoId: contrato.motoId, clienteId: contrato.clienteId, estadoAnterior: contrato.estado },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting rental.contract.exercise_purchase event:", err);
     });
 
     return NextResponse.json({

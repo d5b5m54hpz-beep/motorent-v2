@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { withEvent, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const updateDocumentoSchema = z.object({
@@ -15,11 +16,15 @@ export async function PUT(
   req: NextRequest,
   context: { params: Promise<{ id: string; docId: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.upload_document,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {
-    const { docId } = await context.params;
+    const { id, docId } = await context.params;
     const body = await req.json();
 
     const validation = updateDocumentoSchema.safeParse(body);
@@ -32,7 +37,7 @@ export async function PUT(
 
     const data = validation.data;
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (data.nombre !== undefined) updateData.nombre = data.nombre;
     if (data.url !== undefined) updateData.url = data.url;
     if (data.fechaEmision !== undefined)
@@ -43,10 +48,20 @@ export async function PUT(
         : null;
     if (data.completado !== undefined) updateData.completado = data.completado;
 
-    const documento = await prisma.documentoMoto.update({
-      where: { id: docId },
-      data: updateData,
-    });
+    const documento = await withEvent(
+      {
+        operationId: OPERATIONS.fleet.moto.upload_document,
+        entityType: "Moto",
+        getEntityId: () => id,
+        getPayload: (doc) => ({ documentoId: doc.id, action: "update_document" }),
+        userId,
+      },
+      () =>
+        prisma.documentoMoto.update({
+          where: { id: docId },
+          data: updateData,
+        })
+    );
 
     return NextResponse.json({ data: documento });
   } catch (err: unknown) {
@@ -59,15 +74,29 @@ export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string; docId: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.delete_document,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {
-    const { docId } = await context.params;
+    const { id, docId } = await context.params;
 
-    await prisma.documentoMoto.delete({
-      where: { id: docId },
-    });
+    await withEvent(
+      {
+        operationId: OPERATIONS.fleet.moto.delete_document,
+        entityType: "Moto",
+        getEntityId: () => id,
+        getPayload: () => ({ documentoId: docId, action: "delete_document" }),
+        userId,
+      },
+      () =>
+        prisma.documentoMoto.delete({
+          where: { id: docId },
+        })
+    );
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

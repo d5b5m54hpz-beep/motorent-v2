@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
-import { contratoSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/contratos/[id] — get single contrato with full details
 export async function GET(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.rental.contract.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -42,7 +46,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 // PUT /api/contratos/[id] — update contrato (limited updates)
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.rental.contract.update,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -75,12 +83,14 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       );
     }
 
+    const newEstado = estado || existing.estado;
+
     const contrato = await prisma.contrato.update({
       where: { id },
       data: {
         notas,
         renovacionAuto,
-        estado: estado || existing.estado,
+        estado: newEstado,
       },
       include: {
         cliente: { select: { nombre: true, email: true, dni: true } },
@@ -88,6 +98,27 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         _count: { select: { pagos: true } },
       },
     });
+
+    // Emit state transition events
+    if (estado && estado !== existing.estado) {
+      let operationId: string = OPERATIONS.rental.contract.update;
+
+      if (estado === "activo" && existing.estado === "pendiente") {
+        operationId = OPERATIONS.rental.contract.activate;
+      } else if (estado === "cancelado" || estado === "finalizado") {
+        operationId = OPERATIONS.rental.contract.terminate;
+      }
+
+      eventBus.emit(
+        operationId,
+        "Contrato",
+        id,
+        { estadoAnterior: existing.estado, estadoNuevo: estado },
+        userId
+      ).catch((err) => {
+        console.error(`Error emitting ${operationId} event:`, err);
+      });
+    }
 
     return NextResponse.json(contrato);
   } catch (error: unknown) {
@@ -101,7 +132,10 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
 // DELETE /api/contratos/[id] — cancel contrato (soft delete)
 export async function DELETE(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.rental.contract.terminate,
+    "execute"
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -129,6 +163,8 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       );
     }
 
+    const estadoAnterior = contrato.estado;
+
     // Cancelar contrato en transacción
     await prisma.$transaction(async (tx) => {
       // Actualizar estado del contrato
@@ -151,6 +187,17 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
         where: { id: contrato.motoId },
         data: { estado: "disponible" },
       });
+    });
+
+    // Emit terminate event
+    eventBus.emit(
+      OPERATIONS.rental.contract.terminate,
+      "Contrato",
+      id,
+      { estadoAnterior, estadoNuevo: "cancelado", motoId: contrato.motoId },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting rental.contract.terminate event:", err);
     });
 
     return NextResponse.json({

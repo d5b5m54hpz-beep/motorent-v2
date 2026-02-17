@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { bajaMotoSchema } from "@/lib/validations";
 
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { error, userId } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.decommission,
+    "execute"
+  );
   if (error) return error;
 
   try {
@@ -118,6 +122,17 @@ export async function POST(
       },
     });
 
+    // Emit decommission event
+    eventBus.emit(
+      OPERATIONS.fleet.moto.decommission,
+      "Moto",
+      id,
+      { tipoBaja: data.tipoBaja, estadoLegal, bajaId: bajaMoto.id },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting fleet.moto.decommission event:", err);
+    });
+
     return NextResponse.json({ data: bajaMoto }, { status: 201 });
   } catch (err: unknown) {
     console.error("Error registrando baja:", err);
@@ -132,7 +147,11 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.fleet.moto.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {

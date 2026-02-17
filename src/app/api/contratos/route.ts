@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
 import { auth } from "@/lib/auth";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { contratoSchema } from "@/lib/validations";
 import {
   calcularPreciosContrato,
@@ -19,7 +20,11 @@ const ALLOWED_SORT_COLUMNS = [
 
 // GET /api/contratos — list contratos (paginated, searchable, sortable)
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.rental.contract.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const url = new URL(req.url);
@@ -103,6 +108,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Auth check - cualquier usuario autenticado puede crear contratos
+    // Need full session for CLIENTE auto-creation logic
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
@@ -139,7 +145,7 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        console.log("✅ Cliente auto-created for contract:", user.id);
+        console.log("Cliente auto-created for contract:", user.id);
       }
 
       clienteId = cliente.id;
@@ -258,6 +264,17 @@ export async function POST(req: NextRequest) {
       return nuevoContrato;
     }, {
       timeout: 20000, // 20 segundos (por defecto es 5000ms)
+    });
+
+    // Emit contract creation event
+    eventBus.emit(
+      OPERATIONS.rental.contract.create,
+      "Contrato",
+      contrato.id,
+      { clienteId, motoId, estado: "pendiente", montoTotal: calculo.montoTotal },
+      user.id
+    ).catch((err) => {
+      console.error("Error emitting rental.contract.create event:", err);
     });
 
     return NextResponse.json(contrato, { status: 201 });

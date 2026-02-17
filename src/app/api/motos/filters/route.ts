@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { OPERATIONS } from '@/lib/events';
 
 export async function GET() {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+  const { error } = await requirePermission(
+    OPERATIONS.fleet.moto.view,
+    "view",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
+  try {
     const [marcas, modelos, colores, tipos, anos] = await Promise.all([
       prisma.moto.findMany({
         select: { marca: true },

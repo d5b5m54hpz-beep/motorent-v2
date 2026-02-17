@@ -17,12 +17,27 @@ const OPERATION_CATALOG: OpDef[] = [
   { code: "fleet.moto.update", description: "Actualizar datos de moto" },
   { code: "fleet.moto.decommission", description: "Dar de baja una moto" },
   { code: "fleet.moto.view", description: "Ver motos", isViewOnly: true },
+  { code: "fleet.moto.bulk_update", description: "Actualización masiva de motos" },
+  { code: "fleet.moto.upload_document", description: "Subir documento de moto" },
+  { code: "fleet.moto.delete_document", description: "Eliminar documento de moto" },
+  { code: "fleet.moto.update_insurance", description: "Actualizar seguro de moto" },
+  { code: "fleet.moto.update_registration", description: "Actualizar patentamiento de moto" },
 
-  // Rental
+  // Rental - Contract
+  { code: "rental.contract.view", description: "Ver contratos", isViewOnly: true },
   { code: "rental.contract.create", description: "Crear contrato de alquiler" },
+  { code: "rental.contract.update", description: "Actualizar contrato" },
   { code: "rental.contract.activate", description: "Activar contrato", requiresApproval: true },
   { code: "rental.contract.terminate", description: "Terminar contrato" },
   { code: "rental.contract.exercise_purchase", description: "Ejercer opción de compra", requiresApproval: true },
+
+  // Rental - Client
+  { code: "rental.client.view", description: "Ver clientes", isViewOnly: true },
+  { code: "rental.client.create", description: "Crear cliente" },
+  { code: "rental.client.approve", description: "Aprobar cliente", requiresApproval: true },
+  { code: "rental.client.reject", description: "Rechazar cliente" },
+  { code: "rental.client.update", description: "Actualizar datos de cliente" },
+  { code: "rental.client.delete", description: "Eliminar cliente" },
 
   // Payment
   { code: "payment.create", description: "Registrar pago" },
@@ -155,7 +170,7 @@ const SYSTEM_PROFILES: ProfileDef[] = [
   },
   {
     name: "Comercial",
-    description: "Ventas, contratos, pagos y facturación de ventas",
+    description: "Ventas, contratos, clientes, pagos y facturación de ventas",
     grants: [
       { pattern: "rental.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "fleet.*", canView: true },

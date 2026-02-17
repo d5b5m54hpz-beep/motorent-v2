@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { withEvent, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const documentoSchema = z.object({
@@ -16,7 +17,11 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.fleet.moto.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {
@@ -38,7 +43,11 @@ export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.upload_document,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {
@@ -55,17 +64,27 @@ export async function POST(
 
     const data = validation.data;
 
-    const documento = await prisma.documentoMoto.create({
-      data: {
-        motoId: id,
-        tipo: data.tipo,
-        nombre: data.nombre,
-        url: data.url,
-        fechaEmision: data.fechaEmision ? new Date(data.fechaEmision) : null,
-        fechaVencimiento: data.fechaVencimiento ? new Date(data.fechaVencimiento) : null,
-        completado: data.completado,
+    const documento = await withEvent(
+      {
+        operationId: OPERATIONS.fleet.moto.upload_document,
+        entityType: "Moto",
+        getEntityId: () => id,
+        getPayload: (doc) => ({ documentoId: doc.id, tipo: doc.tipo, nombre: doc.nombre }),
+        userId,
       },
-    });
+      () =>
+        prisma.documentoMoto.create({
+          data: {
+            motoId: id,
+            tipo: data.tipo,
+            nombre: data.nombre,
+            url: data.url,
+            fechaEmision: data.fechaEmision ? new Date(data.fechaEmision) : null,
+            fechaVencimiento: data.fechaVencimiento ? new Date(data.fechaVencimiento) : null,
+            completado: data.completado,
+          },
+        })
+    );
 
     return NextResponse.json({ data: documento }, { status: 201 });
   } catch (err: unknown) {

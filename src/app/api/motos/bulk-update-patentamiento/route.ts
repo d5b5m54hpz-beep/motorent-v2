@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 
 // PUT — Actualización masiva de patentamiento
 export async function PUT(req: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.update_registration,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
+  try {
     const { motoIds, estadoPatentamiento, fechaInicioTramitePatente, fechaPatentamiento } = await req.json();
 
     if (!motoIds?.length) {
@@ -41,6 +44,19 @@ export async function PUT(req: NextRequest) {
       where: { id: { in: motoIds } },
       data: updateData,
     });
+
+    // Emit event per affected moto
+    for (const motoId of motoIds as string[]) {
+      eventBus.emit(
+        OPERATIONS.fleet.moto.update_registration,
+        "Moto",
+        motoId,
+        { action: "bulk_update_patentamiento", estadoPatentamiento },
+        userId
+      ).catch((err) => {
+        console.error("Error emitting fleet.moto.update_registration event:", err);
+      });
+    }
 
     return NextResponse.json({
       updated: result.count,

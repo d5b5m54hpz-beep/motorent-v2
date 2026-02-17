@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { calcularPreciosContrato } from "@/lib/contratos";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.rental.contract.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {

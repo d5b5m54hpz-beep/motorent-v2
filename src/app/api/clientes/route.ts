@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { clienteSchema } from "@/lib/validations";
 import bcrypt from "bcryptjs";
 
@@ -10,7 +11,11 @@ const ALLOWED_SORT_COLUMNS = [
 
 // GET /api/clientes — list clientes (paginated, searchable, sortable)
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.rental.client.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const url = new URL(req.url);
@@ -62,7 +67,11 @@ export async function GET(req: NextRequest) {
 
 // POST /api/clientes — create cliente (User + Cliente in transaction)
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.rental.client.create,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {
@@ -117,6 +126,17 @@ export async function POST(req: NextRequest) {
           _count: { select: { contratos: true } },
         },
       });
+    });
+
+    // Emit client creation event
+    eventBus.emit(
+      OPERATIONS.rental.client.create,
+      "Cliente",
+      cliente.id,
+      { nombre, email },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting rental.client.create event:", err);
     });
 
     return NextResponse.json(cliente, { status: 201 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { withEvent, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const estadoPatentamientoSchema = z.object({
@@ -11,7 +12,11 @@ export async function PUT(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.update_registration,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   try {
@@ -43,17 +48,29 @@ export async function PUT(
       }
     }
 
-    const moto = await prisma.moto.update({
-      where: { id },
-      data: {
-        estadoPatentamiento,
-        fechaPatentamiento:
-          estadoPatentamiento === "COMPLETADO" ? new Date() : undefined,
+    const moto = await withEvent(
+      {
+        operationId: OPERATIONS.fleet.moto.update_registration,
+        entityType: "Moto",
+        getEntityId: (m) => m.id,
+        getPayload: (m) => ({
+          estadoPatentamiento: m.estadoPatentamiento,
+          patente: m.patente,
+        }),
+        userId,
       },
-      include: {
-        documentos: true,
-      },
-    });
+      () => prisma.moto.update({
+        where: { id },
+        data: {
+          estadoPatentamiento,
+          fechaPatentamiento:
+            estadoPatentamiento === "COMPLETADO" ? new Date() : undefined,
+        },
+        include: {
+          documentos: true,
+        },
+      })
+    );
 
     return NextResponse.json({ data: moto });
   } catch (err: unknown) {

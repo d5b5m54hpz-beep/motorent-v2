@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { clienteSchema } from "@/lib/validations";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/clientes/[id] — get single cliente with user and contratos
 export async function GET(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.rental.client.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -34,7 +39,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 // PUT /api/clientes/[id] — update cliente + user in transaction
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.rental.client.update,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -91,6 +100,41 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       });
     });
 
+    // Detect state transitions for approve/reject
+    const estadoAnterior = existing.estado;
+    const estadoNuevo = clienteData.estado;
+
+    if (estadoNuevo && estadoNuevo !== estadoAnterior) {
+      let operationId: string = OPERATIONS.rental.client.update;
+
+      if (estadoNuevo === "aprobado") {
+        operationId = OPERATIONS.rental.client.approve;
+      } else if (estadoNuevo === "rechazado") {
+        operationId = OPERATIONS.rental.client.reject;
+      }
+
+      eventBus.emit(
+        operationId,
+        "Cliente",
+        id,
+        { estadoAnterior, estadoNuevo },
+        userId
+      ).catch((err) => {
+        console.error(`Error emitting ${operationId} event:`, err);
+      });
+    } else {
+      // Generic update event
+      eventBus.emit(
+        OPERATIONS.rental.client.update,
+        "Cliente",
+        id,
+        { nombre, email },
+        userId
+      ).catch((err) => {
+        console.error("Error emitting rental.client.update event:", err);
+      });
+    }
+
     return NextResponse.json(cliente);
   } catch (error: unknown) {
     console.error("Error updating cliente:", error);
@@ -103,7 +147,10 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
 // DELETE /api/clientes/[id] — delete cliente + user (ADMIN only)
 export async function DELETE(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.rental.client.delete,
+    "execute"
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -130,6 +177,17 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     await prisma.$transaction(async (tx) => {
       await tx.cliente.delete({ where: { id } });
       await tx.user.delete({ where: { id: cliente.userId } });
+    });
+
+    // Emit delete event
+    eventBus.emit(
+      OPERATIONS.rental.client.delete,
+      "Cliente",
+      id,
+      { nombre: cliente.nombre, email: cliente.email },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting rental.client.delete event:", err);
     });
 
     return NextResponse.json({ message: "Cliente eliminado" });

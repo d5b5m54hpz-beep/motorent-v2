@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { OPERATIONS } from '@/lib/events';
 
 // GET /api/motos/tipos — return unique tipos from database
 export async function GET() {
+  const { error } = await requirePermission(
+    OPERATIONS.fleet.moto.view,
+    "view",
+    ["OPERADOR"]
+  );
+  if (error) return error;
+
   try {
     const motos = await prisma.moto.findMany({
       select: { tipo: true },

@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth/require-permission';
+import { eventBus, OPERATIONS } from '@/lib/events';
 
 // PUT — Actualización masiva de seguro
 export async function PUT(req: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.update_insurance,
+    "execute",
+    ["OPERADOR"]
+  );
+  if (error) return error;
 
+  try {
     const {
       motoIds,
       estadoSeguro,
@@ -54,6 +57,19 @@ export async function PUT(req: NextRequest) {
       where: { id: { in: motoIds } },
       data: updateData,
     });
+
+    // Emit event per affected moto
+    for (const motoId of motoIds as string[]) {
+      eventBus.emit(
+        OPERATIONS.fleet.moto.update_insurance,
+        "Moto",
+        motoId,
+        { action: "bulk_update_seguro", estadoSeguro },
+        userId
+      ).catch((err) => {
+        console.error("Error emitting fleet.moto.update_insurance event:", err);
+      });
+    }
 
     return NextResponse.json({
       updated: result.count,

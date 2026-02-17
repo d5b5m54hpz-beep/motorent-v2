@@ -12,7 +12,11 @@ const ALLOWED_SORT_COLUMNS = [
 
 // GET /api/motos — list all motos (paginated, searchable, sortable)
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.fleet.moto.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const url = new URL(req.url);

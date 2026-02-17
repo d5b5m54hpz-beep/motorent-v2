@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { withEvent, OPERATIONS } from "@/lib/events";
 import { motoSchema } from "@/lib/validations";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/motos/[id] — get single moto
 export async function GET(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.fleet.moto.view,
+    "view",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -26,7 +31,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 // PUT /api/motos/[id] — update moto
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.update,
+    "execute",
+    ["OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -59,10 +68,21 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       }
     }
 
-    const moto = await prisma.moto.update({
-      where: { id },
-      data: parsed.data,
-    });
+    const moto = await withEvent(
+      {
+        operationId: OPERATIONS.fleet.moto.update,
+        entityType: "Moto",
+        getEntityId: (m) => m.id,
+        getPayload: (m) => ({
+          marca: m.marca,
+          modelo: m.modelo,
+          patente: m.patente,
+          estado: m.estado,
+        }),
+        userId,
+      },
+      () => prisma.moto.update({ where: { id }, data: parsed.data })
+    );
 
     return NextResponse.json(moto);
   } catch (error: unknown) {
@@ -76,7 +96,10 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
 // DELETE /api/motos/[id] — delete moto (ADMIN only)
 export async function DELETE(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.decommission,
+    "execute"
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -104,8 +127,16 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       await prisma.ordenTrabajo.deleteMany({ where: { motoId: id } });
     }
 
-    // Eliminar la moto
-    await prisma.moto.delete({ where: { id } });
+    await withEvent(
+      {
+        operationId: OPERATIONS.fleet.moto.decommission,
+        entityType: "Moto",
+        getEntityId: () => id,
+        getPayload: () => ({ action: "delete" }),
+        userId,
+      },
+      () => prisma.moto.delete({ where: { id } })
+    );
 
     return NextResponse.json({ success: true, message: "Moto eliminada" });
   } catch (error: unknown) {
