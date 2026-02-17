@@ -20,6 +20,8 @@ model User {
   phone                   String?
   phoneVerifiedAt         DateTime?
   role                    Role               @default(CLIENTE)
+  totpSecret              String?
+  totpEnabled             Boolean            @default(false)
   createdAt               DateTime           @default(now())
   updatedAt               DateTime           @updatedAt
   cliente                 Cliente?

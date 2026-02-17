@@ -48,7 +48,14 @@ const config = {
   ],
 
   callbacks: {
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile, trigger, session: updateData }) {
+      // Handle session update from client (e.g. name/image change)
+      if (trigger === "update" && updateData) {
+        if (updateData.name) token.name = updateData.name;
+        if (updateData.image) token.picture = updateData.image;
+        return token;
+      }
+
       // OAuth sign-in: upsert user
       if (account && profile) {
         const email = (profile as Record<string, unknown>).email as string;
