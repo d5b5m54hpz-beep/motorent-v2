@@ -360,6 +360,16 @@ export const OPERATIONS = {
       view: "system.scan.view",
     },
   },
+  anomaly: {
+    view: "anomaly.view",
+    update: "anomaly.update",
+    resolve: "anomaly.resolve",
+    discard: "anomaly.discard",
+    analysis: {
+      run: "anomaly.analysis.run",
+      view: "anomaly.analysis.view",
+    },
+  },
 } as const;
 
 // ─── Type extraction ─────────────────────────────────────────────────────────

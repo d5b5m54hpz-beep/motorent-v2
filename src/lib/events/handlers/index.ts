@@ -1,4 +1,5 @@
 import { registerAccountingHandlers } from "./accounting";
+import { registerAnomalyDetectionHandlers } from "./anomaly-detection";
 import { registerInvoicingHandlers } from "./invoicing";
 import { registerNotificationHandlers } from "./notifications";
 import { registerMetricsHandlers } from "./metrics";
@@ -16,8 +17,9 @@ export function initializeEventHandlers(): void {
 
   registerInvoicingHandlers();       // Priority 30-40 (business logic first)
   registerAccountingHandlers();      // Priority 50 (accounting entries)
-  registerNotificationHandlers();    // Priority 200 (notifications after business logic)
-  registerMetricsHandlers();         // Priority 999 (metrics last)
+  registerNotificationHandlers();        // Priority 200 (notifications after business logic)
+  registerAnomalyDetectionHandlers();    // Priority 500 (anomaly detection)
+  registerMetricsHandlers();             // Priority 999 (metrics last)
 
   initialized = true;
   console.log("[EventBus] All handlers registered");

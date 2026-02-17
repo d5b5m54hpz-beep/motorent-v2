@@ -290,6 +290,14 @@ const OPERATION_CATALOG: OpDef[] = [
   { code: "system.ai.parse", description: "Parsear documentos con IA" },
   { code: "system.upload.execute", description: "Subir archivos" },
   { code: "system.scan.view", description: "Ver escaneos/documentos", isViewOnly: true },
+
+  // Anomaly Detection
+  { code: "anomaly.view", description: "Ver anomalías detectadas", isViewOnly: true },
+  { code: "anomaly.update", description: "Actualizar estado de anomalía" },
+  { code: "anomaly.resolve", description: "Resolver anomalía" },
+  { code: "anomaly.discard", description: "Descartar anomalía" },
+  { code: "anomaly.analysis.run", description: "Ejecutar análisis financiero" },
+  { code: "anomaly.analysis.view", description: "Ver historial de análisis", isViewOnly: true },
 ];
 
 function parseCode(code: string): { family: string; entity: string; action: string } {
@@ -348,6 +356,7 @@ const SYSTEM_PROFILES: ProfileDef[] = [
       { pattern: "system.import.*", canView: true, canExecute: true },
       { pattern: "system.upload.*", canExecute: true },
       { pattern: "system.ai.*", canExecute: true },
+      { pattern: "anomaly.*", canView: true, canExecute: true },
     ],
   },
   {
@@ -372,6 +381,7 @@ const SYSTEM_PROFILES: ProfileDef[] = [
       { pattern: "alert.*", canView: true },
       { pattern: "system.export.*", canView: true, canExecute: true },
       { pattern: "system.ai.*", canExecute: true },
+      { pattern: "anomaly.*", canView: true, canCreate: true, canExecute: true },
     ],
   },
   {

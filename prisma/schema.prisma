@@ -2332,3 +2332,42 @@ model ConciliacionMatch {
   observaciones  String?
   createdAt      DateTime     @default(now())
 }
+
+// ─── Anomaly Detection & Financial Intelligence ───────────────────────────────
+
+model Anomalia {
+  id               String    @id @default(cuid())
+  tipo             String    // GASTO_INUSUAL | PAGO_DUPLICADO | FACTURA_SIN_PAGO | MARGEN_BAJO |
+                             // STOCK_CRITICO | PATRON_SOSPECHOSO | DESVIO_PRESUPUESTO |
+                             // CONCILIACION_PENDIENTE | VENCIMIENTO_PROXIMO | FLUJO_CAJA_NEGATIVO
+  severidad        String    // BAJA | MEDIA | ALTA | CRITICA
+  titulo           String
+  descripcion      String
+  entidadTipo      String?   // Pago, Gasto, Factura, Moto, etc.
+  entidadId        String?
+  montoInvolucrado Decimal?  @db.Decimal(12, 2)
+  datosAnalisis    Json?
+  estado           String    @default("NUEVA") // NUEVA | EN_REVISION | RESUELTA | DESCARTADA
+  resueltaPor      String?
+  resolucion       String?
+  autoDetectada    Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([tipo, estado])
+  @@index([severidad])
+  @@index([createdAt])
+}
+
+model AnalisisFinanciero {
+  id               String   @id @default(cuid())
+  tipo             String   // DIARIO | SEMANAL | MENSUAL
+  fechaAnalisis    DateTime
+  periodo          String   // "2026-02" or "2026-W07" or "2026-02-18"
+  metricas         Json
+  tendencias       Json?
+  alertasGeneradas Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  @@unique([tipo, periodo])
+}
