@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { withEvent, OPERATIONS } from "@/lib/events";
 import { motoSchema } from "@/lib/validations";
 
 const ALLOWED_SORT_COLUMNS = [
@@ -58,7 +60,11 @@ export async function GET(req: NextRequest) {
 
 // POST /api/motos — create a moto
 export async function POST(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.fleet.moto.create,
+    "create",
+    ["OPERADOR"] // fallback: OPERADOR keeps working during migration
+  );
   if (error) return error;
 
   try {
@@ -82,7 +88,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const moto = await prisma.moto.create({ data: parsed.data });
+    const moto = await withEvent(
+      {
+        operationId: OPERATIONS.fleet.moto.create,
+        entityType: "Moto",
+        getEntityId: (m) => m.id,
+        getPayload: (m) => ({
+          marca: m.marca,
+          modelo: m.modelo,
+          patente: m.patente,
+          anio: m.anio,
+          estado: m.estado,
+        }),
+        userId,
+      },
+      () => prisma.moto.create({ data: parsed.data })
+    );
+
     return NextResponse.json(moto, { status: 201 });
   } catch (error: unknown) {
     console.error("Error creating moto:", error);

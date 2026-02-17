@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { facturaCompraSchema } from "@/lib/validations";
 
 type RouteContext = {
@@ -42,7 +44,11 @@ export async function PUT(
   req: NextRequest,
   context: RouteContext
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.invoice.purchase.approve,
+    "execute",
+    ["OPERADOR"] // fallback: OPERADOR keeps working during migration
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -56,6 +62,16 @@ export async function PUT(
         { error: "Datos inválidos", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
+    }
+
+    // Fetch current state to detect status transitions
+    const existing = await prisma.facturaCompra.findUnique({
+      where: { id },
+      select: { estado: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Factura no encontrada" }, { status: 404 });
     }
 
     const { fecha, vencimiento, motoId, proveedorId, ...rest } = parsed.data;
@@ -86,6 +102,26 @@ export async function PUT(
         moto: { select: { id: true, marca: true, modelo: true, patente: true } },
       },
     });
+
+    // Emit event when purchase invoice is approved (state transition)
+    if (parsed.data.estado === "APROBADA" && existing.estado !== "APROBADA") {
+      eventBus.emit(
+        OPERATIONS.invoice.purchase.approve,
+        "FacturaCompra",
+        id,
+        {
+          previousEstado: existing.estado,
+          newEstado: parsed.data.estado,
+          total: facturaCompra.total,
+          numero: facturaCompra.numero,
+          razonSocial: facturaCompra.razonSocial,
+          proveedorId: facturaCompra.proveedor?.id ?? null,
+        },
+        userId
+      ).catch((err) => {
+        console.error("Error emitting invoice.purchase.approve event:", err);
+      });
+    }
 
     return NextResponse.json(facturaCompra);
   } catch (err: unknown) {

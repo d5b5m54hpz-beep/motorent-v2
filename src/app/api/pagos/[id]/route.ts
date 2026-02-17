@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { registrarPagoSchema } from "@/lib/validations";
 import { enviarFacturaEmail } from "@/lib/email";
 
@@ -41,7 +43,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 // PUT /api/pagos/[id] — registrar/actualizar pago
 export async function PUT(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.payment.approve,
+    "execute",
+    ["OPERADOR"] // fallback: OPERADOR keeps working during migration
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -90,6 +96,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         );
       }
     }
+
+    // Track whether this is a state transition (for event emission)
+    const previousEstado = existing.estado;
 
     // Actualizar pago en transacción
     let facturaId: string | null = null;
@@ -179,6 +188,25 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
       return pagoActualizado;
     });
+
+    // Emit event when payment is approved (state transition)
+    if (estado === "aprobado" && previousEstado !== "aprobado") {
+      eventBus.emit(
+        OPERATIONS.payment.approve,
+        "Pago",
+        id,
+        {
+          previousEstado,
+          newEstado: estado,
+          monto: resultado.monto,
+          metodo: resultado.metodo,
+          contratoId: resultado.contratoId,
+        },
+        userId
+      ).catch((err) => {
+        console.error("Error emitting payment.approve event:", err);
+      });
+    }
 
     // Enviar email con factura (fire and forget - no bloquea la respuesta)
     if (facturaId) {
