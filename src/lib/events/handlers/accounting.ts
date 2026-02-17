@@ -1206,6 +1206,76 @@ export async function handlePayrollLiquidateAccounting(ctx: EventContext): Promi
   }
 }
 
+// ─── 16. Reconciliation Complete → Asiento ajuste (diferencias bancarias) ────
+
+const DIFERENCIA_CONCILIACION = { codigo: "5.7.03", nombre: "Diferencias de Conciliación Bancaria", tipo: "EGRESO" as const };
+const BANCO_CUENTA = { codigo: "1.1.02", nombre: "Banco", tipo: "ACTIVO" as const };
+
+export async function handleReconciliationCompleteAccounting(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "reconciliation.process.complete") return;
+  if (!ctx.payload?.crearAsienteAjuste) return;
+
+  try {
+    const conciliacion = await prisma.conciliacion.findUnique({
+      where: { id: ctx.entityId },
+      include: {
+        cuentaBancaria: { select: { banco: true, cuentaContableId: true, cuentaContable: { select: { codigo: true, nombre: true, tipo: true } } } },
+        extractos: { where: { estado: "PENDIENTE" } },
+      },
+    });
+
+    if (!conciliacion || conciliacion.extractos.length === 0) return;
+
+    // Calculate net difference of unreconciled movements
+    let diferencia = 0;
+    for (const ext of conciliacion.extractos) {
+      const monto = ext.monto.toNumber();
+      diferencia += ext.tipo === "CREDITO" ? monto : -monto;
+    }
+
+    if (Math.abs(diferencia) < 0.01) return;
+
+    // Use the bank account's linked accounting account, or fall back to generic Banco
+    const bancoAccount = conciliacion.cuentaBancaria.cuentaContable
+      ? { codigo: conciliacion.cuentaBancaria.cuentaContable.codigo, nombre: conciliacion.cuentaBancaria.cuentaContable.nombre, tipo: conciliacion.cuentaBancaria.cuentaContable.tipo as "ACTIVO" | "PASIVO" | "PATRIMONIO" | "INGRESO" | "EGRESO" }
+      : BANCO_CUENTA;
+
+    const bancoId = await getOrCreateAccount(bancoAccount.codigo, bancoAccount.nombre, bancoAccount.tipo);
+    const diferenciaId = await getOrCreateAccount(DIFERENCIA_CONCILIACION.codigo, DIFERENCIA_CONCILIACION.nombre, DIFERENCIA_CONCILIACION.tipo);
+
+    const absDiferencia = Math.abs(diferencia);
+
+    // If positive difference (more credits than expected) → DEBITO Banco, CREDITO Diferencia
+    // If negative difference → DEBITO Diferencia, CREDITO Banco
+    const lineas = diferencia > 0
+      ? [
+          { orden: 1, cuentaId: bancoId, debe: absDiferencia, haber: 0, descripcion: `Ajuste conciliación - ${conciliacion.cuentaBancaria.banco}` },
+          { orden: 2, cuentaId: diferenciaId, debe: 0, haber: absDiferencia, descripcion: `Diferencias de conciliación bancaria` },
+        ]
+      : [
+          { orden: 1, cuentaId: diferenciaId, debe: absDiferencia, haber: 0, descripcion: `Diferencias de conciliación bancaria` },
+          { orden: 2, cuentaId: bancoId, debe: 0, haber: absDiferencia, descripcion: `Ajuste conciliación - ${conciliacion.cuentaBancaria.banco}` },
+        ];
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        fecha: new Date(),
+        tipo: "AJUSTE",
+        descripcion: `Ajuste conciliación bancaria - ${conciliacion.cuentaBancaria.banco} (${conciliacion.extractos.length} mov. no conciliados)`,
+        totalDebe: absDiferencia,
+        totalHaber: absDiferencia,
+        creadoPor: ctx.userId,
+        notas: `Generado automáticamente por evento reconciliation.process.complete - Conciliación ${ctx.entityId.slice(0, 8)}`,
+        lineas: { create: lineas },
+      },
+    });
+
+    console.log(`[Accounting] Asiento AJUSTE creado para reconciliation.process.complete - Asiento #${asiento.numero}`);
+  } catch (err) {
+    console.error("[Accounting] handleReconciliationCompleteAccounting error:", err);
+  }
+}
+
 // ─── Registration ───────────────────────────────────────────────────────────
 
 export function registerAccountingHandlers(): void {
@@ -1269,6 +1339,11 @@ export function registerAccountingHandlers(): void {
 
   // Payroll events
   eventBus.registerHandler("hr.payroll.liquidate", handlePayrollLiquidateAccounting, {
+    priority: 50,
+  });
+
+  // Reconciliation events
+  eventBus.registerHandler("reconciliation.process.complete", handleReconciliationCompleteAccounting, {
     priority: 50,
   });
 }

@@ -35,6 +35,7 @@ model User {
   recepcionesMercaderia   RecepcionMercaderiaEmbarque[]
   businessEvents          BusinessEvent[]
   profiles                UserProfile[]
+  conciliaciones          Conciliacion[]
 }
 
 enum Role {
@@ -535,7 +536,8 @@ model CuentaContable {
   descripcion String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  lineas      LineaAsiento[]
+  lineas          LineaAsiento[]
+  cuentasBancarias CuentaBancaria[]
 
   @@index([tipo])
   @@index([codigo])
@@ -2255,4 +2257,78 @@ model UserProfile {
   profile PermissionProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([userId, profileId])
+}
+
+// ─── Bank Reconciliation ──────────────────────────────────────────────────────
+
+model CuentaBancaria {
+  id               String             @id @default(cuid())
+  banco            String
+  tipoCuenta       String             // CC_PESOS | CA_PESOS | CC_USD | CA_USD
+  cbu              String?            @unique
+  alias            String?
+  moneda           String             @default("ARS")
+  activa           Boolean            @default(true)
+  cuentaContableId String?
+  cuentaContable   CuentaContable?    @relation(fields: [cuentaContableId], references: [id])
+  extractos        ExtractoBancario[]
+  conciliaciones   Conciliacion[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model ExtractoBancario {
+  id               String          @id @default(cuid())
+  cuentaBancariaId String
+  cuentaBancaria   CuentaBancaria  @relation(fields: [cuentaBancariaId], references: [id])
+  fecha            DateTime
+  descripcion      String
+  referencia       String?
+  monto            Decimal         @db.Decimal(12, 2)
+  tipo             String          // CREDITO | DEBITO
+  saldo            Decimal?        @db.Decimal(12, 2)
+  estado           String          @default("PENDIENTE") // PENDIENTE | CONCILIADO | NO_CONCILIADO
+  conciliacionId   String?
+  conciliacion     Conciliacion?   @relation(fields: [conciliacionId], references: [id])
+  hash             String          @unique
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([cuentaBancariaId, fecha])
+  @@index([estado])
+}
+
+model Conciliacion {
+  id                 String              @id @default(cuid())
+  cuentaBancariaId   String
+  cuentaBancaria     CuentaBancaria      @relation(fields: [cuentaBancariaId], references: [id])
+  fechaDesde         DateTime
+  fechaHasta         DateTime
+  estado             String              @default("EN_PROCESO") // EN_PROCESO | COMPLETADA | REVISION
+  totalMovimientos   Int                 @default(0)
+  totalConciliados   Int                 @default(0)
+  totalNoConciliados Int                 @default(0)
+  matchAutomaticos   Int                 @default(0)
+  matchManuales      Int                 @default(0)
+  userId             String
+  user               User                @relation(fields: [userId], references: [id])
+  extractos          ExtractoBancario[]
+  matches            ConciliacionMatch[]
+  createdAt          DateTime            @default(now())
+  completedAt        DateTime?
+}
+
+model ConciliacionMatch {
+  id             String       @id @default(cuid())
+  conciliacionId String
+  conciliacion   Conciliacion @relation(fields: [conciliacionId], references: [id])
+  extractoId     String
+  tipoMatch      String       // AUTO_EXACTO | AUTO_APROXIMADO | MANUAL
+  confianza      Decimal      @db.Decimal(5, 2) // 0-100%
+  pagoId         String?
+  gastoId        String?
+  asientoId      String?
+  facturaId      String?
+  observaciones  String?
+  createdAt      DateTime     @default(now())
 }

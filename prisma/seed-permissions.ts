@@ -90,6 +90,20 @@ const OPERATION_CATALOG: OpDef[] = [
   { code: "accounting.report.view", description: "Ver reportes contables", isViewOnly: true },
   { code: "accounting.reconciliation.execute", description: "Ejecutar conciliación" },
 
+  // Reconciliation (Bank)
+  { code: "reconciliation.bank_account.create", description: "Crear cuenta bancaria" },
+  { code: "reconciliation.bank_account.update", description: "Actualizar cuenta bancaria" },
+  { code: "reconciliation.bank_account.view", description: "Ver cuentas bancarias", isViewOnly: true },
+  { code: "reconciliation.statement.import", description: "Importar extracto bancario" },
+  { code: "reconciliation.statement.view", description: "Ver extractos bancarios", isViewOnly: true },
+  { code: "reconciliation.process.start", description: "Iniciar conciliación bancaria" },
+  { code: "reconciliation.process.complete", description: "Completar conciliación bancaria" },
+  { code: "reconciliation.process.view", description: "Ver conciliaciones", isViewOnly: true },
+  { code: "reconciliation.match.create", description: "Crear match manual de conciliación" },
+  { code: "reconciliation.match.approve", description: "Aprobar match de conciliación", requiresApproval: true },
+  { code: "reconciliation.match.reject", description: "Rechazar match de conciliación" },
+  { code: "reconciliation.match.view", description: "Ver matches de conciliación", isViewOnly: true },
+
   // Maintenance - Work Order
   { code: "maintenance.workorder.create", description: "Crear orden de trabajo" },
   { code: "maintenance.workorder.update", description: "Actualizar orden de trabajo" },
@@ -341,6 +355,7 @@ const SYSTEM_PROFILES: ProfileDef[] = [
     description: "Acceso completo a contabilidad, finanzas, vista de facturas, pagos, gastos e inventario",
     grants: [
       { pattern: "accounting.*", canView: true, canCreate: true, canExecute: true, canApprove: true },
+      { pattern: "reconciliation.*", canView: true, canCreate: true, canExecute: true, canApprove: true },
       { pattern: "finance.*", canView: true },
       { pattern: "credit_note.*", canView: true, canCreate: true, canExecute: true },
       { pattern: "invoice.*", canView: true, canApprove: true },

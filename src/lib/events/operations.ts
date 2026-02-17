@@ -101,6 +101,28 @@ export const OPERATIONS = {
       execute: "accounting.reconciliation.execute",
     },
   },
+  reconciliation: {
+    bank_account: {
+      create: "reconciliation.bank_account.create",
+      update: "reconciliation.bank_account.update",
+      view: "reconciliation.bank_account.view",
+    },
+    statement: {
+      import: "reconciliation.statement.import",
+      view: "reconciliation.statement.view",
+    },
+    process: {
+      start: "reconciliation.process.start",
+      complete: "reconciliation.process.complete",
+      view: "reconciliation.process.view",
+    },
+    match: {
+      create: "reconciliation.match.create",
+      approve: "reconciliation.match.approve",
+      reject: "reconciliation.match.reject",
+      view: "reconciliation.match.view",
+    },
+  },
   maintenance: {
     workorder: {
       create: "maintenance.workorder.create",

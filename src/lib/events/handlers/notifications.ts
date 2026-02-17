@@ -381,6 +381,63 @@ export async function handleExpenseAlertNotification(ctx: EventContext): Promise
   }
 }
 
+// ─── Reconciliation Started → Alerta informativa ────────────────────────────
+export async function handleReconciliationStartedNotification(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "reconciliation.process.start") return;
+
+  try {
+    const totalMovimientos = Number(ctx.payload?.totalMovimientos ?? 0);
+    const matchAutomaticos = Number(ctx.payload?.matchAutomaticos ?? 0);
+
+    await prisma.alerta.create({
+      data: {
+        tipo: "CONCILIACION",
+        mensaje: `Conciliación iniciada — ${totalMovimientos} movimientos analizados, ${matchAutomaticos} matches automáticos encontrados`,
+        metadata: {
+          conciliacionId: ctx.entityId,
+          totalMovimientos,
+          matchAutomaticos,
+        },
+      },
+    });
+
+    console.log(`[Notifications] Reconciliation started: ${ctx.entityId}`);
+  } catch (err) {
+    console.error("[Notifications] handleReconciliationStartedNotification error:", err);
+  }
+}
+
+// ─── Reconciliation Complete → Alerta urgente si hay pendientes ─────────────
+export async function handleReconciliationCompleteNotification(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "reconciliation.process.complete") return;
+
+  try {
+    const totalPendientes = Number(ctx.payload?.totalPendientes ?? 0);
+    const totalConciliados = Number(ctx.payload?.totalConciliados ?? 0);
+
+    const tipo = totalPendientes > 0 ? "URGENTE" : "CONCILIACION";
+    const mensaje = totalPendientes > 0
+      ? `URGENTE: Conciliación completada con ${totalPendientes} movimiento(s) sin conciliar. Requiere revisión manual.`
+      : `Conciliación completada exitosamente — ${totalConciliados} movimientos conciliados, 0 pendientes.`;
+
+    await prisma.alerta.create({
+      data: {
+        tipo,
+        mensaje,
+        metadata: {
+          conciliacionId: ctx.entityId,
+          totalConciliados,
+          totalPendientes,
+        },
+      },
+    });
+
+    console.log(`[Notifications] Reconciliation complete: ${ctx.entityId} (${totalPendientes} pending)`);
+  } catch (err) {
+    console.error("[Notifications] handleReconciliationCompleteNotification error:", err);
+  }
+}
+
 // ─── Registration ───────────────────────────────────────────────────────────
 export function registerNotificationHandlers(): void {
   // Payment events
@@ -426,6 +483,14 @@ export function registerNotificationHandlers(): void {
 
   // Expense events — high amount alerts
   eventBus.registerHandler("expense.create", handleExpenseAlertNotification, {
+    priority: 200,
+  });
+
+  // Reconciliation events
+  eventBus.registerHandler("reconciliation.process.start", handleReconciliationStartedNotification, {
+    priority: 200,
+  });
+  eventBus.registerHandler("reconciliation.process.complete", handleReconciliationCompleteNotification, {
     priority: 200,
   });
 }
