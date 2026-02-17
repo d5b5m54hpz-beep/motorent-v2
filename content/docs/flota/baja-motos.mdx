@@ -1,0 +1,61 @@
+---
+title: Baja de Motos
+description: Proceso para dar de baja una moto de la flota
+---
+
+# Baja de Motos
+
+El proceso de baja retira una moto de la operación activa de la flota.
+
+## Cuándo dar de baja
+
+- Venta de la moto
+- Siniestro total
+- Fin de vida útil
+- Robo (con denuncia policial)
+- Ejercicio de opción de compra por parte del cliente
+
+## Proceso
+
+### 1. Verificar estado
+
+Antes de dar de baja, verificá que la moto:
+- **No tenga contrato activo**: Si está alquilada, primero hay que finalizar el contrato
+- **No tenga OT pendientes**: Si tiene órdenes de trabajo abiertas, completarlas o cancelarlas
+- **No tenga pagos pendientes**: Verificar que no haya deuda asociada
+
+### 2. Ejecutar la baja
+
+1. Ir a `/admin/motos`
+2. Seleccionar la moto
+3. Click en "Dar de Baja"
+4. Completar:
+   - **Motivo de baja**: Venta, siniestro, fin vida útil, robo
+   - **Fecha de baja**
+   - **Observaciones**
+5. Confirmar
+
+### 3. Impacto de la baja
+
+Al dar de baja una moto:
+- Su estado cambia a `FUERA_DE_SERVICIO`
+- Deja de aparecer en el catálogo público
+- Se detiene la amortización
+- Se registra el evento en el historial
+
+## Opción de compra
+
+Si un cliente ejerce la opción de compra desde un contrato:
+
+1. Ir a `/admin/contratos` → seleccionar el contrato
+2. Click en "Ejercer Opción de Compra"
+3. El sistema:
+   - Genera la factura correspondiente
+   - Finaliza el contrato
+   - Da de baja la moto automáticamente
+
+## Tips
+
+- Las motos dadas de baja siguen visibles en el sistema (marcadas como FUERA_DE_SERVICIO) para mantener el historial
+- El valor contable al momento de la baja se usa para calcular ganancia/pérdida por la operación
+- Podés filtrar motos por estado en la tabla principal para ver las bajas

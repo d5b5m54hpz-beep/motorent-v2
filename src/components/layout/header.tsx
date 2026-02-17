@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { CommandPalette } from "@/components/command-palette";
 
 type Props = {
   user: { name: string; email: string; image?: string | null; role: string };
@@ -110,9 +111,12 @@ export function Header({ user }: Props) {
         ))}
       </div>
 
-      {/* Search placeholder (⌘K) - mobile/tablet */}
+      {/* Search (⌘K) - mobile/tablet */}
       <div className="flex flex-1 items-center lg:hidden">
-        <button className="flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-input bg-background px-3 text-sm shadow-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:max-w-xs">
+        <button
+          onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+          className="flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border border-input bg-background px-3 text-sm shadow-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:max-w-xs"
+        >
           <Search className="h-4 w-4 text-muted-foreground/70" />
           <span className="text-muted-foreground/70">Buscar...</span>
           <kbd className="ml-auto hidden rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">
@@ -120,6 +124,9 @@ export function Header({ user }: Props) {
           </kbd>
         </button>
       </div>
+
+      {/* Command Palette */}
+      <CommandPalette />
 
       {/* Right actions */}
       <div className="flex items-center gap-1">

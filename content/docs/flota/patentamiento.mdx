@@ -1,0 +1,38 @@
+---
+title: Patentamiento
+description: Seguimiento del proceso de patentamiento de motos
+---
+
+# Patentamiento
+
+El módulo de patentamiento permite hacer seguimiento del estado registral de cada moto.
+
+## Acceso
+
+**Ruta:** `/admin/motos/patentamiento`
+
+## Estados del proceso
+
+Cada moto atraviesa estos pasos de patentamiento:
+
+| Paso | Descripción |
+|------|-------------|
+| **Pedido de dominio** | Solicitud ante DNRPA |
+| **Pago aranceles** | Pago de los aranceles registrales |
+| **Verificación policial** | Verificación física del vehículo |
+| **Cédula verde emitida** | Recepción del título de propiedad |
+| **Cédula azul emitida** | Si corresponde, para terceros autorizados |
+
+## Actualización masiva
+
+Desde la tabla de patentamiento podés:
+
+1. Seleccionar múltiples motos con los checkboxes
+2. Marcar pasos completados en bulk
+3. Los cambios se guardan automáticamente
+
+## Tips
+
+- Una moto no puede pasar a estado DISPONIBLE hasta completar al menos la cédula verde
+- El sistema genera alertas si una moto lleva más de 30 días sin avanzar en el proceso
+- Subí los comprobantes de cada paso desde la sección Documentos de cada moto

@@ -1,0 +1,46 @@
+---
+title: Amortización
+description: Cálculo de depreciación y amortización de la flota
+---
+
+# Amortización de Flota
+
+El módulo de amortización calcula automáticamente la depreciación de cada moto.
+
+## Acceso
+
+**Ruta:** `/admin/flota/amortizacion`
+
+## Método de cálculo
+
+Se utiliza **depreciación lineal** según normas AFIP:
+
+```
+Depreciación mensual = (Valor de compra - Valor residual) / (Vida útil en meses)
+```
+
+### Parámetros por defecto
+
+| Parámetro | Valor |
+|-----------|-------|
+| Vida útil | 5 años (60 meses) |
+| Valor residual | 10% del valor de compra |
+| Método | Lineal |
+
+## Visualización
+
+La página muestra:
+
+- **Tabla por moto**: valor de compra, depreciación acumulada, valor contable actual
+- **Gráfico de depreciación**: curva de valor contable en el tiempo
+- **Costo mensual por moto**: cuánto "cuesta" cada moto por mes (depreciación + seguro + mantenimiento promedio)
+
+## Impacto contable
+
+La amortización se refleja automáticamente al generar asientos contables de cierre de período.
+
+## Tips
+
+- Modificá el valor residual y vida útil desde la ficha financiera de cada moto
+- Las motos dadas de baja dejan de amortizarse desde la fecha de baja
+- El valor FOB/CIF de importación se suma al valor de compra si corresponde

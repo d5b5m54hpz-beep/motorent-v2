@@ -1,0 +1,62 @@
+---
+title: Repuestos e Inventario
+description: Gestión de stock, proveedores y costeo de repuestos
+---
+
+# Repuestos e Inventario
+
+El módulo de repuestos gestiona el stock de piezas y accesorios para mantenimiento.
+
+## Acceso
+
+**Ruta:** `/admin/repuestos` (inventario) y `/admin/pricing-repuestos` (costeo y precios)
+
+## Inventario
+
+### Registrar un repuesto
+
+1. Ir a `/admin/repuestos` → "+ Nuevo Repuesto"
+2. Completar datos:
+   - **Código SKU**: Identificador único
+   - **Nombre**: Descripción del repuesto
+   - **Categoría**: Filtro, Aceite, Frenos, Eléctrico, etc.
+   - **Stock mínimo**: Cantidad mínima antes de alertar
+   - **Ubicación**: Depósito y estante
+3. Guardar
+
+### Ajuste de stock
+
+Para corregir el stock (inventario físico, merma, etc.):
+1. Click en el repuesto → "Ajustar Stock"
+2. Ingresar nueva cantidad y motivo
+3. El sistema registra el movimiento en el historial
+
+### Importar / Exportar
+
+- **Importar**: Carga masiva desde CSV (descargar template primero)
+- **Exportar**: Descarga el inventario completo a CSV
+
+## Costeo de Repuestos
+
+**Ruta:** `/admin/pricing-repuestos`
+
+### Tabs disponibles
+
+1. **Dashboard**: KPIs de márgenes, alertas de precios críticos, tendencias
+2. **Lista de Precios**: Vista de todos los repuestos con precio de costo y venta, edición inline, sugerencias de IA para optimizar márgenes
+3. **Historial**: Registro de todos los cambios de precio con fecha y motivo
+
+### Sugerencias de IA
+
+El sistema analiza:
+- Margen actual vs. objetivo
+- Costo promedio ponderado (últimas compras)
+- Variación del tipo de cambio (para repuestos importados)
+
+Y sugiere ajustes de precio para mantener márgenes saludables.
+
+## Tips
+
+- Revisá las alertas de márgenes regularmente (aparecen en la campana de notificaciones)
+- Usá el bulk update para ajustar precios masivamente
+- Los movimientos de stock de las OT de mantenimiento se registran automáticamente

@@ -1,0 +1,70 @@
+---
+title: Mantenimientos
+description: Órdenes de trabajo, planes preventivos y check-in/check-out
+---
+
+# Mantenimientos
+
+El módulo de mantenimiento gestiona todo el ciclo de servicio de las motos.
+
+## Acceso
+
+**Ruta:** `/admin/mantenimientos`
+
+El módulo tiene 4 tabs principales:
+
+## 1. Calendario
+
+Vista mensual de citas de mantenimiento programadas. Cada cita muestra:
+- Moto asignada
+- Taller / mecánico
+- Tipo de servicio
+- Estado (programada, en proceso, completada)
+
+## 2. Órdenes de Trabajo
+
+CRUD completo de órdenes de trabajo (OT):
+
+### Crear una OT
+1. Click en "+ Nueva Orden"
+2. Seleccionar moto y taller
+3. Agregar tareas (ej: cambio de aceite, revisión de frenos)
+4. Agregar repuestos necesarios (se descuentan del inventario)
+5. Guardar
+
+### Estados de una OT
+- **PENDIENTE**: Creada, esperando atención
+- **EN_PROGRESO**: El taller está trabajando
+- **COMPLETADA**: Trabajo finalizado
+- **CANCELADA**: Cancelada
+
+### Repuestos en OT
+Al agregar un repuesto a una OT, el sistema:
+- Verifica stock disponible
+- Reserva las unidades
+- Al completar la OT, descuenta definitivamente del inventario
+
+## 3. Check-in / Check-out
+
+Registro de entrada y salida de motos del taller:
+
+- **Check-in**: La moto ingresa al taller. Se registra kilometraje, estado general, y observaciones
+- **Check-out**: La moto sale del taller. Se registra trabajos realizados y kilometraje de salida
+
+## 4. Planes de Mantenimiento
+
+Planes preventivos basados en kilometraje o tiempo:
+
+| Intervalo | Tipo | Tareas típicas |
+|-----------|------|----------------|
+| Cada 3.000 km | Service básico | Aceite, filtro, bujía |
+| Cada 10.000 km | Service completo | Básico + cadena, pastillas, líquidos |
+| Cada 6 meses | Revisión periódica | Neumáticos, luces, frenos |
+
+El sistema genera alertas automáticas cuando una moto se acerca a un intervalo de servicio.
+
+## Tips
+
+- Mantené actualizado el kilometraje de las motos para que las alertas sean precisas
+- Las OT impactan directamente en el costo de mantenimiento por moto (visible en Amortización)
+- Podés asignar mecánicos específicos a cada taller desde `/admin/talleres`

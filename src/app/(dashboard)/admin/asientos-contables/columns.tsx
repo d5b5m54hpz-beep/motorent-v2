@@ -16,7 +16,9 @@ import { toast } from "sonner";
 import type { AsientoContable, LineaAsiento } from "@prisma/client";
 
 type AsientoContableWithLineas = AsientoContable & {
-  lineas: LineaAsiento[];
+  lineas: (LineaAsiento & {
+    cuenta: { codigo: string; nombre: string };
+  })[];
 };
 
 const tipoColors: Record<string, string> = {

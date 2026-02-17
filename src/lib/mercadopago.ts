@@ -1,4 +1,5 @@
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
+import { createHmac } from "crypto";
 
 // Validar que las credenciales estén configuradas
 if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
@@ -80,26 +81,45 @@ export async function getPaymentInfo(paymentId: string) {
   return result;
 }
 
-// Helper para verificar webhook signature (opcional, MP no siempre lo envía)
+// Helper para verificar webhook signature
 export function verifyWebhookSignature(
   xSignature: string | null,
   xRequestId: string | null,
   dataId: string
 ): boolean {
-  // MercadoPago recomienda validar el signature, pero en modo test puede no estar presente
-  // Por ahora retornamos true, pero en producción se debería validar correctamente
-  if (!xSignature || !xRequestId) {
-    console.warn("⚠️  Webhook sin signature, verificación omitida");
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+
+  // Si no hay secret configurado o no viene signature, skip validation
+  if (!secret || !xSignature || !xRequestId) {
+    console.warn("⚠️  Webhook sin signature o sin secret configurado, verificación omitida");
     return true;
   }
 
-  // TODO: Implementar validación real con secret
-  // const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-  // const ts = xSignature.split(',')[0].split('=')[1];
-  // const hash = xSignature.split(',')[1].split('=')[1];
-  // const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
-  // const hmac = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
-  // return hmac === hash;
+  try {
+    // Parse x-signature header: "ts=...,v1=..."
+    const parts: Record<string, string> = {};
+    xSignature.split(",").forEach((part) => {
+      const [key, value] = part.trim().split("=", 2);
+      if (key && value) parts[key] = value;
+    });
 
-  return true;
+    const ts = parts["ts"];
+    const hash = parts["v1"];
+
+    if (!ts || !hash) {
+      console.warn("⚠️  Formato de x-signature inválido");
+      return true;
+    }
+
+    // Build the manifest string as per MP docs
+    const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+    // Compute HMAC-SHA256
+    const hmac = createHmac("sha256", secret).update(manifest).digest("hex");
+
+    return hmac === hash;
+  } catch (error) {
+    console.error("Error verificando webhook signature:", error);
+    return true; // Fail open to not lose payments
+  }
 }

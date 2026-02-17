@@ -17,6 +17,11 @@ import {
   Trash2,
   RefreshCw,
   Sparkles,
+  TrendingDown,
+  DollarSign,
+  Ship,
+  ArrowRightLeft,
+  Tag,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -28,6 +33,14 @@ type Alerta = {
   leida: boolean;
   createdAt: Date;
   updatedAt: Date;
+};
+
+type PricingAlerta = {
+  tipo: string;
+  severidad: "ALTA" | "MEDIA" | "BAJA";
+  mensaje: string;
+  repuestoId?: string;
+  precioSugerido?: number;
 };
 
 const iconosAlerta: Record<string, React.ElementType> = {
@@ -51,12 +64,34 @@ const nombresAlerta: Record<string, string> = {
   general: "General",
 };
 
+const iconosPricing: Record<string, React.ElementType> = {
+  MARGEN_CRITICO: TrendingDown,
+  MARGEN_BAJO_MINIMO: TrendingDown,
+  SIN_PRECIO: Tag,
+  EMBARQUE_LLEGANDO: Ship,
+  TIPO_CAMBIO: ArrowRightLeft,
+};
+
+const coloresSeveridad: Record<string, string> = {
+  ALTA: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-red-200",
+  MEDIA: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200",
+  BAJA: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-blue-200",
+};
+
+const nombresSeveridad: Record<string, string> = {
+  ALTA: "Alta",
+  MEDIA: "Media",
+  BAJA: "Baja",
+};
+
 function AlertasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [pricingAlertas, setPricingAlertas] = useState<PricingAlerta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPricing, setLoadingPricing] = useState(true);
   const [generando, setGenerando] = useState(false);
   const [marcandoTodas, setMarcandoTodas] = useState(false);
 
@@ -89,9 +124,30 @@ function AlertasContent() {
     }
   };
 
+  const fetchPricingAlertas = async () => {
+    setLoadingPricing(true);
+    try {
+      const res = await fetch("/api/pricing-repuestos/dashboard-margenes?periodo=30d");
+      if (res.ok) {
+        const data = await res.json();
+        setPricingAlertas(data.alertas || []);
+      }
+    } catch (error) {
+      console.error("Error fetching pricing alertas:", error);
+    } finally {
+      setLoadingPricing(false);
+    }
+  };
+
   useEffect(() => {
-    fetchAlertas();
+    if (tipoActivo !== "margenes") {
+      fetchAlertas();
+    }
   }, [tipoActivo]);
+
+  useEffect(() => {
+    fetchPricingAlertas();
+  }, []);
 
   const handleTipoChange = (tipo: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -223,30 +279,34 @@ function AlertasContent() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={fetchAlertas}
-            disabled={loading}
+            onClick={tipoActivo === "margenes" ? fetchPricingAlertas : fetchAlertas}
+            disabled={tipoActivo === "margenes" ? loadingPricing : loading}
             className="gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${(tipoActivo === "margenes" ? loadingPricing : loading) ? "animate-spin" : ""}`} />
             Actualizar
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleMarcarTodasComoLeidas}
-            disabled={marcandoTodas || alertasNoLeidas === 0}
-            className="gap-2"
-          >
-            <Check className="h-4 w-4" />
-            Marcar Todas como Leídas
-          </Button>
-          <Button
-            onClick={handleGenerarAlertas}
-            disabled={generando}
-            className="gap-2"
-          >
-            <Sparkles className="h-4 w-4" />
-            {generando ? "Generando..." : "Generar Alertas"}
-          </Button>
+          {tipoActivo !== "margenes" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleMarcarTodasComoLeidas}
+                disabled={marcandoTodas || alertasNoLeidas === 0}
+                className="gap-2"
+              >
+                <Check className="h-4 w-4" />
+                Marcar Todas como Leídas
+              </Button>
+              <Button
+                onClick={handleGenerarAlertas}
+                disabled={generando}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                {generando ? "Generando..." : "Generar Alertas"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -259,97 +319,163 @@ function AlertasContent() {
             <TabsTrigger value="contrato_por_vencer">Contratos por Vencer</TabsTrigger>
             <TabsTrigger value="licencia_vencida">Licencias Vencidas</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="margenes" className="gap-1.5">
+              <DollarSign className="h-3.5 w-3.5" />
+              Márgenes
+              {pricingAlertas.length > 0 && (
+                <Badge variant="destructive" className="ml-1 h-4 min-w-[16px] px-1 text-[9px]">
+                  {pricingAlertas.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
         <div className="ml-auto text-sm text-muted-foreground">
-          {alertas.length} alerta{alertas.length !== 1 ? "s" : ""}
-          {alertasNoLeidas > 0 && (
-            <span className="ml-2 font-medium text-red-600 dark:text-red-400">
-              ({alertasNoLeidas} sin leer)
-            </span>
+          {tipoActivo === "margenes" ? (
+            <>
+              {pricingAlertas.length} alerta{pricingAlertas.length !== 1 ? "s" : ""} de márgenes
+            </>
+          ) : (
+            <>
+              {alertas.length} alerta{alertas.length !== 1 ? "s" : ""}
+              {alertasNoLeidas > 0 && (
+                <span className="ml-2 font-medium text-red-600 dark:text-red-400">
+                  ({alertasNoLeidas} sin leer)
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
 
       {/* Lista de Alertas */}
       <div className="space-y-3">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : alertas.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <AlertTriangle className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground">No hay alertas</p>
-            </CardContent>
-          </Card>
-        ) : (
-          alertas.map((alerta) => {
-            const Icono = iconosAlerta[alerta.tipo];
-            const colorClasses = coloresAlerta[alerta.tipo];
-            const isNoLeida = !alerta.leida;
+        {tipoActivo === "margenes" ? (
+          /* Alertas de Pricing/Márgenes */
+          loadingPricing ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : pricingAlertas.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <DollarSign className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">No hay alertas de márgenes</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Todos los márgenes de repuestos están dentro de los parámetros
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            pricingAlertas.map((alerta, index) => {
+              const Icono = iconosPricing[alerta.tipo] || AlertTriangle;
+              const colorClasses = coloresSeveridad[alerta.severidad] || coloresSeveridad.MEDIA;
 
-            return (
-              <Card
-                key={alerta.id}
-                className={isNoLeida ? "border-l-4 border-l-primary bg-primary/5" : ""}
-              >
-                <CardContent className="flex items-start gap-4 p-4">
-                  {/* Ícono */}
-                  <div className={`rounded-full p-2 ${colorClasses}`}>
-                    <Icono className="h-5 w-5" />
-                  </div>
-
-                  {/* Contenido */}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={colorClasses}>
-                            {nombresAlerta[alerta.tipo]}
-                          </Badge>
-                          {isNoLeida && (
-                            <Badge variant="destructive" className="text-xs">
-                              No leída
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm leading-relaxed">{alerta.mensaje}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(new Date(alerta.createdAt))}
-                        </p>
-                      </div>
-
-                      {/* Acciones */}
+              return (
+                <Card
+                  key={`pricing-${index}`}
+                  className={alerta.severidad === "ALTA" ? "border-l-4 border-l-red-500" : ""}
+                >
+                  <CardContent className="flex items-start gap-4 p-4">
+                    <div className={`rounded-full p-2 ${colorClasses}`}>
+                      <Icono className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        {isNoLeida && (
+                        <Badge variant="outline" className={colorClasses}>
+                          Severidad: {nombresSeveridad[alerta.severidad]}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {alerta.tipo.replace(/_/g, " ")}
+                        </Badge>
+                      </div>
+                      <p className="text-sm leading-relaxed">{alerta.mensaje}</p>
+                      {alerta.precioSugerido && (
+                        <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">
+                          Precio sugerido: ${alerta.precioSugerido.toLocaleString("es-AR")}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )
+        ) : (
+          /* Alertas del Sistema (DB) */
+          loading ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : alertas.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">No hay alertas</p>
+              </CardContent>
+            </Card>
+          ) : (
+            alertas.map((alerta) => {
+              const Icono = iconosAlerta[alerta.tipo];
+              const colorClasses = coloresAlerta[alerta.tipo];
+              const isNoLeida = !alerta.leida;
+
+              return (
+                <Card
+                  key={alerta.id}
+                  className={isNoLeida ? "border-l-4 border-l-primary bg-primary/5" : ""}
+                >
+                  <CardContent className="flex items-start gap-4 p-4">
+                    <div className={`rounded-full p-2 ${colorClasses}`}>
+                      <Icono className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={colorClasses}>
+                              {nombresAlerta[alerta.tipo]}
+                            </Badge>
+                            {isNoLeida && (
+                              <Badge variant="destructive" className="text-xs">
+                                No leída
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm leading-relaxed">{alerta.mensaje}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(new Date(alerta.createdAt))}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isNoLeida && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarcarComoLeida(alerta.id)}
+                              title="Marcar como leída"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleMarcarComoLeida(alerta.id)}
-                            title="Marcar como leída"
+                            onClick={() => handleEliminar(alerta.id)}
+                            title="Eliminar"
+                            className="text-red-600 hover:text-red-700 dark:text-red-400"
                           >
-                            <Check className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEliminar(alerta.id)}
-                          title="Eliminar"
-                          className="text-red-600 hover:text-red-700 dark:text-red-400"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
+                  </CardContent>
+                </Card>
+              );
+            })
+          )
         )}
       </div>
     </div>
