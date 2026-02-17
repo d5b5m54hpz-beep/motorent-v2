@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { facturaSchema } from "@/lib/validations";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.invoice.sale.view,
+    "view",
+    ["ADMIN", "OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await params;
@@ -59,7 +64,11 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.invoice.sale.update,
+    "execute",
+    ["ADMIN"]
+  );
   if (error) return error;
 
   const { id } = await params;
@@ -123,6 +132,22 @@ export async function PUT(
           },
         },
       },
+    });
+
+    // Emit event for invoice update
+    eventBus.emit(
+      OPERATIONS.invoice.sale.update,
+      "Factura",
+      id,
+      {
+        previousTipo: factura.tipo,
+        newTipo: validated.tipo,
+        numero: updated.numero,
+        montoTotal: updated.montoTotal,
+      },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting invoice.sale.update event:", err);
     });
 
     return NextResponse.json(updated);

@@ -40,20 +40,27 @@ const OPERATION_CATALOG: OpDef[] = [
   { code: "rental.client.delete", description: "Eliminar cliente" },
 
   // Payment
+  { code: "payment.view", description: "Ver pagos", isViewOnly: true },
   { code: "payment.create", description: "Registrar pago" },
+  { code: "payment.update", description: "Actualizar datos de pago" },
   { code: "payment.approve", description: "Aprobar pago", requiresApproval: true },
   { code: "payment.reject", description: "Rechazar pago" },
   { code: "payment.refund", description: "Reembolsar pago", requiresApproval: true },
+  { code: "payment.checkout", description: "Iniciar checkout de pago" },
 
   // Invoice - Sale
+  { code: "invoice.sale.view", description: "Ver facturas de venta", isViewOnly: true },
   { code: "invoice.sale.create", description: "Crear factura de venta" },
+  { code: "invoice.sale.update", description: "Actualizar factura de venta" },
   { code: "invoice.sale.send", description: "Enviar factura" },
   { code: "invoice.sale.cancel", description: "Anular factura de venta" },
 
   // Invoice - Purchase
+  { code: "invoice.purchase.view", description: "Ver facturas de compra", isViewOnly: true },
   { code: "invoice.purchase.create", description: "Registrar factura de compra" },
   { code: "invoice.purchase.approve", description: "Aprobar factura de compra", requiresApproval: true },
   { code: "invoice.purchase.reject", description: "Rechazar factura de compra" },
+  { code: "invoice.purchase.cancel", description: "Eliminar factura de compra" },
 
   // Invoice - Credit Note
   { code: "invoice.credit_note.create", description: "Crear nota de crédito" },

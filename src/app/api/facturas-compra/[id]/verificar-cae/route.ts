@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(
@@ -7,7 +8,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireRole(["ADMIN", "OPERADOR", "CONTADOR"]);
+    const { error } = await requirePermission(
+      OPERATIONS.invoice.purchase.view,
+      "execute",
+      ["ADMIN", "OPERADOR", "CONTADOR"]
+    );
+    if (error) return error;
+
     const { id } = await params;
 
     const factura = await prisma.facturaCompra.findUnique({

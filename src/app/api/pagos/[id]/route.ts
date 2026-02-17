@@ -10,7 +10,11 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/pagos/[id] — get single pago with full details
 export async function GET(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.payment.view,
+    "view",
+    ["ADMIN", "OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -44,7 +48,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
 // PUT /api/pagos/[id] — registrar/actualizar pago
 export async function PUT(req: NextRequest, context: RouteContext) {
   const { error, userId } = await requirePermission(
-    OPERATIONS.payment.approve,
+    OPERATIONS.payment.update,
     "execute",
     ["OPERADOR"] // fallback: OPERADOR keeps working during migration
   );
@@ -189,23 +193,55 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       return pagoActualizado;
     });
 
-    // Emit event when payment is approved (state transition)
-    if (estado === "aprobado" && previousEstado !== "aprobado") {
-      eventBus.emit(
-        OPERATIONS.payment.approve,
-        "Pago",
-        id,
-        {
-          previousEstado,
-          newEstado: estado,
-          monto: resultado.monto,
-          metodo: resultado.metodo,
-          contratoId: resultado.contratoId,
-        },
-        userId
-      ).catch((err) => {
-        console.error("Error emitting payment.approve event:", err);
-      });
+    // Emit events for state transitions
+    if (estado !== previousEstado) {
+      if (estado === "aprobado") {
+        eventBus.emit(
+          OPERATIONS.payment.approve,
+          "Pago",
+          id,
+          {
+            previousEstado,
+            newEstado: estado,
+            monto: resultado.monto,
+            metodo: resultado.metodo,
+            contratoId: resultado.contratoId,
+          },
+          userId
+        ).catch((err) => {
+          console.error("Error emitting payment.approve event:", err);
+        });
+      } else if (estado === "rechazado") {
+        eventBus.emit(
+          OPERATIONS.payment.reject,
+          "Pago",
+          id,
+          {
+            previousEstado,
+            newEstado: estado,
+            monto: resultado.monto,
+            contratoId: resultado.contratoId,
+          },
+          userId
+        ).catch((err) => {
+          console.error("Error emitting payment.reject event:", err);
+        });
+      } else if (estado === "reembolsado") {
+        eventBus.emit(
+          OPERATIONS.payment.refund,
+          "Pago",
+          id,
+          {
+            previousEstado,
+            newEstado: estado,
+            monto: resultado.monto,
+            contratoId: resultado.contratoId,
+          },
+          userId
+        ).catch((err) => {
+          console.error("Error emitting payment.refund event:", err);
+        });
+      }
     }
 
     // Enviar email con factura (fire and forget - no bloquea la respuesta)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 
 const ALLOWED_SORT_COLUMNS = [
   "vencimientoAt",
@@ -12,7 +13,11 @@ const ALLOWED_SORT_COLUMNS = [
 
 // GET /api/pagos — list pagos (paginated, searchable, sortable, filterable)
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.payment.view,
+    "view",
+    ["ADMIN", "OPERADOR"]
+  );
   if (error) return error;
 
   const url = new URL(req.url);

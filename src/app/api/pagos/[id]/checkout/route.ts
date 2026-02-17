@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { OPERATIONS } from "@/lib/events";
 import { requireRole } from "@/lib/authz";
 import { createPaymentPreference } from "@/lib/mercadopago";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, context: RouteContext) {
-  const { error, userId, role } = await requireRole(["CLIENTE", "ADMIN"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.payment.checkout,
+    "execute",
+    ["CLIENTE", "ADMIN"]
+  );
   if (error) return error;
+
+  // Need role for ownership check below
+  const { role } = await requireRole(["CLIENTE", "ADMIN"]);
 
   const { id } = await context.params;
 

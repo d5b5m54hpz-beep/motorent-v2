@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { facturaCompraSchema } from "@/lib/validations";
@@ -13,7 +12,11 @@ export async function GET(
   _req: NextRequest,
   context: RouteContext
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.invoice.purchase.view,
+    "view",
+    ["ADMIN", "OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -134,7 +137,11 @@ export async function DELETE(
   _req: NextRequest,
   context: RouteContext
 ) {
-  const { error } = await requireRole(["ADMIN"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.invoice.purchase.cancel,
+    "execute",
+    ["ADMIN"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -143,7 +150,7 @@ export async function DELETE(
     // Check if has related gasto or asiento
     const factura = await prisma.facturaCompra.findUnique({
       where: { id },
-      select: { gastoId: true, asientoId: true },
+      select: { gastoId: true, asientoId: true, numero: true, razonSocial: true, total: true },
     });
 
     if (!factura) {
@@ -158,6 +165,21 @@ export async function DELETE(
     }
 
     await prisma.facturaCompra.delete({ where: { id } });
+
+    // Emit event for purchase invoice deletion
+    eventBus.emit(
+      OPERATIONS.invoice.purchase.cancel,
+      "FacturaCompra",
+      id,
+      {
+        numero: factura.numero,
+        razonSocial: factura.razonSocial,
+        total: factura.total,
+      },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting invoice.purchase.cancel event:", err);
+    });
 
     return NextResponse.json({ message: "Factura eliminada correctamente" });
   } catch (err: unknown) {

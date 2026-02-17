@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { facturaCompraSchema } from "@/lib/validations";
 import {
   validarCUIT,
@@ -12,7 +13,11 @@ import {
 } from "@/lib/controles-internos";
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR", "CONTADOR"]);
+  const { error } = await requirePermission(
+    OPERATIONS.invoice.purchase.view,
+    "view",
+    ["ADMIN", "OPERADOR", "CONTADOR"]
+  );
   if (error) return error;
 
   try {
@@ -80,7 +85,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error, userId } = await requireRole(["ADMIN", "OPERADOR", "CONTADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.invoice.purchase.create,
+    "create",
+    ["ADMIN", "OPERADOR", "CONTADOR"]
+  );
   if (error) return error;
 
   try {
@@ -336,6 +345,22 @@ export async function POST(req: NextRequest) {
         },
       });
     }
+
+    // Emit event for purchase invoice creation
+    eventBus.emit(
+      OPERATIONS.invoice.purchase.create,
+      "FacturaCompra",
+      facturaCompra.id,
+      {
+        numero: rest.numero,
+        razonSocial: rest.razonSocial,
+        total,
+        proveedorId: facturaCompra.proveedor?.id ?? null,
+      },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting invoice.purchase.create event:", err);
+    });
 
     return NextResponse.json(
       {

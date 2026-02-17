@@ -37,21 +37,28 @@ export const OPERATIONS = {
     },
   },
   payment: {
+    view: "payment.view",
     create: "payment.create",
+    update: "payment.update",
     approve: "payment.approve",
     reject: "payment.reject",
     refund: "payment.refund",
+    checkout: "payment.checkout",
   },
   invoice: {
     sale: {
+      view: "invoice.sale.view",
       create: "invoice.sale.create",
+      update: "invoice.sale.update",
       send: "invoice.sale.send",
       cancel: "invoice.sale.cancel",
     },
     purchase: {
+      view: "invoice.purchase.view",
       create: "invoice.purchase.create",
       approve: "invoice.purchase.approve",
       reject: "invoice.purchase.reject",
+      cancel: "invoice.purchase.cancel",
     },
     credit_note: {
       create: "invoice.credit_note.create",

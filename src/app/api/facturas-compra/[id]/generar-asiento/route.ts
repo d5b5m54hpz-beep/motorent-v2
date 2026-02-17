@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -27,7 +28,11 @@ export async function POST(
   _req: NextRequest,
   context: RouteContext
 ) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.accounting.entry.create,
+    "execute",
+    ["ADMIN", "OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -157,6 +162,23 @@ export async function POST(
     await prisma.facturaCompra.update({
       where: { id: factura.id },
       data: { asientoId: asiento.id },
+    });
+
+    // Emit event for accounting entry creation
+    eventBus.emit(
+      OPERATIONS.accounting.entry.create,
+      "AsientoContable",
+      asiento.id,
+      {
+        facturaCompraId: factura.id,
+        tipo: "COMPRA",
+        totalDebe,
+        totalHaber,
+        descripcion,
+      },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting accounting.entry.create event:", err);
     });
 
     return NextResponse.json({

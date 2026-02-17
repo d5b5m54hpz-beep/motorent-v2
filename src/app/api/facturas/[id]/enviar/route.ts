@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/authz";
+import { requirePermission } from "@/lib/auth/require-permission";
+import { eventBus, OPERATIONS } from "@/lib/events";
 import { enviarFacturaEmail } from "@/lib/email";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -7,10 +8,13 @@ type RouteContext = { params: Promise<{ id: string }> };
 /**
  * POST /api/facturas/[id]/enviar
  * Envía (o reenvía) una factura por email al cliente
- * Solo accesible para ADMIN y OPERADOR
  */
 export async function POST(req: NextRequest, context: RouteContext) {
-  const { error } = await requireRole(["ADMIN", "OPERADOR"]);
+  const { error, userId } = await requirePermission(
+    OPERATIONS.invoice.sale.send,
+    "execute",
+    ["ADMIN", "OPERADOR"]
+  );
   if (error) return error;
 
   const { id } = await context.params;
@@ -24,6 +28,17 @@ export async function POST(req: NextRequest, context: RouteContext) {
         { status: 500 }
       );
     }
+
+    // Emit event for invoice sent
+    eventBus.emit(
+      OPERATIONS.invoice.sale.send,
+      "Factura",
+      id,
+      { success: true },
+      userId
+    ).catch((err) => {
+      console.error("Error emitting invoice.sale.send event:", err);
+    });
 
     return NextResponse.json({
       success: true,
