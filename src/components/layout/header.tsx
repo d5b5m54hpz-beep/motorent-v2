@@ -1,18 +1,13 @@
 "use client";
 
-import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { Menu, Sun, Moon, LogOut, Search, User, Bell, ChevronRight } from "lucide-react";
+import { Menu, Sun, Moon, Search, Bell, ChevronRight } from "lucide-react";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { CommandPalette } from "@/components/command-palette";
-
-type Props = {
-  user: { name: string; email: string; image?: string | null; role: string };
-};
 
 // Map routes to breadcrumb labels
 const routeLabels: Record<string, string> = {
@@ -27,10 +22,9 @@ const routeLabels: Record<string, string> = {
   "/admin/pricing": "Pricing",
 };
 
-export function Header({ user }: Props) {
+export function Header() {
   const { toggleMobile } = useSidebar();
   const { theme, setTheme } = useTheme();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [alertasCount, setAlertasCount] = useState(0);
   const pathname = usePathname();
 
@@ -156,55 +150,6 @@ export function Header({ user }: Props) {
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </button>
-
-        {/* User menu */}
-        <div className="relative">
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 rounded-lg p-2 text-sm transition-colors hover:bg-accent"
-          >
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow-sm">
-              {user.name?.charAt(0)?.toUpperCase() ?? "U"}
-            </div>
-            <span className="hidden text-sm font-medium tracking-tight md:inline">
-              {user.name}
-            </span>
-          </button>
-
-          {dropdownOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setDropdownOpen(false)}
-              />
-              <div className="absolute right-0 z-50 mt-2 w-60 rounded-lg border bg-popover p-1 shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-2">
-                <div className="px-3 py-2.5">
-                  <p className="text-sm font-semibold tracking-tight">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                  <span className="mt-1.5 inline-block rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                    {user.role}
-                  </span>
-                </div>
-                <div className="my-1 h-px bg-border" />
-                <Link
-                  href="/perfil"
-                  className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  <User className="h-4 w-4" />
-                  Mi perfil
-                </Link>
-                <button
-                  onClick={() => signOut({ callbackUrl: "/login-admin" })}
-                  className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-accent"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Cerrar sesión
-                </button>
-              </div>
-            </>
-          )}
-        </div>
       </div>
     </header>
   );

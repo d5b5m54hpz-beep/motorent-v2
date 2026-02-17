@@ -20,7 +20,7 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <div className="min-h-screen">
         <AppSidebar user={session.user} />
-        <DashboardContent user={session.user}>{children}</DashboardContent>
+        <DashboardContent>{children}</DashboardContent>
       </div>
       <ChatAssistant />
     </SidebarProvider>

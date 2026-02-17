@@ -5,11 +5,10 @@ import { cn } from "@/lib/utils";
 import { Header } from "./header";
 
 type Props = {
-  user: { name: string; email: string; image?: string | null; role: string };
   children: React.ReactNode;
 };
 
-export function DashboardContent({ user, children }: Props) {
+export function DashboardContent({ children }: Props) {
   const { isCollapsed } = useSidebar();
 
   return (
@@ -19,7 +18,7 @@ export function DashboardContent({ user, children }: Props) {
         isCollapsed ? "lg:ml-16" : "lg:ml-64"
       )}
     >
-      <Header user={user} />
+      <Header />
       <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
     </div>
   );
