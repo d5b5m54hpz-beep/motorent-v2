@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { seedPermissions } from './seed-permissions';
 
 const prisma = new PrismaClient();
 
@@ -267,6 +268,9 @@ async function main() {
     },
   });
   console.log('✅ Mecánico de ejemplo creado');
+
+  // 9. Permissions system (operations, profiles, grants, user migration)
+  await seedPermissions();
 
   console.log('🎉 Seed completed!');
   console.log('');

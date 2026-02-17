@@ -34,6 +34,7 @@ model User {
   notasCreditoCreadas     NotaCredito[]
   recepcionesMercaderia   RecepcionMercaderiaEmbarque[]
   businessEvents          BusinessEvent[]
+  profiles                UserProfile[]
 }
 
 enum Role {
@@ -2196,4 +2197,62 @@ model BusinessEvent {
   @@index([entityType, entityId])
   @@index([status])
   @@index([createdAt])
+}
+
+// ─── Permissions ────────────────────────────────────────────────────────────
+
+model Operation {
+  id               String   @id @default(cuid())
+  code             String   @unique // "fleet.moto.create"
+  family           String   // "fleet" (primer segmento)
+  entity           String   // "moto" (segundo segmento)
+  action           String   // "create" (tercer segmento)
+  description      String   // "Crear moto en el sistema"
+  requiresApproval Boolean  @default(false)
+  isViewOnly       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  permissions      PermissionGrant[]
+
+  @@index([family])
+}
+
+model PermissionProfile {
+  id          String   @id @default(cuid())
+  name        String   @unique // "Contador", "Operador Flota"
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  grants      PermissionGrant[]
+  users       UserProfile[]
+}
+
+model PermissionGrant {
+  id          String  @id @default(cuid())
+  profileId   String
+  operationId String
+  canView     Boolean @default(false)
+  canCreate   Boolean @default(false)
+  canExecute  Boolean @default(false)
+  canApprove  Boolean @default(false)
+
+  profile     PermissionProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  operation   Operation         @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, operationId])
+}
+
+model UserProfile {
+  id         String   @id @default(cuid())
+  userId     String
+  profileId  String
+  assignedBy String?
+  assignedAt DateTime @default(now())
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile PermissionProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, profileId])
 }
