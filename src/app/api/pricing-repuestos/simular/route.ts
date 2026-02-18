@@ -55,10 +55,11 @@ export async function POST(req: NextRequest) {
     let itemsSobrePrecio = 0;
 
     const detalle = repuestos.map((r) => {
-      const precioActual = r.precioVenta;
+      const precioActual = Number(r.precioVenta);
+      const costoPromedio = Number(r.costoPromedioArs);
       const precioNuevo = Math.round(precioActual * (1 + ajuste / 100));
-      const margenActual = (precioActual - r.costoPromedioArs) / precioActual;
-      const margenNuevo = (precioNuevo - r.costoPromedioArs) / precioNuevo;
+      const margenActual = (precioActual - costoPromedio) / precioActual;
+      const margenNuevo = (precioNuevo - costoPromedio) / precioNuevo;
 
       margenPromedioActual += margenActual;
       margenPromedioNuevo += margenNuevo;
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     // Estimación de ingreso mensual (simplificado)
     const ingresoEstimado = repuestos.reduce(
-      (sum, r) => sum + (r.precioVenta * (ajuste / 100)),
+      (sum, r) => sum + (Number(r.precioVenta) * (ajuste / 100)),
       0
     );
 

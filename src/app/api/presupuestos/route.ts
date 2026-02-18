@@ -29,14 +29,14 @@ export async function GET(req: NextRequest) {
     });
 
     const gastoMap = new Map(
-      gastosReales.map((g) => [g.categoria, g._sum.monto ?? 0])
+      gastosReales.map((g) => [g.categoria, Number(g._sum.monto) || 0])
     );
 
     const data = presupuestos.map((p) => ({
       ...p,
       gastoReal: gastoMap.get(p.categoria) ?? 0,
-      porcentaje: p.montoPresupuestado > 0
-        ? ((gastoMap.get(p.categoria) ?? 0) / p.montoPresupuestado) * 100
+      porcentaje: Number(p.montoPresupuestado) > 0
+        ? ((gastoMap.get(p.categoria) ?? 0) / Number(p.montoPresupuestado)) * 100
         : 0,
     }));
 

@@ -53,8 +53,8 @@ export async function POST() {
     const sugerencias: PricingSugerencia[] = [];
 
     repuestos.forEach((r) => {
-      const costo = r.costoPromedioArs;
-      const precio = r.precioVenta;
+      const costo = Number(r.costoPromedioArs);
+      const precio = Number(r.precioVenta);
 
       // Configuración de la categoría
       const config = configMap.get(r.categoria || "");

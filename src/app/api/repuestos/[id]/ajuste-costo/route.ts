@@ -49,8 +49,8 @@ export async function POST(
       return NextResponse.json({ error: "Repuesto no encontrado" }, { status: 404 });
     }
 
-    const costoAnteriorArs = repuesto.costoPromedioArs || 0;
-    const costoAnteriorUsd = repuesto.costoPromedioUsd || 0;
+    const costoAnteriorArs = Number(repuesto.costoPromedioArs) || 0;
+    const costoAnteriorUsd = Number(repuesto.costoPromedioUsd) || 0;
 
     // Update repuesto and create history in transaction
     const result = await prisma.$transaction(async (tx) => {

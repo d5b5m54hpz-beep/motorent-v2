@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
         const mes = `${pago.pagadoAt.getFullYear()}-${String(
           pago.pagadoAt.getMonth() + 1
         ).padStart(2, "0")}`;
-        ingresosMensuales.set(mes, (ingresosMensuales.get(mes) || 0) + pago.monto);
+        ingresosMensuales.set(mes, (ingresosMensuales.get(mes) || 0) + Number(pago.monto));
       }
     });
 
@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
       cliente: pago.contrato.cliente.nombre || pago.contrato.cliente.user.name || pago.contrato.cliente.email,
       moto: `${pago.contrato.moto.marca} ${pago.contrato.moto.modelo}`,
       patente: pago.contrato.moto.patente,
-      monto: pago.monto,
+      monto: Number(pago.monto),
       fecha: pago.pagadoAt,
       metodo: pago.metodo,
     }));
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
         cliente: pago.contrato.cliente.nombre || pago.contrato.cliente.user.name || pago.contrato.cliente.email,
         moto: `${pago.contrato.moto.marca} ${pago.contrato.moto.modelo}`,
         patente: pago.contrato.moto.patente,
-        monto: pago.monto,
+        monto: Number(pago.monto),
         vencimiento: pago.vencimientoAt,
         diasRestantes,
         vencido: diasRestantes !== null && diasRestantes < 0,
@@ -204,8 +204,8 @@ export async function GET(req: NextRequest) {
         contratosPendientes,
         pagosPendientes,
         pagosVencidos,
-        ingresosTotales: ingresosTotales._sum.monto || 0,
-        ingresosMes: ingresosMes._sum.monto || 0,
+        ingresosTotales: Number(ingresosTotales._sum.monto) || 0,
+        ingresosMes: Number(ingresosMes._sum.monto) || 0,
         alertasSinLeer,
       },
       charts: {

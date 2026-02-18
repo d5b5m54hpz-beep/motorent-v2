@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
       meses.push({
         mes: mesDate.toLocaleDateString("es-AR", { month: "short", year: "2-digit" }),
-        ingresos: Math.round(ingresos._sum.montoTotal || 0),
+        ingresos: Math.round(Number(ingresos._sum.montoTotal) || 0),
       });
     }
 
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
       },
       contratosRenovados,
       tasaRenovacion: nuevosContratos > 0 ? Math.round((contratosRenovados / nuevosContratos) * 100) : 0,
-      ticketPromedio: Math.round(ticketPromedio._avg.montoPeriodo || 0),
+      ticketPromedio: Math.round(Number(ticketPromedio._avg.montoPeriodo) || 0),
       morosidad: Math.round(morosidad * 10) / 10,
     });
   } catch (err: unknown) {

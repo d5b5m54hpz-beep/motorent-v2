@@ -62,10 +62,10 @@ export async function GET(
             .map((pago) => ({
               tipo: "pago" as const,
               id: pago.id,
-              monto: pago.monto,
+              monto: Number(pago.monto),
               fecha: pago.pagadoAt,
               referencia: pago.referencia,
-              diferenciaMonto: Math.abs(pago.monto - montoAbs),
+              diferenciaMonto: Math.abs(Number(pago.monto) - montoAbs),
             }))
             .sort((a, b) => a.diferenciaMonto - b.diferenciaMonto)
             .slice(0, 3);
@@ -83,10 +83,10 @@ export async function GET(
             .map((gasto) => ({
               tipo: "gasto" as const,
               id: gasto.id,
-              monto: gasto.monto,
+              monto: Number(gasto.monto),
               fecha: gasto.fecha,
               referencia: null,
-              diferenciaMonto: Math.abs(gasto.monto - montoAbs),
+              diferenciaMonto: Math.abs(Number(gasto.monto) - montoAbs),
             }))
             .sort((a, b) => a.diferenciaMonto - b.diferenciaMonto)
             .slice(0, 3);

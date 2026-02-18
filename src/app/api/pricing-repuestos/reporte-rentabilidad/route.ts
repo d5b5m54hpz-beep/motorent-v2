@@ -60,8 +60,8 @@ export async function GET(req: NextRequest) {
     // Asumimos que cada producto vendió ~10% de su stock en el período
     const ventasSimuladas = repuestos.map((r) => {
       const cantidadVendida = Math.max(1, Math.floor(r.stock * 0.10));
-      const ingreso = cantidadVendida * r.precioVenta;
-      const costo = cantidadVendida * r.costoPromedioArs;
+      const ingreso = cantidadVendida * Number(r.precioVenta);
+      const costo = cantidadVendida * Number(r.costoPromedioArs);
       const margen = ingreso - costo;
       const margenPct = ingreso > 0 ? margen / ingreso : 0;
 

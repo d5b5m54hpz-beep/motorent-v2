@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       facturasPendientes: {
         cantidad: facturasPendientes._count.id,
-        monto: Math.round(facturasPendientes._sum.total || 0),
+        monto: Math.round(Number(facturasPendientes._sum.total) || 0),
       },
     });
   } catch (err: unknown) {

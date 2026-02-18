@@ -328,13 +328,13 @@ export default function AsientosContablesPage() {
                 <Card>
                   <CardContent className="p-4 text-center">
                     <p className="text-xs text-muted-foreground">Total Debe</p>
-                    <p className="text-lg font-bold font-mono">{formatCurrency(viewAsiento.totalDebe)}</p>
+                    <p className="text-lg font-bold font-mono">{formatCurrency(Number(viewAsiento.totalDebe))}</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
                     <p className="text-xs text-muted-foreground">Total Haber</p>
-                    <p className="text-lg font-bold font-mono">{formatCurrency(viewAsiento.totalHaber)}</p>
+                    <p className="text-lg font-bold font-mono">{formatCurrency(Number(viewAsiento.totalHaber))}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -364,10 +364,10 @@ export default function AsientosContablesPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                            {linea.debe > 0 ? formatCurrency(linea.debe) : "-"}
+                            {Number(linea.debe) > 0 ? formatCurrency(Number(linea.debe)) : "-"}
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                            {linea.haber > 0 ? formatCurrency(linea.haber) : "-"}
+                            {Number(linea.haber) > 0 ? formatCurrency(Number(linea.haber)) : "-"}
                           </TableCell>
                         </TableRow>
                       ))}

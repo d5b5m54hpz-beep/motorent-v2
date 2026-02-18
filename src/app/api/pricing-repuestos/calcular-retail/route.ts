@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     let sumaMargenNuevo = 0;
 
     for (const repuesto of repuestos) {
-      const costo = repuesto.costoPromedioArs || repuesto.precioCompra || 0;
+      const costo = Number(repuesto.costoPromedioArs) || Number(repuesto.precioCompra) || 0;
 
       if (costo === 0) continue;
 
@@ -101,8 +101,8 @@ export async function POST(req: NextRequest) {
         if (r.categoria && r.categoria !== repuesto.categoria) return false;
 
         // Verificar banda de costo
-        if (r.costoBandaDesde !== null && costo < r.costoBandaDesde) return false;
-        if (r.costoBandaHasta !== null && costo >= r.costoBandaHasta) return false;
+        if (r.costoBandaDesde !== null && costo < Number(r.costoBandaDesde)) return false;
+        if (r.costoBandaHasta !== null && costo >= Number(r.costoBandaHasta)) return false;
 
         // Verificar OEM
         if (r.esOEM !== null && r.esOEM !== repuesto.esOEM) return false;
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       }
 
       const precioCalculado = redondearPrecio(costo * multiplicador, redondeo);
-      const precioActual = repuesto.precioVenta || 0;
+      const precioActual = Number(repuesto.precioVenta) || 0;
 
       const margenActual =
         precioActual > 0 ? (precioActual - costo) / precioActual : 0;

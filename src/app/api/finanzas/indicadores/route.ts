@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       where: { estado: "pendiente" },
       _sum: { monto: true },
     });
-    const activoCorriente = cajaYBancos + (cuentasPorCobrar._sum.monto || 0);
+    const activoCorriente = cajaYBancos + (Number(cuentasPorCobrar._sum.monto) || 0);
 
     // Activo No Corriente: Valor de la flota (motos activas)
     const flota = await prisma.moto.aggregate({
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       where: { estado: { in: ["PENDIENTE", "PAGADA_PARCIAL"] } },
       _sum: { total: true },
     });
-    const pasivoCorriente = cuentasPorPagar._sum.total || 0;
+    const pasivoCorriente = Number(cuentasPorPagar._sum.total) || 0;
 
     // Pasivo No Corriente: Préstamos a largo plazo (placeholder)
     const pasivoNoCorriente = 0; // TODO: agregar cuando haya modelo de Préstamos
@@ -58,13 +58,13 @@ export async function GET(req: NextRequest) {
       where: { estado: "aprobado", pagadoAt: { gte: inicioMes, lte: finMes } },
       _sum: { monto: true },
     });
-    const totalIngresos = ingresos._sum.monto || 0;
+    const totalIngresos = Number(ingresos._sum.monto) || 0;
 
     const gastos = await prisma.gasto.aggregate({
       where: { fecha: { gte: inicioMes, lte: finMes } },
       _sum: { monto: true },
     });
-    const totalGastos = gastos._sum.monto || 0;
+    const totalGastos = Number(gastos._sum.monto) || 0;
 
     const gastosOperativos = await prisma.gasto.aggregate({
       where: {
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
       },
       _sum: { monto: true },
     });
-    const totalGastosOperativos = gastosOperativos._sum.monto || 0;
+    const totalGastosOperativos = Number(gastosOperativos._sum.monto) || 0;
 
     const resultadoNeto = totalIngresos - totalGastos;
     const ebit = totalIngresos - totalGastosOperativos;
@@ -147,9 +147,9 @@ export async function GET(req: NextRequest) {
         }),
       ]);
 
-      const mesIngresos = ing._sum.monto || 0;
-      const mesGastos = gst._sum.monto || 0;
-      const mesGastosOp = gstOp._sum.monto || 0;
+      const mesIngresos = Number(ing._sum.monto) || 0;
+      const mesGastos = Number(gst._sum.monto) || 0;
+      const mesGastosOp = Number(gstOp._sum.monto) || 0;
       const mesResultado = mesIngresos - mesGastos;
       const mesEbit = mesIngresos - mesGastosOp;
 

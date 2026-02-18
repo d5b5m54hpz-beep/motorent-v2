@@ -29,8 +29,8 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    const ingresosTotal = ingresos._sum.montoTotal || 0;
-    const costosTotal = costos._sum.total || 0;
+    const ingresosTotal = Number(ingresos._sum.montoTotal) || 0;
+    const costosTotal = Number(costos._sum.total) || 0;
     const ebitda = ingresosTotal - costosTotal;
     const margenBruto = ingresosTotal > 0 ? (ebitda / ingresosTotal) * 100 : 0;
 

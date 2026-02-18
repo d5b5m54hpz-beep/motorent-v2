@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
           1,
           Math.min(6, (now.getTime() - moto.createdAt.getTime()) / (1000 * 60 * 60 * 24 * 30))
         );
-        const costoOperativoMensual = (gastosTotal._sum.monto ?? 0) / meses;
+        const costoOperativoMensual = (Number(gastosTotal._sum.monto) || 0) / meses;
 
         // Suggested prices based on cost + margin
         const precioSugeridoMensual = costoOperativoMensual * (1 + margen);

@@ -113,7 +113,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<AsientoContableWit
       header: "Debe",
       cell: ({ row }) => (
         <span className="font-mono text-sm">
-          {formatCurrency(row.original.totalDebe)}
+          {formatCurrency(Number(row.original.totalDebe))}
         </span>
       ),
     },
@@ -122,7 +122,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<AsientoContableWit
       header: "Haber",
       cell: ({ row }) => (
         <span className="font-mono text-sm">
-          {formatCurrency(row.original.totalHaber)}
+          {formatCurrency(Number(row.original.totalHaber))}
         </span>
       ),
     },

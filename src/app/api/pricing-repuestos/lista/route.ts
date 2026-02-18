@@ -86,8 +86,8 @@ export async function GET(req: NextRequest) {
 
     // ─── 4. CALCULAR MÁRGENES Y APLICAR FILTROS ADICIONALES ────────
     let repuestosConMargen = repuestos.map((r) => {
-      const costo = r.costoPromedioArs;
-      const precio = r.precioVenta;
+      const costo = Number(r.costoPromedioArs);
+      const precio = Number(r.precioVenta);
       const margen = precio > 0 ? (precio - costo) / precio : null;
 
       const config = configMap.get(r.categoria || "");
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
     // Filtro de margen
     if (margenFiltro && margenFiltro !== "todos") {
       repuestosConMargen = repuestosConMargen.filter((r) => {
-        if (margenFiltro === "sin-precio") return r.precioVenta === 0;
+        if (margenFiltro === "sin-precio") return Number(r.precioVenta) === 0;
         if (!r.margen) return false;
 
         switch (margenFiltro) {

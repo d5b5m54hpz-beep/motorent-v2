@@ -115,7 +115,7 @@ export async function handleContractActivatedInvoicing(ctx: EventContext): Promi
     if (!contrato) return;
 
     // Check if there's a deposit > 0 and an approved first payment
-    if (contrato.deposito <= 0 || contrato.pagos.length === 0) {
+    if (Number(contrato.deposito) <= 0 || contrato.pagos.length === 0) {
       console.log(`[Invoicing] Contract ${ctx.entityId.slice(0, 8)} activated - no deposit invoice needed`);
       return;
     }

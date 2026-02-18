@@ -139,9 +139,9 @@ model Moto {
   esImportada       Boolean   @default(true)
   numeroDespachImport String?
   fechaImportacion  DateTime?
-  valorFOB          Float?
-  valorCIF          Float?
-  derechosImportacion Float?
+  valorFOB          Decimal?  @db.Decimal(12,2)
+  valorCIF          Decimal?  @db.Decimal(12,2)
+  derechosImportacion Decimal? @db.Decimal(12,2)
 
   // ─── Estado legal ───────────────────────────────────────────────────────
   estadoLegal       String?   @default("REGULAR") // REGULAR, DENUNCIA_ROBO, SINIESTRO_TOTAL, BAJA_DEFINITIVA, EN_PROCESO_PATENTAMIENTO, PRENDA
@@ -188,10 +188,10 @@ model Contrato {
   fechaInicio       DateTime
   fechaFin          DateTime
   frecuenciaPago    String   @default("mensual") // semanal | quincenal | mensual
-  montoPeriodo      Float // Monto por período según frecuencia
-  montoTotal        Float // Monto total del contrato
-  deposito          Float    @default(0)
-  descuentoAplicado Float    @default(0)
+  montoPeriodo      Decimal  @db.Decimal(12,2) // Monto por período según frecuencia
+  montoTotal        Decimal  @db.Decimal(12,2) // Monto total del contrato
+  deposito          Decimal  @default(0) @db.Decimal(12,2)
+  descuentoAplicado Decimal  @default(0) @db.Decimal(12,2)
   notas             String?
   renovacionAuto    Boolean  @default(false)
   // Valores: pendiente | activo | finalizado | cancelado | finalizado_compra
@@ -200,7 +200,7 @@ model Contrato {
   // ─── Opción a Compra ────────────────────────────────────────────────────
   esOpcionCompra    Boolean  @default(false)
   mesesParaCompra   Int?     @default(24)
-  valorCompraFinal  Float?   // Precio al ejercer opción
+  valorCompraFinal  Decimal? @db.Decimal(12,2) // Precio al ejercer opción
   opcionEjercida    Boolean  @default(false)
   fechaEjercicio    DateTime?
 
@@ -215,7 +215,7 @@ model Contrato {
 model Pago {
   id            String    @id @default(cuid())
   contratoId    String
-  monto         Float
+  monto         Decimal   @db.Decimal(12,2)
   metodo        String    @default("pendiente") // transferencia | tarjeta | mercadopago | efectivo | pendiente
   // Valores: pendiente | aprobado | rechazado | reembolsado | cancelado
   estado        String    @default("pendiente")
@@ -237,9 +237,9 @@ model Factura {
   numero         String // Autoincremental 00000001, 00000002, etc.
   tipo           String // A, B, C
   puntoVenta     Int       @default(1)
-  montoNeto      Float // Subtotal sin IVA (si tipo A)
-  montoIva       Float // IVA 21% (si tipo A)
-  montoTotal     Float // Total final
+  montoNeto      Decimal  @db.Decimal(12,2) // Subtotal sin IVA (si tipo A)
+  montoIva       Decimal  @db.Decimal(12,2) // IVA 21% (si tipo A)
+  montoTotal     Decimal  @db.Decimal(12,2) // Total final
   cae            String? // Código de Autorización Electrónico de AFIP
   caeVencimiento String? // Fecha de vencimiento del CAE
   razonSocial    String? // Razón social del cliente (opcional)
@@ -298,8 +298,8 @@ model Repuesto {
   nombre       String
   codigo       String?
   categoria    String?
-  precioCompra Float           @default(0)
-  precioVenta  Float           @default(0)
+  precioCompra Decimal         @default(0) @db.Decimal(12,2)
+  precioVenta  Decimal         @default(0) @db.Decimal(12,2)
   stock        Int             @default(0)
   stockMinimo  Int             @default(2)
   proveedorId  String?
@@ -326,8 +326,8 @@ model Repuesto {
   pesoUnitarioKg     Float?    // Peso por unidad en kg (para prorrateo de flete)
   volumenUnitarioCbm Float?    // Volumen por unidad en CBM (para prorrateo)
   esOEM              Boolean   @default(false) // Original vs genérico
-  costoPromedioArs   Float     @default(0) // Costo promedio ponderado actual en ARS
-  costoPromedioUsd   Float     @default(0) // Costo promedio ponderado actual en USD
+  costoPromedioArs   Decimal   @default(0) @db.Decimal(12,2) // Costo promedio ponderado actual en ARS
+  costoPromedioUsd   Decimal   @default(0) @db.Decimal(12,2) // Costo promedio ponderado actual en USD
   ultimoCostoUpdate  DateTime? // Última vez que se recalculó el costo promedio
   margenObjetivo     Float?    // Margen objetivo para esta pieza (override de categoría)
   margenMinimo       Float?    // Margen mínimo (override de categoría)
@@ -363,7 +363,7 @@ model Gasto {
   visibleId       String         @unique @default(cuid())
   concepto        String
   descripcion     String?
-  monto           Float
+  monto           Decimal        @db.Decimal(12,2)
   categoria       CategoriaGasto
   subcategoria    String?
   motoId          String?
@@ -384,7 +384,7 @@ model PresupuestoMensual {
   mes                Int
   anio               Int
   categoria          CategoriaGasto
-  montoPresupuestado Float
+  montoPresupuestado Decimal    @db.Decimal(12,2)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -466,16 +466,16 @@ model FacturaCompra {
   vencimiento DateTime?
 
   // Impuestos argentinos
-  subtotal       Float
-  iva21          Float @default(0)
-  iva105         Float @default(0)
-  iva27          Float @default(0)
-  percepcionIVA  Float @default(0)
-  percepcionIIBB Float @default(0)
-  impInterno     Float @default(0)
-  noGravado      Float @default(0)
-  exento         Float @default(0)
-  total          Float
+  subtotal       Decimal @db.Decimal(12,2)
+  iva21          Decimal @default(0) @db.Decimal(12,2)
+  iva105         Decimal @default(0) @db.Decimal(12,2)
+  iva27          Decimal @default(0) @db.Decimal(12,2)
+  percepcionIVA  Decimal @default(0) @db.Decimal(12,2)
+  percepcionIIBB Decimal @default(0) @db.Decimal(12,2)
+  impInterno     Decimal @default(0) @db.Decimal(12,2)
+  noGravado      Decimal @default(0) @db.Decimal(12,2)
+  exento         Decimal @default(0) @db.Decimal(12,2)
+  total          Decimal @db.Decimal(12,2)
 
   // Categorización
   categoria    CategoriaGasto
@@ -488,7 +488,7 @@ model FacturaCompra {
   estado             EstadoFacturaCompra @default(BORRADOR)
   estadoAnterior     EstadoFacturaCompra?
   estadoMotivo       String?
-  montoAbonado       Float               @default(0)
+  montoAbonado       Decimal             @default(0) @db.Decimal(12,2)
   aprobadoPor        String?
   aprobadoFecha      DateTime?
   aprobador          User?               @relation("FacturaAprobador", fields: [aprobadoPor], references: [id])
@@ -556,8 +556,8 @@ model AsientoContable {
   fecha           DateTime
   tipo            TipoAsiento
   descripcion     String
-  totalDebe       Float
-  totalHaber      Float
+  totalDebe       Decimal  @db.Decimal(12,2)
+  totalHaber      Decimal  @db.Decimal(12,2)
   facturaCompraId String?        @unique
   facturaCompra   FacturaCompra?
   cerrado         Boolean        @default(false)
@@ -578,8 +578,8 @@ model LineaAsiento {
   orden       Int
   cuentaId    String
   cuenta      CuentaContable  @relation(fields: [cuentaId], references: [id])
-  debe        Float           @default(0)
-  haber       Float           @default(0)
+  debe        Decimal         @default(0) @db.Decimal(12,2)
+  haber       Decimal         @default(0) @db.Decimal(12,2)
   descripcion String?
   createdAt   DateTime        @default(now())
 
@@ -659,7 +659,7 @@ model Empleado {
   horasSemanales Int?           @default(48)
 
   // Datos salariales
-  salarioBasico Float
+  salarioBasico Decimal  @db.Decimal(12,2)
   categoriaCCT  String? // Categoría del convenio colectivo
   obraSocial    String?
   sindicato     String?
@@ -699,33 +699,33 @@ model ReciboSueldo {
   tipo TipoRecibo @default(MENSUAL) // MENSUAL, SAC_1, SAC_2, FINAL, VACACIONES
 
   // Haberes (conceptos que suman)
-  salarioBasico Float
-  presentismo   Float @default(0)
-  antiguedad    Float @default(0)
-  horasExtra50  Float @default(0)
-  horasExtra100 Float @default(0)
-  adicionales   Float @default(0)
-  totalHaberes  Float
+  salarioBasico Decimal @db.Decimal(12,2)
+  presentismo   Decimal @default(0) @db.Decimal(12,2)
+  antiguedad    Decimal @default(0) @db.Decimal(12,2)
+  horasExtra50  Decimal @default(0) @db.Decimal(12,2)
+  horasExtra100 Decimal @default(0) @db.Decimal(12,2)
+  adicionales   Decimal @default(0) @db.Decimal(12,2)
+  totalHaberes  Decimal @db.Decimal(12,2)
 
   // Deducciones (conceptos que restan)
-  jubilacion        Float @default(0) // 11%
-  obraSocial        Float @default(0) // 3%
-  sindicato         Float @default(0) // 2-3%
-  ley19032          Float @default(0) // 3% PAMI/INSSJP
-  impuestoGanancias Float @default(0)
-  otrasDeduccciones Float @default(0)
-  totalDeducciones  Float
+  jubilacion        Decimal @default(0) @db.Decimal(12,2) // 11%
+  obraSocial        Decimal @default(0) @db.Decimal(12,2) // 3%
+  sindicato         Decimal @default(0) @db.Decimal(12,2) // 2-3%
+  ley19032          Decimal @default(0) @db.Decimal(12,2) // 3% PAMI/INSSJP
+  impuestoGanancias Decimal @default(0) @db.Decimal(12,2)
+  otrasDeduccciones Decimal @default(0) @db.Decimal(12,2)
+  totalDeducciones  Decimal @db.Decimal(12,2)
 
   // Aportes patronales (no descuento al empleado, costo empresa)
-  aporteJubilacion       Float @default(0) // 16%
-  aporteObraSocial       Float @default(0) // 6%
-  aportePAMI             Float @default(0) // 1.5%
-  aporteART              Float @default(0)
-  seguroVida             Float @default(0)
-  totalAportesPatronales Float
+  aporteJubilacion       Decimal @default(0) @db.Decimal(12,2) // 16%
+  aporteObraSocial       Decimal @default(0) @db.Decimal(12,2) // 6%
+  aportePAMI             Decimal @default(0) @db.Decimal(12,2) // 1.5%
+  aporteART              Decimal @default(0) @db.Decimal(12,2)
+  seguroVida             Decimal @default(0) @db.Decimal(12,2)
+  totalAportesPatronales Decimal @db.Decimal(12,2)
 
   // Neto
-  netoAPagar Float
+  netoAPagar Decimal @db.Decimal(12,2)
 
   // Estado
   estado    EstadoRecibo @default(BORRADOR)
@@ -883,10 +883,10 @@ model Amortizacion {
   moto                Moto     @relation(fields: [motoId], references: [id], onDelete: Cascade)
   periodo             String   // "2026-01"
   anioNumero          Int
-  valorInicio         Float
-  cuotaAmortizacion   Float
-  amortizacionAcum    Float
-  valorResidualActual Float
+  valorInicio         Decimal  @db.Decimal(12,2)
+  cuotaAmortizacion   Decimal  @db.Decimal(12,2)
+  amortizacionAcum    Decimal  @db.Decimal(12,2)
+  valorResidualActual Decimal  @db.Decimal(12,2)
   createdAt           DateTime @default(now())
 
   @@unique([motoId, periodo])
@@ -942,14 +942,14 @@ model BajaMoto {
   // ─── SINIESTRO ──────────────────────────────────────────────────────────
   numeroSiniestro String?
   aseguradora     String?
-  montoIndemnizacion Float?
+  montoIndemnizacion Decimal? @db.Decimal(12,2)
   fechaSiniestro  DateTime?
 
   // ─── VENTA ──────────────────────────────────────────────────────────────
   compradorNombre String?
   compradorDNI    String?
   compradorTelefono String?
-  precioVenta     Float?
+  precioVenta     Decimal? @db.Decimal(12,2)
   formaPago       String? // EFECTIVO, TRANSFERENCIA, CHEQUE
 
   // ─── Documentación ──────────────────────────────────────────────────────
@@ -972,9 +972,9 @@ model NotaCredito {
   facturaOriginalId String?
   clienteId         String
   cliente           Cliente  @relation(fields: [clienteId], references: [id])
-  monto             Float
-  montoNeto         Float?
-  montoIva          Float?
+  monto             Decimal  @db.Decimal(12,2)
+  montoNeto         Decimal? @db.Decimal(12,2)
+  montoIva          Decimal? @db.Decimal(12,2)
   motivo            String
   estado            String   @default("EMITIDA") // EMITIDA, APLICADA, REEMBOLSADA, ANULADA
   aplicadaAId       String?  // Factura/pago donde se aplicó
@@ -1158,10 +1158,10 @@ model OrdenTrabajo {
   observacionesRecepcion String? // Notas de recepción
 
   // Costos
-  costoRepuestos  Float    @default(0)
-  costoManoObra   Float    @default(0)
-  costoOtros      Float    @default(0) // Flete, grúa, etc.
-  costoTotal      Float    @default(0) // Calculado
+  costoRepuestos  Decimal  @default(0) @db.Decimal(12,2)
+  costoManoObra   Decimal  @default(0) @db.Decimal(12,2)
+  costoOtros      Decimal  @default(0) @db.Decimal(12,2) // Flete, grúa, etc.
+  costoTotal      Decimal  @default(0) @db.Decimal(12,2) // Calculado
   costoACargoDel  ResponsableCosto @default(EMPRESA)
 
   // Detección de problema mayor
@@ -1273,12 +1273,12 @@ model RepuestoOrdenTrabajo {
   cantidadUsada       Float  @default(0) // Lo que realmente se usó
 
   // Costos (para la empresa)
-  costoUnitario       Float  @default(0)
-  costoTotal          Float  @default(0) // cantidadUsada * costoUnitario
+  costoUnitario       Decimal @default(0) @db.Decimal(12,2)
+  costoTotal          Decimal @default(0) @db.Decimal(12,2) // cantidadUsada * costoUnitario
 
   // Precios (lo que se cobra al rider/cliente)
-  precioUnitario      Float  @default(0) // Resuelto por motor de pricing
-  precioTotal         Float  @default(0) // cantidadUsada * precioUnitario
+  precioUnitario      Decimal @default(0) @db.Decimal(12,2) // Resuelto por motor de pricing
+  precioTotal         Decimal @default(0) @db.Decimal(12,2) // cantidadUsada * precioUnitario
   listaId             String? // Lista de precios usada (B2C, Rider, etc.)
   descuentoAplicadoPct Float @default(0) // % de descuento aplicado
   margenUnitario      Float  @default(0) // (precioUnitario - costoUnitario) / precioUnitario
@@ -1392,7 +1392,7 @@ model Mecanico {
   tallerId        String
   taller          Taller   @relation(fields: [tallerId], references: [id])
   activo          Boolean  @default(true)
-  tarifaHora      Float?   // Tarifa por hora (para talleres internos)
+  tarifaHora      Decimal? @db.Decimal(12,2) // Tarifa por hora (para talleres internos)
 
   ordenesTrabajo  OrdenTrabajo[]
 
@@ -1538,9 +1538,9 @@ model OrdenCompra {
   estado               EstadoOrdenCompra @default(BORRADOR)
   fechaEmision         DateTime          @default(now())
   fechaEntregaEstimada DateTime?
-  subtotal             Float             @default(0)
-  iva                  Float             @default(0)
-  total                Float             @default(0)
+  subtotal             Decimal           @default(0) @db.Decimal(12,2)
+  iva                  Decimal           @default(0) @db.Decimal(12,2)
+  total                Decimal           @default(0) @db.Decimal(12,2)
   notas                String?
   creadoPor            String?           // Email del usuario
   aprobadoPor          String?
@@ -1571,8 +1571,8 @@ model ItemOrdenCompra {
   repuesto         Repuesto    @relation(fields: [repuestoId], references: [id])
   cantidad         Int         // Cantidad pedida
   cantidadRecibida Int         @default(0) // Cantidad ya recibida (se actualiza con recepciones)
-  precioUnitario   Float       @default(0)
-  subtotal         Float       @default(0) // cantidad × precioUnitario
+  precioUnitario   Decimal     @default(0) @db.Decimal(12,2)
+  subtotal         Decimal     @default(0) @db.Decimal(12,2) // cantidad × precioUnitario
   createdAt        DateTime    @default(now())
 
   @@unique([ordenCompraId, repuestoId])
@@ -1649,37 +1649,37 @@ model EmbarqueImportacion {
   tipoContenedor      String?             // "20GP", "40GP", "40HQ"
 
   // ─── Costos compartidos en USD ────────────────────────────────
-  totalFobUsd         Float               @default(0)
-  fleteUsd            Float               @default(0)
-  seguroUsd           Float               @default(0)
-  cifUsd              Float               @default(0) // FOB + Flete + Seguro
+  totalFobUsd         Decimal             @default(0) @db.Decimal(12,2)
+  fleteUsd            Decimal             @default(0) @db.Decimal(12,2)
+  seguroUsd           Decimal             @default(0) @db.Decimal(12,2)
+  cifUsd              Decimal             @default(0) @db.Decimal(12,2) // FOB + Flete + Seguro
 
   // ─── Impuestos de aduana (calculados) ─────────────────────────
-  derechosImportacion Float?   // DIE — NO recuperable
-  tasaEstadistica     Float?   // 3% — NO recuperable
-  ivaAduana           Float?   // 21% — RECUPERABLE (crédito fiscal)
-  ivaAdicional        Float?   // 20% — RECUPERABLE
-  gananciasAnticipado Float?   // 6% — RECUPERABLE
-  iibbAnticipado      Float?   // ~3% — RECUPERABLE
-  tasaOficializacion  Float?   // USD $10 fijo — NO recuperable
-  tasaDigitalizacion  Float?   // USD $28 fijo — NO recuperable
+  derechosImportacion Decimal? @db.Decimal(12,2) // DIE — NO recuperable
+  tasaEstadistica     Decimal? @db.Decimal(12,2) // 3% — NO recuperable
+  ivaAduana           Decimal? @db.Decimal(12,2) // 21% — RECUPERABLE (crédito fiscal)
+  ivaAdicional        Decimal? @db.Decimal(12,2) // 20% — RECUPERABLE
+  gananciasAnticipado Decimal? @db.Decimal(12,2) // 6% — RECUPERABLE
+  iibbAnticipado      Decimal? @db.Decimal(12,2) // ~3% — RECUPERABLE
+  tasaOficializacion  Decimal? @db.Decimal(12,2) // USD $10 fijo — NO recuperable
+  tasaDigitalizacion  Decimal? @db.Decimal(12,2) // USD $28 fijo — NO recuperable
 
   // ─── Gastos logísticos en USD ─────────────────────────────────
-  despachanteFee      Float?   // Honorarios despachante
-  gastosPuerto        Float?   // Terminal, almacenaje, etc
-  transporteInterno   Float?   // Flete interno hasta depósito
-  otrosGastos         Float?   // Otros gastos no categorizados
+  despachanteFee      Decimal? @db.Decimal(12,2) // Honorarios despachante
+  gastosPuerto        Decimal? @db.Decimal(12,2) // Terminal, almacenaje, etc
+  transporteInterno   Decimal? @db.Decimal(12,2) // Flete interno hasta depósito
+  otrosGastos         Decimal? @db.Decimal(12,2) // Otros gastos no categorizados
   otrosGastosDetalle  String?  // Descripción de otros gastos
 
   // ─── Tipo de cambio ───────────────────────────────────────────
-  tipoCambioArsUsd    Float?   // TC Banco Nación vendedor al momento del despacho
+  tipoCambioArsUsd    Decimal? @db.Decimal(10,4) // TC Banco Nación vendedor al momento del despacho
   fechaDespacho       DateTime?
   numeroDespacho      String?  // Número de despacho aduanero
 
   // ─── Totales calculados ───────────────────────────────────────
-  costoTotalNoRecuperable Float?  // Todo lo que suma al costo del inventario
-  costoTotalRecuperable   Float?  // IVA + Ganancias + IIBB (crédito fiscal)
-  desembolsoTotal         Float?  // Total que se paga en aduana
+  costoTotalNoRecuperable Decimal? @db.Decimal(12,2) // Todo lo que suma al costo del inventario
+  costoTotalRecuperable   Decimal? @db.Decimal(12,2) // IVA + Ganancias + IIBB (crédito fiscal)
+  desembolsoTotal         Decimal? @db.Decimal(12,2) // Total que se paga en aduana
 
   // ─── Cantidad de despachos parciales ──────────────────────────
   cantidadDespachos       Int     @default(1)
@@ -1727,22 +1727,22 @@ model ItemEmbarque {
   repuesto        Repuesto?          @relation(fields: [repuestoId], references: [id])
 
   cantidad        Int                // Cantidad importada
-  precioFobUnitarioUsd Float         // Precio FOB por unidad en USD
-  subtotalFobUsd  Float              // cantidad × precioFobUnitario
+  precioFobUnitarioUsd Decimal        @db.Decimal(12,2) // Precio FOB por unidad en USD
+  subtotalFobUsd  Decimal            @db.Decimal(12,2) // cantidad × precioFobUnitario
   pesoTotalKg     Float?             // Peso total de esta línea
   volumenTotalCbm Float?             // Volumen total de esta línea
   ncmCodigo       String?            // NCM específico (override del repuesto)
   arancelPorcentaje Float?           // % arancel específico (override de categoría)
 
   // ─── Costos asignados (se calculan al finalizar) ──────────────
-  costoAsignadoFlete    Float?       // Flete prorrateado a esta línea
-  costoAsignadoSeguro   Float?
-  costoAsignadoDerechos Float?
-  costoAsignadoTasas    Float?
-  costoAsignadoLogistica Float?
+  costoAsignadoFlete    Decimal?     @db.Decimal(12,2) // Flete prorrateado a esta línea
+  costoAsignadoSeguro   Decimal?     @db.Decimal(12,2)
+  costoAsignadoDerechos Decimal?     @db.Decimal(12,2)
+  costoAsignadoTasas    Decimal?     @db.Decimal(12,2)
+  costoAsignadoLogistica Decimal?    @db.Decimal(12,2)
 
-  costoLandedUnitarioUsd Float?      // Costo puesto en almacén por unidad (USD)
-  costoLandedUnitarioArs Float?      // Costo puesto en almacén por unidad (ARS)
+  costoLandedUnitarioUsd Decimal?    @db.Decimal(12,2) // Costo puesto en almacén por unidad (USD)
+  costoLandedUnitarioArs Decimal?    @db.Decimal(12,2) // Costo puesto en almacén por unidad (ARS)
 
   createdAt       DateTime           @default(now())
 
@@ -1758,18 +1758,18 @@ model DespachoAduanero {
   embarque            EmbarqueImportacion @relation(fields: [embarqueId], references: [id])
   numeroDespacho      String             @unique
   fecha               DateTime
-  tipoCambio          Float              // TC BNA vendedor en la fecha
-  cifParcialUsd       Float              // CIF de lo despachado en este despacho
-  derechosPagados     Float              @default(0)
-  tasaEstadistica     Float              @default(0)
-  ivaPagado           Float              @default(0)
-  ivaAdicionalPagado  Float              @default(0)
-  gananciasPagado     Float              @default(0)
-  iibbPagado          Float              @default(0)
-  tasaOficializacion  Float              @default(10)  // USD 10
-  tasaDigitalizacion  Float              @default(28)  // USD 28
-  gastosDespachante   Float?
-  otrosGastos         Float?
+  tipoCambio          Decimal            @db.Decimal(10,4) // TC BNA vendedor en la fecha
+  cifParcialUsd       Decimal            @db.Decimal(12,2) // CIF de lo despachado en este despacho
+  derechosPagados     Decimal            @default(0) @db.Decimal(12,2)
+  tasaEstadistica     Decimal            @default(0) @db.Decimal(12,2)
+  ivaPagado           Decimal            @default(0) @db.Decimal(12,2)
+  ivaAdicionalPagado  Decimal            @default(0) @db.Decimal(12,2)
+  gananciasPagado     Decimal            @default(0) @db.Decimal(12,2)
+  iibbPagado          Decimal            @default(0) @db.Decimal(12,2)
+  tasaOficializacion  Decimal            @default(10) @db.Decimal(12,2) // USD 10
+  tasaDigitalizacion  Decimal            @default(28) @db.Decimal(12,2) // USD 28
+  gastosDespachante   Decimal?           @db.Decimal(12,2)
+  otrosGastos         Decimal?           @db.Decimal(12,2)
   notas               String?
 
   // Items despachados en este despacho parcial
@@ -1790,20 +1790,20 @@ model AsignacionCostoImportacion {
   repuesto            Repuesto           @relation(fields: [repuestoId], references: [id])
 
   cantidad            Int
-  fobUnitarioUsd      Float
-  fleteUnitarioUsd    Float
-  seguroUnitarioUsd   Float
-  derechosUnitarioUsd Float
-  tasasUnitarioUsd    Float
-  logisticaUnitarioUsd Float
+  fobUnitarioUsd      Decimal @db.Decimal(12,2)
+  fleteUnitarioUsd    Decimal @db.Decimal(12,2)
+  seguroUnitarioUsd   Decimal @db.Decimal(12,2)
+  derechosUnitarioUsd Decimal @db.Decimal(12,2)
+  tasasUnitarioUsd    Decimal @db.Decimal(12,2)
+  logisticaUnitarioUsd Decimal @db.Decimal(12,2)
 
   // Totales por unidad
-  costoLandedUnitarioUsd Float          // Solo costos no recuperables
-  costoLandedUnitarioArs Float          // Convertido a ARS al TC del despacho
-  desembolsoUnitarioUsd  Float          // Incluyendo recuperables (cash flow)
+  costoLandedUnitarioUsd Decimal        @db.Decimal(12,2) // Solo costos no recuperables
+  costoLandedUnitarioArs Decimal        @db.Decimal(12,2) // Convertido a ARS al TC del despacho
+  desembolsoUnitarioUsd  Decimal        @db.Decimal(12,2) // Incluyendo recuperables (cash flow)
 
   metodoAsignacion    String            // "POR_VALOR", "POR_VOLUMEN", "POR_PESO", "HIBRIDO"
-  tipoCambioUsado     Float
+  tipoCambioUsado     Decimal @db.Decimal(10,4)
 
   createdAt           DateTime          @default(now())
 
@@ -1942,16 +1942,16 @@ model HistorialCostoRepuesto {
   repuestoId          String
   repuesto            Repuesto @relation(fields: [repuestoId], references: [id])
 
-  costoAnteriorArs    Float
-  costoNuevoArs       Float
-  costoAnteriorUsd    Float?
-  costoNuevoUsd       Float?
+  costoAnteriorArs    Decimal  @db.Decimal(12,2)
+  costoNuevoArs       Decimal  @db.Decimal(12,2)
+  costoAnteriorUsd    Decimal? @db.Decimal(12,2)
+  costoNuevoUsd       Decimal? @db.Decimal(12,2)
   cantidadAnterior    Int
   cantidadNueva       Int
 
   motivo              String   // "IMPORTACION", "AJUSTE_MANUAL", "CORRECCION", "RECEPCION_LOCAL"
   referencia          String?  // ID del embarque, OC, o ajuste que originó el cambio
-  tipoCambio          Float?
+  tipoCambio          Decimal? @db.Decimal(10,4)
   usuario             String?  // Email del usuario
 
   createdAt           DateTime @default(now())
@@ -2011,8 +2011,8 @@ model ItemListaPrecio {
   repuestoId      String
   repuesto        Repuesto     @relation(fields: [repuestoId], references: [id])
 
-  precioArs       Float        // Precio final en ARS para esta lista
-  precioUsd       Float?       // Precio en USD (referencial)
+  precioArs       Decimal      @db.Decimal(12,2) // Precio final en ARS para esta lista
+  precioUsd       Decimal?     @db.Decimal(12,2) // Precio en USD (referencial)
 
   // Cantidad mínima para este precio (permite escalonado)
   cantidadMinima  Int          @default(1)
@@ -2022,7 +2022,7 @@ model ItemListaPrecio {
   vigenciaHasta   DateTime?
 
   // Metadata de cálculo (para auditoría: cómo se llegó a este precio)
-  costoBase       Float?       // Costo al momento de calcular
+  costoBase       Decimal?     @db.Decimal(12,2) // Costo al momento de calcular
   markupAplicado  Float?       // Multiplicador aplicado
   descuentoAplicado Float?     // % de descuento aplicado
   metodoCalculo   String?      // "MARKUP_CATEGORIA", "MARKUP_BANDA", "MANUAL", "BULK_UPDATE"
@@ -2042,8 +2042,8 @@ model ReglaMarkup {
   
   // Condiciones (al menos una debe aplicar)
   categoria       String?  // Si null, aplica a todas las categorías
-  costoBandaDesde Float?   // Rango de costo unitario (en ARS)
-  costoBandaHasta Float?
+  costoBandaDesde Decimal? @db.Decimal(12,2) // Rango de costo unitario (en ARS)
+  costoBandaHasta Decimal? @db.Decimal(12,2)
   esOEM           Boolean? // null = ambos, true = solo OEM, false = solo genérico
 
   // Acción
@@ -2084,7 +2084,7 @@ model ReglaDescuento {
 
   // ─── Acción ───────────────────────────────────────────────────
   tipoDescuento   TipoDescuento
-  valorDescuento  Float        // Porcentaje (0.10 = 10%) o monto fijo en ARS
+  valorDescuento  Decimal      @db.Decimal(12,2) // Porcentaje (0.10 = 10%) o monto fijo en ARS
 
   // ─── Guardrails ───────────────────────────────────────────────
   margenMinimo    Float?       // No aplicar si el margen cae por debajo de esto
@@ -2147,15 +2147,15 @@ model HistorialPrecioRepuesto {
   repuesto        Repuesto @relation(fields: [repuestoId], references: [id])
   listaPrecioId   String?  // null = precio general (precioVenta del repuesto)
 
-  precioAnterior  Float?
-  precioNuevo     Float
+  precioAnterior  Decimal? @db.Decimal(12,2)
+  precioNuevo     Decimal  @db.Decimal(12,2)
   
   tipoCambio      String   // "MANUAL", "BULK_UPDATE", "RECALCULO_COSTO", "REGLA_MARKUP", "IMPORTACION"
   motivo          String?  // "Actualización por embarque EMB-003", "Ajuste inflación +15%"
   loteId          String?  // Agrupa cambios bulk (para rollback)
 
   // Snapshot al momento del cambio
-  costoAlMomento  Float?
+  costoAlMomento  Decimal? @db.Decimal(12,2)
   margenAlMomento Float?   // (precio - costo) / precio
 
   usuario         String   // Email del usuario

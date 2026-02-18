@@ -27,7 +27,7 @@ export async function GET() {
     ]);
 
     const costoLaboralMes = recibosDelMes.reduce(
-      (sum, r) => sum + r.totalHaberes + r.totalAportesPatronales,
+      (sum, r) => sum + Number(r.totalHaberes) + Number(r.totalAportesPatronales),
       0
     );
 

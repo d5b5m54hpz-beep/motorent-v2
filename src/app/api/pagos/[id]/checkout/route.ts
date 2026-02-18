@@ -82,7 +82,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       externalReference: pago.id,
       title: `Alquiler ${pago.contrato.moto.marca} ${pago.contrato.moto.modelo} - Cuota ${cuotaNumber}`,
       description: `Pago de alquiler - Vencimiento: ${pago.vencimientoAt?.toLocaleDateString("es-AR")}`,
-      amount: pago.monto,
+      amount: Number(pago.monto),
       payerEmail: pago.contrato.cliente.email,
       payerName: pago.contrato.cliente.nombre ?? undefined,
     });

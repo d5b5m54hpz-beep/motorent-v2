@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
       // Calculate presentismo (8.33% if no unjustified absences)
       const ausenciasInjustificadas = empleado.ausencias.filter((a) => !a.justificada);
       const tienePresentismo = ausenciasInjustificadas.length === 0;
-      const presentismo = tienePresentismo ? empleado.salarioBasico * 0.0833 : 0;
+      const salarioBasico = Number(empleado.salarioBasico);
+      const presentismo = tienePresentismo ? salarioBasico * 0.0833 : 0;
 
       // Calculate antigüedad (1% per year)
       const fechaIngresoDate = new Date(empleado.fechaIngreso);
@@ -62,10 +63,10 @@ export async function POST(req: NextRequest) {
         (new Date(anio, mes - 1, 1).getTime() - fechaIngresoDate.getTime()) /
           (1000 * 60 * 60 * 24 * 365.25)
       );
-      const antiguedad = empleado.salarioBasico * 0.01 * añosTrabajados;
+      const antiguedad = salarioBasico * 0.01 * añosTrabajados;
 
       // Total haberes
-      const totalHaberes = empleado.salarioBasico + presentismo + antiguedad;
+      const totalHaberes = salarioBasico + presentismo + antiguedad;
 
       // Deducciones (percentages of totalHaberes)
       const jubilacion = totalHaberes * 0.11; // 11%
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
       const aporteJubilacion = totalHaberes * 0.16; // 16%
       const aporteObraSocial = totalHaberes * 0.06; // 6%
       const aportePAMI = totalHaberes * 0.015; // 1.5%
-      const aporteART = empleado.salarioBasico * 0.03; // ~3% estimate
+      const aporteART = salarioBasico * 0.03; // ~3% estimate
 
       const recibo = await prisma.reciboSueldo.create({
         data: {
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
           mes,
           anio,
           tipo: "MENSUAL",
-          salarioBasico: empleado.salarioBasico,
+          salarioBasico,
           presentismo,
           antiguedad,
           horasExtra50: 0,

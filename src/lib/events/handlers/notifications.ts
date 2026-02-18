@@ -45,7 +45,7 @@ export async function handleContractActivated(ctx: EventContext): Promise<void> 
         subject: `MotoLibre - Tu contrato fue activado`,
         html: `<p>Hola ${contrato.cliente.user.name},</p>
 <p>Tu contrato de alquiler para la moto <strong>${contrato.moto.marca} ${contrato.moto.modelo}</strong> (${contrato.moto.patente}) fue activado exitosamente.</p>
-<p>Monto mensual: $${contrato.montoPeriodo.toLocaleString("es-AR")}</p>`,
+<p>Monto mensual: $${Number(contrato.montoPeriodo).toLocaleString("es-AR")}</p>`,
       });
     } catch (emailErr) {
       console.error("[Notifications] Failed to send activation email:", emailErr);
@@ -192,7 +192,7 @@ export async function handlePaymentNotification(ctx: EventContext): Promise<void
     await prisma.alerta.create({
       data: {
         tipo: action === "reembolsado" ? "URGENTE" : "PAGO",
-        mensaje: `Pago ${action}: $${pago.monto.toLocaleString("es-AR")} (${pago.metodo ?? "N/A"}) - Contrato #${pago.contratoId.slice(0, 8)}`,
+        mensaje: `Pago ${action}: $${Number(pago.monto).toLocaleString("es-AR")} (${pago.metodo ?? "N/A"}) - Contrato #${pago.contratoId.slice(0, 8)}`,
         pagoId: ctx.entityId,
         metadata: {
           operationId: ctx.operationId,
@@ -266,7 +266,7 @@ export async function handleWorkOrderCompleteNotification(ctx: EventContext): Pr
     await prisma.alerta.create({
       data: {
         tipo: "MANTENIMIENTO",
-        mensaje: `OT ${orden.numero} completada - ${orden.moto.marca} ${orden.moto.modelo} (${orden.moto.patente}) disponible. Costo: $${orden.costoTotal.toLocaleString("es-AR")}`,
+        mensaje: `OT ${orden.numero} completada - ${orden.moto.marca} ${orden.moto.modelo} (${orden.moto.patente}) disponible. Costo: $${Number(orden.costoTotal).toLocaleString("es-AR")}`,
         metadata: {
           ordenTrabajoId: ctx.entityId,
           costoTotal: orden.costoTotal,
@@ -360,12 +360,12 @@ export async function handleExpenseAlertNotification(ctx: EventContext): Promise
       select: { concepto: true, monto: true, categoria: true },
     });
 
-    if (!gasto || gasto.monto < UMBRAL_GASTO) return;
+    if (!gasto || Number(gasto.monto) < UMBRAL_GASTO) return;
 
     await prisma.alerta.create({
       data: {
         tipo: "URGENTE",
-        mensaje: `GASTO ALTO: $${gasto.monto.toLocaleString("es-AR")} — ${gasto.concepto} (${gasto.categoria}). Requiere revisión/aprobación.`,
+        mensaje: `GASTO ALTO: $${Number(gasto.monto).toLocaleString("es-AR")} — ${gasto.concepto} (${gasto.categoria}). Requiere revisión/aprobación.`,
         metadata: {
           gastoId: ctx.entityId,
           monto: gasto.monto,

@@ -99,11 +99,11 @@ export async function PUT(
     if (validated.tipo !== factura.tipo) {
       if (validated.tipo === "A") {
         // Discriminar IVA
-        updateData.montoNeto = factura.montoTotal / 1.21;
-        updateData.montoIva = factura.montoTotal - updateData.montoNeto;
+        updateData.montoNeto = Number(factura.montoTotal) / 1.21;
+        updateData.montoIva = Number(factura.montoTotal) - updateData.montoNeto;
       } else {
         // Tipo B o C - IVA incluido
-        updateData.montoNeto = factura.montoTotal;
+        updateData.montoNeto = Number(factura.montoTotal);
         updateData.montoIva = 0;
       }
     }

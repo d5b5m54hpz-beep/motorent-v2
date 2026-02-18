@@ -30,7 +30,7 @@ export const rrhhTools: ToolMetadata[] = [
         select: { salarioBasico: true },
       });
 
-      const costoLaboralMes = empleadosActivos.reduce((sum, e) => sum + e.salarioBasico, 0);
+      const costoLaboralMes = empleadosActivos.reduce((sum, e) => sum + Number(e.salarioBasico), 0);
 
       return {
         activos,

@@ -24,8 +24,8 @@ export async function GET() {
       _sum: { monto: true },
     });
 
-    const ingresos = ingresosMes._sum.monto ?? 0;
-    const gastos = gastosMes._sum.monto ?? 0;
+    const ingresos = Number(ingresosMes._sum.monto) || 0;
+    const gastos = Number(gastosMes._sum.monto) || 0;
 
     // Fleet occupancy
     const totalMotos = await prisma.moto.count({ where: { estado: { not: "baja" } } });
@@ -51,8 +51,8 @@ export async function GET() {
 
       ultimos12.push({
         mes: d.toLocaleDateString("es-AR", { month: "short", year: "2-digit" }),
-        ingresos: ing._sum.monto ?? 0,
-        gastos: gst._sum.monto ?? 0,
+        ingresos: Number(ing._sum.monto) || 0,
+        gastos: Number(gst._sum.monto) || 0,
       });
     }
 
@@ -75,16 +75,18 @@ export async function GET() {
       where: { fecha: { gte: inicioMes, lte: finMes } },
       _sum: { monto: true },
     });
-    const gastoMap = new Map(gastosCategoria.map((g) => [g.categoria, g._sum.monto ?? 0]));
+    const gastoMap = new Map(gastosCategoria.map((g) => [g.categoria, Number(g._sum.monto) || 0]));
 
-    const presupuestoVsReal = presupuestos.map((p) => ({
-      categoria: p.categoria,
-      presupuestado: p.montoPresupuestado,
-      real: gastoMap.get(p.categoria) ?? 0,
-      porcentaje: p.montoPresupuestado > 0
-        ? ((gastoMap.get(p.categoria) ?? 0) / p.montoPresupuestado) * 100
-        : 0,
-    }));
+    const presupuestoVsReal = presupuestos.map((p) => {
+      const presupuestado = Number(p.montoPresupuestado);
+      const real = gastoMap.get(p.categoria) ?? 0;
+      return {
+        categoria: p.categoria,
+        presupuestado,
+        real,
+        porcentaje: presupuestado > 0 ? (real / presupuestado) * 100 : 0,
+      };
+    });
 
     // Cash flow last 30 days
     const hace30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -110,12 +112,12 @@ export async function GET() {
     for (const p of pagos30) {
       if (p.pagadoAt) {
         const key = p.pagadoAt.toISOString().slice(0, 10);
-        if (flujoDiario[key]) flujoDiario[key].ingresos += p.monto;
+        if (flujoDiario[key]) flujoDiario[key].ingresos += Number(p.monto);
       }
     }
     for (const g of gastos30) {
       const key = g.fecha.toISOString().slice(0, 10);
-      if (flujoDiario[key]) flujoDiario[key].gastos += g.monto;
+      if (flujoDiario[key]) flujoDiario[key].gastos += Number(g.monto);
     }
 
     const flujoCaja = Object.entries(flujoDiario).map(([fecha, vals]) => ({
@@ -133,7 +135,7 @@ export async function GET() {
       },
       _sum: { monto: true },
     });
-    const ebitda = ingresos - (gastosOperativos._sum.monto ?? 0);
+    const ebitda = ingresos - (Number(gastosOperativos._sum.monto) || 0);
     const margenEbitda = ingresos > 0 ? (ebitda / ingresos) * 100 : 0;
 
     // ROI por moto (top 10) - Ingresos vs valor de compra
@@ -188,7 +190,7 @@ export async function GET() {
       ultimos12,
       topCategorias: topCategorias.map((c) => ({
         categoria: c.categoria,
-        monto: c._sum.monto ?? 0,
+        monto: Number(c._sum.monto) || 0,
       })),
       presupuestoVsReal,
       flujoCaja,

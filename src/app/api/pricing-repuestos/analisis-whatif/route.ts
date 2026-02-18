@@ -47,25 +47,26 @@ export async function GET(req: NextRequest) {
 
     // ─── 3. SIMULAR IMPACTO SEGÚN ESCENARIO ────────────────────────
     const detalle = repuestos.map((r) => {
-      let costoSimulado = r.costoPromedioArs;
+      const costoBase = Number(r.costoPromedioArs);
+      let costoSimulado = costoBase;
 
       switch (escenario) {
         case "TC_CAMBIO":
           // Tipo de cambio: afecta costo directo
-          costoSimulado = r.costoPromedioArs * (1 + variacion);
+          costoSimulado = costoBase * (1 + variacion);
           break;
 
         case "FLETE_CAMBIO":
           // Flete: asumimos que representa ~15% del costo landed
-          costoSimulado = r.costoPromedioArs * (1 + variacion * 0.15);
+          costoSimulado = costoBase * (1 + variacion * 0.15);
           break;
 
         case "ARANCEL_CAMBIO":
           // Arancel: aplicar nueva tasa sobre costo FOB (asumimos ~60% del costo total)
-          const costoFOB = r.costoPromedioArs * 0.60;
+          const costoFOB = costoBase * 0.60;
           const arancelNuevo = costoFOB * variacion;
           const arancelActual = costoFOB * 0.10; // Asumimos 10% actual
-          costoSimulado = r.costoPromedioArs - arancelActual + arancelNuevo;
+          costoSimulado = costoBase - arancelActual + arancelNuevo;
           break;
 
         case "MARKUP_CAMBIO":
@@ -74,10 +75,10 @@ export async function GET(req: NextRequest) {
           break;
 
         default:
-          costoSimulado = r.costoPromedioArs;
+          costoSimulado = costoBase;
       }
 
-      const precioActual = r.precioVenta;
+      const precioActual = Number(r.precioVenta);
       let precioSimulado = precioActual;
 
       if (escenario === "MARKUP_CAMBIO") {
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
       }
 
       const margenActual = precioActual > 0
-        ? (precioActual - r.costoPromedioArs) / precioActual
+        ? (precioActual - costoBase) / precioActual
         : 0;
 
       const margenSimulado = precioSimulado > 0
@@ -104,7 +105,7 @@ export async function GET(req: NextRequest) {
         repuestoId: r.id,
         repuesto: r.nombre,
         categoria: r.categoria,
-        costoActual: Math.round(r.costoPromedioArs),
+        costoActual: Math.round(costoBase),
         costoSimulado: Math.round(costoSimulado),
         precioActual,
         precioSimulado: Math.round(precioSimulado),
@@ -151,7 +152,7 @@ export async function GET(req: NextRequest) {
       // Cuánto hay que subir precios para mantener el margen actual
       const costoAumento = costoPromedioNuevo - costoPromedioActual;
       const precioActualPromedio = detalle.length > 0
-        ? detalle.reduce((sum, d) => sum + d.precioActual, 0) / detalle.length
+        ? detalle.reduce((sum: number, d) => sum + d.precioActual, 0) / detalle.length
         : 0;
 
       if (precioActualPromedio > 0) {

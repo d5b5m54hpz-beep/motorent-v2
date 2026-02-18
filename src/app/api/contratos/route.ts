@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
 
       const montoCobrado = pagos
         .filter((p) => p.estado === "pagado")
-        .reduce((sum, p) => sum + p.monto, 0);
+        .reduce((sum, p) => sum + Number(p.monto), 0);
 
       return {
         ...contrato,

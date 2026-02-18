@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     // Ingresos por ventas de repuestos (si existen)
     const ingresosRepuestos = 0; // TODO: implementar cuando haya ventas de repuestos
 
-    const totalIngresos = (ingresosAlquileres._sum.monto || 0) + ingresosRepuestos;
+    const totalIngresos = (Number(ingresosAlquileres._sum.monto) || 0) + ingresosRepuestos;
 
     // Ingresos período anterior
     let totalIngresosAnterior = 0;
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
           monto: true,
         },
       });
-      totalIngresosAnterior = ingresosAnterior._sum.monto || 0;
+      totalIngresosAnterior = Number(ingresosAnterior._sum.monto) || 0;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     // Depreciación de flota (TODO: calcular desde tabla Amortizacion)
     const depreciacionFlota = 0;
 
-    const totalCostosDirectos = (gastosDirectos._sum.monto || 0) + depreciacionFlota;
+    const totalCostosDirectos = (Number(gastosDirectos._sum.monto) || 0) + depreciacionFlota;
 
     // Costos directos período anterior
     let totalCostosDirectosAnterior = 0;
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
           monto: true,
         },
       });
-      totalCostosDirectosAnterior = gastosDirectosAnterior._sum.monto || 0;
+      totalCostosDirectosAnterior = Number(gastosDirectosAnterior._sum.monto) || 0;
     }
 
     const margenBruto = totalIngresos - totalCostosDirectos;
@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const totalGastosOperativos = (sueldos._sum.netoAPagar || 0) + (gastosOperativos._sum.monto || 0);
+    const totalGastosOperativos = (Number(sueldos._sum.netoAPagar) || 0) + (Number(gastosOperativos._sum.monto) || 0);
 
     // Gastos operativos período anterior
     let totalGastosOperativosAnterior = 0;
@@ -189,7 +189,7 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      totalGastosOperativosAnterior = (sueldosAnterior._sum.netoAPagar || 0) + (gastosOperativosAnterior._sum.monto || 0);
+      totalGastosOperativosAnterior = (Number(sueldosAnterior._sum.netoAPagar) || 0) + (Number(gastosOperativosAnterior._sum.monto) || 0);
     }
 
     const ebitda = margenBruto - totalGastosOperativos;
@@ -219,7 +219,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const totalImpuestos = impuestos._sum.monto || 0;
+    const totalImpuestos = Number(impuestos._sum.monto) || 0;
 
     let totalImpuestosAnterior = 0;
     if (comparar) {
@@ -235,7 +235,7 @@ export async function GET(req: NextRequest) {
           monto: true,
         },
       });
-      totalImpuestosAnterior = impuestosAnterior._sum.monto || 0;
+      totalImpuestosAnterior = Number(impuestosAnterior._sum.monto) || 0;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -252,13 +252,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       periodo: { desde, hasta },
       ingresos: {
-        alquileres: ingresosAlquileres._sum.monto || 0,
+        alquileres: Number(ingresosAlquileres._sum.monto) || 0,
         repuestos: ingresosRepuestos,
         total: totalIngresos,
         porcentaje: 100,
       },
       costosDirectos: {
-        mantenimiento: gastosDirectos._sum.monto || 0,
+        mantenimiento: Number(gastosDirectos._sum.monto) || 0,
         depreciacion: depreciacionFlota,
         total: totalCostosDirectos,
         porcentaje: totalIngresos > 0 ? (totalCostosDirectos / totalIngresos) * 100 : 0,
@@ -268,8 +268,8 @@ export async function GET(req: NextRequest) {
         porcentaje: totalIngresos > 0 ? (margenBruto / totalIngresos) * 100 : 0,
       },
       gastosOperativos: {
-        sueldos: sueldos._sum.netoAPagar || 0,
-        otros: gastosOperativos._sum.monto || 0,
+        sueldos: Number(sueldos._sum.netoAPagar) || 0,
+        otros: Number(gastosOperativos._sum.monto) || 0,
         total: totalGastosOperativos,
         porcentaje: totalIngresos > 0 ? (totalGastosOperativos / totalIngresos) * 100 : 0,
       },

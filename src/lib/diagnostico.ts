@@ -370,7 +370,7 @@ export async function verificarIntegridad(
   });
 
   const asientosDesbalanceados = asientos.filter(
-    (a) => Math.abs(a.totalDebe - a.totalHaber) > 0.01
+    (a) => Math.abs(Number(a.totalDebe) - Number(a.totalHaber)) > 0.01
   );
 
   if (asientosDesbalanceados.length > 0) {

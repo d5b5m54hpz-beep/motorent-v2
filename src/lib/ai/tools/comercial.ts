@@ -68,7 +68,7 @@ export const comercialTools: ToolMetadata[] = [
         activos,
         porVencerEn7Dias: porVencer,
         vencidos,
-        montoTotalActivos: Math.round(montoTotal._sum.montoTotal ?? 0),
+        montoTotalActivos: Math.round(Number(montoTotal._sum.montoTotal ?? 0)),
       };
     },
   },

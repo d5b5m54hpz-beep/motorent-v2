@@ -51,8 +51,8 @@ export async function GET(req: NextRequest) {
         : Promise.resolve(null),
     ]);
 
-    const ingresos = ingresosPeriodo._sum.montoTotal || 0;
-    const ingresosAnt = ingresosAnterior?._sum.montoTotal || 0;
+    const ingresos = Number(ingresosPeriodo._sum.montoTotal) || 0;
+    const ingresosAnt = Number(ingresosAnterior?._sum.montoTotal) || 0;
     const variacionIngresos = ingresosAnt > 0 ? ((ingresos - ingresosAnt) / ingresosAnt) * 100 : 0;
 
     // Gastos del período (facturas de compra + gastos)
@@ -69,8 +69,8 @@ export async function GET(req: NextRequest) {
         : Promise.resolve(null),
     ]);
 
-    const gastos = gastosPeriodo._sum.total || 0;
-    const gastosAnt = gastosAnterior?._sum.total || 0;
+    const gastos = Number(gastosPeriodo._sum.total) || 0;
+    const gastosAnt = Number(gastosAnterior?._sum.total) || 0;
     const variacionGastos = gastosAnt > 0 ? ((gastos - gastosAnt) / gastosAnt) * 100 : 0;
 
     // Resultado Neto
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
       clientes,
       pagosPendientes: {
         cantidad: pagosPendientes._count.id,
-        monto: Math.round(pagosPendientes._sum.monto || 0),
+        monto: Math.round(Number(pagosPendientes._sum.monto) || 0),
       },
       ebitda: Math.round(ebitda),
     });

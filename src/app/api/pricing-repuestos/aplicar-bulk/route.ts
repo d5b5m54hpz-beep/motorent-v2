@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       const repuestos = await prisma.repuesto.findMany({ where });
 
       for (const rep of repuestos) {
-        const precioActual = rep.precioVenta || 0;
+        const precioActual = Number(rep.precioVenta) || 0;
         if (precioActual === 0) continue;
 
         const factor = 1 + porcentaje / 100;
@@ -155,9 +155,9 @@ export async function POST(req: NextRequest) {
 
         if (!repuesto) continue;
 
-        const precioAnterior = repuesto.precioVenta;
+        const precioAnterior = Number(repuesto.precioVenta);
         const precioNuevo = cambio.precioNuevo || cambio.precioCalculado || 0;
-        const costo = repuesto.costoPromedioArs || repuesto.precioCompra || 0;
+        const costo = Number(repuesto.costoPromedioArs) || Number(repuesto.precioCompra) || 0;
 
         // Actualizar precio del repuesto (solo si es lista B2C)
         if (listaPrecioCodigo === "B2C") {

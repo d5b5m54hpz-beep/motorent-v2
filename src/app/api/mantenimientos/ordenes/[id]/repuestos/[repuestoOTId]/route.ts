@@ -46,8 +46,8 @@ export async function PUT(
       where: { id: repuestoOTId },
       data: {
         cantidadUsada,
-        costoTotal: cantidadUsada * repuestoOT.costoUnitario,
-        precioTotal: cantidadUsada * repuestoOT.precioUnitario,
+        costoTotal: cantidadUsada * Number(repuestoOT.costoUnitario),
+        precioTotal: cantidadUsada * Number(repuestoOT.precioUnitario),
       },
       include: {
         repuesto: {

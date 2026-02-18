@@ -36,7 +36,7 @@ async function calcularPrecioConMarkup(
   repuesto: Repuesto,
   listaPrecio: ListaPrecio
 ): Promise<{ precio: number; reglaAplicada: string }> {
-  const costo = repuesto.costoPromedioArs || repuesto.precioCompra || 0;
+  const costo = Number(repuesto.costoPromedioArs) || Number(repuesto.precioCompra) || 0;
 
   if (costo === 0) {
     return { precio: 0, reglaAplicada: "Sin costo" };
@@ -158,8 +158,8 @@ async function evaluarDescuentos(
           if (contratoActivo) {
             // Inferir plan por montoPeriodo: < 150k = BASICO, 150k-250k = PREMIUM, > 250k = VIP
             let planInferido = "BASICO";
-            if (contratoActivo.montoPeriodo > 250000) planInferido = "VIP";
-            else if (contratoActivo.montoPeriodo >= 150000) planInferido = "PREMIUM";
+            if (Number(contratoActivo.montoPeriodo) > 250000) planInferido = "VIP";
+            else if (Number(contratoActivo.montoPeriodo) >= 150000) planInferido = "PREMIUM";
 
             if (planInferido === regla.planAlquiler) {
               aplica = true;
@@ -211,10 +211,10 @@ async function evaluarDescuentos(
 
 function aplicarDescuento(precio: number, descuento: ReglaDescuento): number {
   if (descuento.tipoDescuento === "PORCENTAJE") {
-    return precio * (1 - descuento.valorDescuento);
+    return precio * (1 - Number(descuento.valorDescuento));
   } else {
     // MONTO_FIJO
-    return Math.max(0, precio - descuento.valorDescuento);
+    return Math.max(0, precio - Number(descuento.valorDescuento));
   }
 }
 
@@ -284,7 +284,7 @@ export async function POST(req: NextRequest) {
 
     // ⭐ GAP 3: Auto-cálculo para listas con autoCalcular=true (ej: Uso Interno)
     if (listaPrecio.autoCalcular && listaPrecio.formulaMarkup) {
-      const costo = repuesto.costoPromedioArs || repuesto.precioCompra || 0;
+      const costo = Number(repuesto.costoPromedioArs) || Number(repuesto.precioCompra) || 0;
       precioBase = costo * listaPrecio.formulaMarkup;
       metodoCalculo = `Auto-calculado (costo × ${listaPrecio.formulaMarkup})`;
     } else {
@@ -304,7 +304,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (itemLista) {
-        precioBase = itemLista.precioArs;
+        precioBase = Number(itemLista.precioArs);
         metodoCalculo = itemLista.metodoCalculo || "Precio de lista";
       } else {
         // Calcular con markup
@@ -336,9 +336,9 @@ export async function POST(req: NextRequest) {
         });
 
         if (itemB2C) {
-          precioRetailArs = itemB2C.precioArs;
-        } else if (repuesto.precioVenta > 0) {
-          precioRetailArs = repuesto.precioVenta;
+          precioRetailArs = Number(itemB2C.precioArs);
+        } else if (Number(repuesto.precioVenta) > 0) {
+          precioRetailArs = Number(repuesto.precioVenta);
         } else {
           const resultadoB2C = await calcularPrecioConMarkup(repuesto, listaB2C);
           precioRetailArs = resultadoB2C.precio;
@@ -348,7 +348,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Aplicar descuento global de la lista
     if (listaPrecio.descuentoGlobalPct) {
-      precioBase = precioBase * (1 - listaPrecio.descuentoGlobalPct);
+      precioBase = precioBase * (1 - Number(listaPrecio.descuentoGlobalPct));
     }
 
     // 5. Evaluar y aplicar descuentos
@@ -365,7 +365,7 @@ export async function POST(req: NextRequest) {
     // Primero: mejor descuento NO acumulable
     const noAcumulables = descuentosDisponibles.filter((d) => !d.acumulable);
     const mejorNoAcumulable = noAcumulables.sort(
-      (a, b) => b.valorDescuento - a.valorDescuento
+      (a, b) => Number(b.valorDescuento) - Number(a.valorDescuento)
     )[0];
 
     if (mejorNoAcumulable) {
@@ -373,7 +373,7 @@ export async function POST(req: NextRequest) {
       descuentosAplicados.push({
         nombre: mejorNoAcumulable.nombre,
         tipo: mejorNoAcumulable.tipoDescuento,
-        valor: mejorNoAcumulable.valorDescuento,
+        valor: Number(mejorNoAcumulable.valorDescuento),
       });
     }
 
@@ -387,12 +387,12 @@ export async function POST(req: NextRequest) {
       descuentosAplicados.push({
         nombre: desc.nombre,
         tipo: desc.tipoDescuento,
-        valor: desc.valorDescuento,
+        valor: Number(desc.valorDescuento),
       });
     }
 
     // 7. GUARDRAIL: margen mínimo
-    const costo = repuesto.costoPromedioArs || repuesto.precioCompra || 0;
+    const costo = Number(repuesto.costoPromedioArs) || Number(repuesto.precioCompra) || 0;
     const categoriaConfig = await prisma.categoriaRepuestoConfig.findFirst({
       where: { categoria: repuesto.categoria || "" },
     });

@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
           tipo: dup.tipo,
           puntoVenta: dup.puntoVenta,
           numero: dup.numero,
-          total: dup.total,
+          total: Number(dup.total),
           fecha: dup.fecha,
           cae: dup.cae,
         },

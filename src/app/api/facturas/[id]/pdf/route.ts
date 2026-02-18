@@ -201,7 +201,7 @@ export async function GET(
 
     doc.text("1", 130, yPos);
 
-    const precioUnitario = factura.tipo === "A" ? factura.montoNeto : factura.montoTotal;
+    const precioUnitario = factura.tipo === "A" ? Number(factura.montoNeto) : Number(factura.montoTotal);
     doc.text(formatCurrency(precioUnitario), 145, yPos);
     doc.text(formatCurrency(precioUnitario), 175, yPos);
 
@@ -215,22 +215,22 @@ export async function GET(
 
     if (factura.tipo === "A") {
       doc.text("Subtotal:", 140, yPos);
-      doc.text(formatCurrency(factura.montoNeto), 175, yPos);
+      doc.text(formatCurrency(Number(factura.montoNeto)), 175, yPos);
 
       yPos += 5;
       doc.text("IVA 21%:", 140, yPos);
-      doc.text(formatCurrency(factura.montoIva), 175, yPos);
+      doc.text(formatCurrency(Number(factura.montoIva)), 175, yPos);
 
       yPos += 7;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.text("TOTAL:", 140, yPos);
-      doc.text(formatCurrency(factura.montoTotal), 175, yPos);
+      doc.text(formatCurrency(Number(factura.montoTotal)), 175, yPos);
     } else {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.text("TOTAL:", 140, yPos);
-      doc.text(formatCurrency(factura.montoTotal), 175, yPos);
+      doc.text(formatCurrency(Number(factura.montoTotal)), 175, yPos);
     }
 
     // Footer

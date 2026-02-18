@@ -215,13 +215,13 @@ export async function handleInvoiceSaleCreatedAccounting(ctx: EventContext): Pro
       {
         orden: 1,
         cuentaId: cuentasCobrarId,
-        debe: factura.montoTotal,
+        debe: Number(factura.montoTotal),
         haber: 0,
         descripcion: `Cuentas por Cobrar - Factura ${factura.tipo} ${factura.numero}`,
       },
     ];
 
-    if (factura.tipo === "A" && factura.montoIva > 0) {
+    if (factura.tipo === "A" && Number(factura.montoIva) > 0) {
       // Tipo A: discriminate IVA
       const ivaDebitoId = await getOrCreateAccount(
         ACCOUNTS.IVA_DEBITO_FISCAL.codigo,
@@ -234,14 +234,14 @@ export async function handleInvoiceSaleCreatedAccounting(ctx: EventContext): Pro
           orden: 2,
           cuentaId: ingresosId,
           debe: 0,
-          haber: factura.montoNeto,
+          haber: Number(factura.montoNeto),
           descripcion: `Ventas netas - Factura ${factura.tipo} ${factura.numero}`,
         },
         {
           orden: 3,
           cuentaId: ivaDebitoId,
           debe: 0,
-          haber: factura.montoIva,
+          haber: Number(factura.montoIva),
           descripcion: `IVA Débito Fiscal 21%`,
         }
       );
@@ -251,7 +251,7 @@ export async function handleInvoiceSaleCreatedAccounting(ctx: EventContext): Pro
         orden: 2,
         cuentaId: ingresosId,
         debe: 0,
-        haber: factura.montoTotal,
+        haber: Number(factura.montoTotal),
         descripcion: `Ventas - Factura ${factura.tipo} ${factura.numero}`,
       });
     }
@@ -308,7 +308,7 @@ export async function handleInvoiceSaleCancelledAccounting(ctx: EventContext): P
 
     const lineas: Array<{ orden: number; cuentaId: string; debe: number; haber: number; descripcion: string }> = [];
 
-    if (factura.tipo === "A" && factura.montoIva > 0) {
+    if (factura.tipo === "A" && Number(factura.montoIva) > 0) {
       const ivaDebitoId = await getOrCreateAccount(
         ACCOUNTS.IVA_DEBITO_FISCAL.codigo,
         ACCOUNTS.IVA_DEBITO_FISCAL.nombre,
@@ -319,14 +319,14 @@ export async function handleInvoiceSaleCancelledAccounting(ctx: EventContext): P
         {
           orden: 1,
           cuentaId: ingresosId,
-          debe: factura.montoNeto,
+          debe: Number(factura.montoNeto),
           haber: 0,
           descripcion: `Reversión Ventas - Anulación Factura ${factura.tipo} ${factura.numero}`,
         },
         {
           orden: 2,
           cuentaId: ivaDebitoId,
-          debe: factura.montoIva,
+          debe: Number(factura.montoIva),
           haber: 0,
           descripcion: `Reversión IVA Débito Fiscal`,
         },
@@ -334,7 +334,7 @@ export async function handleInvoiceSaleCancelledAccounting(ctx: EventContext): P
           orden: 3,
           cuentaId: cuentasCobrarId,
           debe: 0,
-          haber: factura.montoTotal,
+          haber: Number(factura.montoTotal),
           descripcion: `Reversión Cuentas por Cobrar`,
         }
       );
@@ -343,7 +343,7 @@ export async function handleInvoiceSaleCancelledAccounting(ctx: EventContext): P
         {
           orden: 1,
           cuentaId: ingresosId,
-          debe: factura.montoTotal,
+          debe: Number(factura.montoTotal),
           haber: 0,
           descripcion: `Reversión Ventas - Anulación Factura ${factura.tipo} ${factura.numero}`,
         },
@@ -351,7 +351,7 @@ export async function handleInvoiceSaleCancelledAccounting(ctx: EventContext): P
           orden: 2,
           cuentaId: cuentasCobrarId,
           debe: 0,
-          haber: factura.montoTotal,
+          haber: Number(factura.montoTotal),
           descripcion: `Reversión Cuentas por Cobrar`,
         }
       );
@@ -425,9 +425,9 @@ export async function handleInvoicePurchaseCreatedAccounting(ctx: EventContext):
       ACCOUNTS.PROVEEDORES.tipo
     );
 
-    const subtotal = factura.subtotal;
-    const totalIVA = factura.iva21 + factura.iva105 + factura.iva27;
-    const total = factura.total;
+    const subtotal = Number(factura.subtotal);
+    const totalIVA = Number(factura.iva21) + Number(factura.iva105) + Number(factura.iva27);
+    const total = Number(factura.total);
 
     // Validate Debe = Haber
     const totalDebe = subtotal + totalIVA;
@@ -463,7 +463,7 @@ export async function handleInvoicePurchaseCreatedAccounting(ctx: EventContext):
               cuentaId: ivaCreditoId,
               debe: totalIVA,
               haber: 0,
-              descripcion: `IVA Crédito Fiscal (21%: $${factura.iva21}, 10.5%: $${factura.iva105}, 27%: $${factura.iva27})`,
+              descripcion: `IVA Crédito Fiscal (21%: $${Number(factura.iva21)}, 10.5%: $${Number(factura.iva105)}, 27%: $${Number(factura.iva27)})`,
             },
             {
               orden: 3,
@@ -602,9 +602,9 @@ export async function handleStockAdjustmentAccounting(ctx: EventContext): Promis
       select: { precioCompra: true, nombre: true },
     });
 
-    if (!repuesto || repuesto.precioCompra === 0) return;
+    if (!repuesto || Number(repuesto.precioCompra) === 0) return;
 
-    const valorDiff = Math.abs(diff) * repuesto.precioCompra;
+    const valorDiff = Math.abs(diff) * Number(repuesto.precioCompra);
 
     const inventarioId = await getOrCreateAccount(
       INVENTARIO_ACCOUNT.codigo,
@@ -663,7 +663,7 @@ export async function handleReceptionCreatedAccounting(ctx: EventContext): Promi
 
     if (!recepcion || !recepcion.ordenCompra) return;
 
-    const monto = recepcion.ordenCompra.total;
+    const monto = Number(recepcion.ordenCompra.total);
     if (!monto || monto === 0) return;
 
     const inventarioId = await getOrCreateAccount(
@@ -731,7 +731,7 @@ export async function handleImportConfirmCostsAccounting(ctx: EventContext): Pro
 
     if (!embarque || !embarque.tipoCambioArsUsd) return;
 
-    const montoArs = embarque.totalFobUsd * embarque.tipoCambioArsUsd;
+    const montoArs = Number(embarque.totalFobUsd) * Number(embarque.tipoCambioArsUsd);
     if (montoArs === 0) return;
 
     const transitoId = await getOrCreateAccount(
@@ -880,8 +880,8 @@ export async function handleImportReceptionFinalizeAccounting(ctx: EventContext)
     if (!embarque) return;
 
     // Total value to reclassify: FOB in ARS + non-recoverable costs
-    const fobArs = (embarque.totalFobUsd ?? 0) * (embarque.tipoCambioArsUsd ?? 1);
-    const monto = fobArs + (embarque.costoTotalNoRecuperable ?? 0);
+    const fobArs = Number(embarque.totalFobUsd ?? 0) * Number(embarque.tipoCambioArsUsd ?? 1);
+    const monto = fobArs + Number(embarque.costoTotalNoRecuperable ?? 0);
     if (monto === 0) return;
 
     const inventarioId = await getOrCreateAccount(
@@ -948,7 +948,7 @@ export async function handleWorkOrderCompleteAccounting(ctx: EventContext): Prom
       },
     });
 
-    if (!orden || orden.costoTotal === 0) return;
+    if (!orden || Number(orden.costoTotal) === 0) return;
 
     const gastoMantenimientoId = await getOrCreateAccount(
       CATEGORIA_TO_CUENTA["MANTENIMIENTO"].codigo,
@@ -961,7 +961,7 @@ export async function handleWorkOrderCompleteAccounting(ctx: EventContext): Prom
       ACCOUNTS.CAJA.tipo
     );
 
-    const monto = orden.costoTotal;
+    const monto = Number(orden.costoTotal);
 
     const asiento = await prisma.asientoContable.create({
       data: {
@@ -971,7 +971,7 @@ export async function handleWorkOrderCompleteAccounting(ctx: EventContext): Prom
         totalDebe: monto,
         totalHaber: monto,
         creadoPor: ctx.userId,
-        notas: `Generado automáticamente por evento maintenance.workorder.complete - Repuestos: $${orden.costoRepuestos}, Mano obra: $${orden.costoManoObra}`,
+        notas: `Generado automáticamente por evento maintenance.workorder.complete - Repuestos: $${Number(orden.costoRepuestos)}, Mano obra: $${Number(orden.costoManoObra)}`,
         lineas: {
           create: [
             {
@@ -1015,10 +1015,10 @@ export async function handleCreditNoteCreatedAccounting(ctx: EventContext): Prom
       select: { numero: true, monto: true, montoNeto: true, montoIva: true, motivo: true, cliente: { select: { nombre: true } } },
     });
 
-    if (!nota || nota.monto === 0) return;
+    if (!nota || Number(nota.monto) === 0) return;
 
-    const montoNeto = nota.montoNeto ?? nota.monto / 1.21;
-    const montoIva = nota.montoIva ?? nota.monto - montoNeto;
+    const montoNeto = Number(nota.montoNeto ?? Number(nota.monto) / 1.21);
+    const montoIva = Number(nota.montoIva ?? Number(nota.monto) - montoNeto);
 
     const ventasId = await getOrCreateAccount(
       ACCOUNTS.INGRESOS_ALQUILER.codigo,
@@ -1064,7 +1064,7 @@ export async function handleCreditNoteCreatedAccounting(ctx: EventContext): Prom
       orden: orden,
       cuentaId: cuentasPorCobrarId,
       debe: 0,
-      haber: nota.monto,
+      haber: Number(nota.monto),
       descripcion: `${nota.cliente?.nombre ?? "Cliente"} - NC ${nota.numero}`,
     });
 
@@ -1073,8 +1073,8 @@ export async function handleCreditNoteCreatedAccounting(ctx: EventContext): Prom
         fecha: new Date(),
         tipo: "AJUSTE",
         descripcion: `Nota de Crédito ${nota.numero} - ${nota.motivo}`,
-        totalDebe: nota.monto,
-        totalHaber: nota.monto,
+        totalDebe: Number(nota.monto),
+        totalHaber: Number(nota.monto),
         creadoPor: ctx.userId,
         notas: `Generado automáticamente por evento credit_note.create`,
         lineas: { create: lineas },

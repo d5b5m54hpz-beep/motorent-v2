@@ -44,12 +44,12 @@ export const contabilidadTools: ToolMetadata[] = [
       return {
         pendientes,
         vencidas,
-        adeudadoTotal: Math.round(adeudadoTotal._sum.total ?? 0),
+        adeudadoTotal: Math.round(Number(adeudadoTotal._sum.total ?? 0)),
         detalle: detalle.map((f) => ({
           proveedor: f.razonSocial,
           factura: `${f.tipo} ${f.numero}`,
-          total: Math.round(f.total),
-          adeudado: Math.round(f.total - f.montoAbonado),
+          total: Math.round(Number(f.total)),
+          adeudado: Math.round(Number(f.total) - Number(f.montoAbonado)),
           vencimiento: f.vencimiento?.toLocaleDateString("es-AR") ?? "Sin vencimiento",
           vencida: f.vencimiento ? f.vencimiento < now : false,
         })),
@@ -93,8 +93,8 @@ export const contabilidadTools: ToolMetadata[] = [
         _sum: { debe: true, haber: true },
       });
 
-      const credito = (ivaCredito._sum.debe ?? 0) - (ivaCredito._sum.haber ?? 0);
-      const debito = (ivaDebito._sum.haber ?? 0) - (ivaDebito._sum.debe ?? 0);
+      const credito = Number(ivaCredito._sum.debe ?? 0) - Number(ivaCredito._sum.haber ?? 0);
+      const debito = Number(ivaDebito._sum.haber ?? 0) - Number(ivaDebito._sum.debe ?? 0);
       const saldo = debito - credito;
 
       return {
@@ -132,14 +132,14 @@ export const contabilidadTools: ToolMetadata[] = [
         _count: { id: true },
       });
 
-      const sorted = facturas.sort((a, b) => (b._sum.total ?? 0) - (a._sum.total ?? 0)).slice(0, 10);
+      const sorted = facturas.sort((a, b) => Number(b._sum.total ?? 0) - Number(a._sum.total ?? 0)).slice(0, 10);
 
       return {
         periodo,
         topProveedores: sorted.map((f, idx) => ({
           ranking: idx + 1,
           proveedor: f.razonSocial,
-          montoTotal: Math.round(f._sum.total ?? 0),
+          montoTotal: Math.round(Number(f._sum.total ?? 0)),
           cantidadFacturas: f._count.id,
         })),
       };

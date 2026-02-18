@@ -69,7 +69,7 @@ export async function GET(
 
       if (lista.autoCalcular && lista.formulaMarkup) {
         // Auto-cálculo (GAP 3)
-        precio = rep.costoPromedioArs * lista.formulaMarkup;
+        precio = Number(rep.costoPromedioArs) * lista.formulaMarkup;
         metodo = `Auto (× ${lista.formulaMarkup})`;
       } else {
         // Buscar en itemListaPrecio o calcular con motor
@@ -88,7 +88,7 @@ export async function GET(
         });
 
         if (itemLista) {
-          precio = itemLista.precioArs;
+          precio = Number(itemLista.precioArs);
           metodo = 'Precio manual';
         } else {
           // Calcular con markup por categoría
@@ -97,12 +97,12 @@ export async function GET(
           });
 
           const multiplicador = categoriaConfig?.markupDefault ?? 2.0;
-          precio = rep.costoPromedioArs * multiplicador;
+          precio = Number(rep.costoPromedioArs) * multiplicador;
           metodo = `Markup ${multiplicador}x`;
         }
       }
 
-      const margen = precio > 0 ? ((precio - rep.costoPromedioArs) / precio) * 100 : 0;
+      const margen = precio > 0 ? ((precio - Number(rep.costoPromedioArs)) / precio) * 100 : 0;
 
       lineasCSV.push(
         [
@@ -110,7 +110,7 @@ export async function GET(
           `"${rep.nombre.replace(/"/g, '""')}"`, // Escape comillas
           rep.categoria || '-',
           rep.unidad || '-',
-          rep.costoPromedioArs.toFixed(2),
+          Number(rep.costoPromedioArs).toFixed(2),
           precio.toFixed(2),
           margen.toFixed(1),
           `"${metodo}"`,

@@ -42,8 +42,8 @@ export const finanzasTools: ToolMetadata[] = [
         }),
       ]);
 
-      const ing = ingresos._sum.monto ?? 0;
-      const gas = gastos._sum.monto ?? 0;
+      const ing = Number(ingresos._sum.monto ?? 0);
+      const gas = Number(gastos._sum.monto ?? 0);
       return {
         periodo,
         ingresos: Math.round(ing),
@@ -53,7 +53,7 @@ export const finanzasTools: ToolMetadata[] = [
         resultadoNeto: Math.round(ing - gas),
         topCategorias: topCategorias.map((c) => ({
           categoria: c.categoria,
-          monto: Math.round(c._sum.monto ?? 0),
+          monto: Math.round(Number(c._sum.monto ?? 0)),
         })),
       };
     },
@@ -84,8 +84,8 @@ export const finanzasTools: ToolMetadata[] = [
             where: { motoId: moto.id },
             _sum: { monto: true },
           });
-          const ing = ingresos._sum.monto ?? 0;
-          const gas = gastos._sum.monto ?? 0;
+          const ing = Number(ingresos._sum.monto ?? 0);
+          const gas = Number(gastos._sum.monto ?? 0);
           return {
             moto: `${moto.marca} ${moto.modelo} (${moto.patente})`,
             ingresos: Math.round(ing),
@@ -123,7 +123,7 @@ export const finanzasTools: ToolMetadata[] = [
             _sum: { monto: true },
           });
           const meses = Math.max(1, Math.min(6, (now.getTime() - moto.createdAt.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-          const costoMensual = (gastos._sum.monto ?? 0) / meses;
+          const costoMensual = Number(gastos._sum.monto ?? 0) / meses;
           const sugerido = costoMensual * (1 + margen / 100);
           const precioMensualNum = Number(moto.precioMensual);
           return {
@@ -189,7 +189,7 @@ export const finanzasTools: ToolMetadata[] = [
         } else {
           key = d.toLocaleDateString("es-AR", { month: "short", year: "numeric" });
         }
-        grouped.set(key, (grouped.get(key) ?? 0) + p.monto);
+        grouped.set(key, (grouped.get(key) ?? 0) + Number(p.monto));
       }
 
       return Array.from(grouped.entries()).map(([fecha, monto]) => ({
@@ -225,14 +225,14 @@ export const finanzasTools: ToolMetadata[] = [
         take: 20,
       });
 
-      const total = gastos.reduce((s, g) => s + g.monto, 0);
+      const total = gastos.reduce((s, g) => s + Number(g.monto), 0);
 
       return {
         totalGastos: Math.round(total),
         cantidad: gastos.length,
         detalle: gastos.map((g) => ({
           concepto: g.concepto,
-          monto: Math.round(g.monto),
+          monto: Math.round(Number(g.monto)),
           categoria: g.categoria,
           fecha: g.fecha.toLocaleDateString("es-AR"),
           moto: g.moto ? `${g.moto.marca} ${g.moto.modelo} (${g.moto.patente})` : null,
@@ -257,7 +257,7 @@ export const finanzasTools: ToolMetadata[] = [
         _count: { id: true },
       });
 
-      const total = gastosPorCategoria.reduce((s, g) => s + (g._sum.monto ?? 0), 0);
+      const total = gastosPorCategoria.reduce((s, g) => s + Number(g._sum.monto ?? 0), 0);
 
       return {
         mes: now.toLocaleDateString("es-AR", { month: "long", year: "numeric" }),
@@ -265,7 +265,7 @@ export const finanzasTools: ToolMetadata[] = [
         porCategoria: gastosPorCategoria
           .map((g) => ({
             categoria: g.categoria,
-            monto: Math.round(g._sum.monto ?? 0),
+            monto: Math.round(Number(g._sum.monto ?? 0)),
             cantidad: g._count.id,
           }))
           .sort((a, b) => b.monto - a.monto),

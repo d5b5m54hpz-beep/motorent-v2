@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
           : "00000001";
 
         const tipo = "B" as "A" | "B" | "C";
-        const montoTotal = pago.monto;
+        const montoTotal = Number(pago.monto);
         const montoNeto = tipo === "A" ? montoTotal / 1.21 : montoTotal;
         const montoIva = tipo === "A" ? montoTotal - montoNeto : 0;
 

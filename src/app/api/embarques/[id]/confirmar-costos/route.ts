@@ -46,8 +46,8 @@ export async function POST(
         if (!repuesto) continue;
 
         const stockAnterior = repuesto.stock;
-        const costoAnteriorArs = repuesto.costoPromedioArs || repuesto.precioCompra;
-        const costoAnteriorUsd = repuesto.costoPromedioUsd;
+        const costoAnteriorArs = Number(repuesto.costoPromedioArs) || Number(repuesto.precioCompra);
+        const costoAnteriorUsd = Number(repuesto.costoPromedioUsd);
 
         // Calculate new weighted average cost
         const stockActual = stockAnterior;

@@ -46,13 +46,14 @@ export async function PUT(
       return NextResponse.json({ error: "Repuesto no encontrado" }, { status: 404 });
     }
 
-    const precioAnterior = repuesto.precioVenta;
+    const precioAnterior = Number(repuesto.precioVenta);
+    const costoPromArs = Number(repuesto.costoPromedioArs);
     const margenAnterior =
       precioAnterior > 0
-        ? (precioAnterior - repuesto.costoPromedioArs) / precioAnterior
+        ? (precioAnterior - costoPromArs) / precioAnterior
         : null;
     const margenNuevo =
-      precio > 0 ? (precio - repuesto.costoPromedioArs) / precio : null;
+      precio > 0 ? (precio - costoPromArs) / precio : null;
 
     // Actualizar precio + crear registro en historial
     await prisma.$transaction(async (tx) => {

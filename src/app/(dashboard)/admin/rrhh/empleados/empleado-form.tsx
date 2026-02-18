@@ -57,6 +57,7 @@ export function EmpleadoForm({ empleado, open, onOpenChange, onSuccess }: Emplea
     defaultValues: empleado
       ? {
           ...empleado,
+          salarioBasico: Number(empleado.salarioBasico),
           fechaNacimiento: empleado.fechaNacimiento
             ? new Date(empleado.fechaNacimiento).toISOString().split("T")[0]
             : undefined,

@@ -73,7 +73,7 @@ export async function GET(
             cantidadObligatoria: 0,
             cantidadCondicional: 0,
             cantidadTotal: 0,
-            costoUnitario: rtp.repuesto.precioCompra,
+            costoUnitario: Number(rtp.repuesto.precioCompra),
             costoObligatorio: 0,
             costoCondicional: 0,
             stockActual: rtp.repuesto.stock,

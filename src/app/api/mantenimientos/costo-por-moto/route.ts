@@ -51,10 +51,10 @@ export async function GET(req: NextRequest) {
     const resultado = motos.map((moto) => {
       const ots = moto.ordenesTrabajoMoto;
       const totalOTs = ots.length;
-      const costoTotalRepuestos = ots.reduce((s, ot) => s + ot.costoRepuestos, 0);
-      const costoTotalManoObra = ots.reduce((s, ot) => s + ot.costoManoObra, 0);
-      const costoTotalOtros = ots.reduce((s, ot) => s + ot.costoOtros, 0);
-      const costoTotal = ots.reduce((s, ot) => s + ot.costoTotal, 0);
+      const costoTotalRepuestos = ots.reduce((s, ot) => s + Number(ot.costoRepuestos), 0);
+      const costoTotalManoObra = ots.reduce((s, ot) => s + Number(ot.costoManoObra), 0);
+      const costoTotalOtros = ots.reduce((s, ot) => s + Number(ot.costoOtros), 0);
+      const costoTotal = ots.reduce((s, ot) => s + Number(ot.costoTotal), 0);
 
       // Cost per km
       const kmActual = moto.kmActual || 0;
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
 
       // Monthly rental income: prefer contract montoPeriodo, fallback to moto.precioMensual
       const ingresosMensuales = moto.contratos.length > 0
-        ? moto.contratos.reduce((s, c) => s + (c.montoPeriodo || 0), 0) / moto.contratos.length
+        ? moto.contratos.reduce((s, c) => s + (Number(c.montoPeriodo) || 0), 0) / moto.contratos.length
         : Number(moto.precioMensual) || 0;
       const ingresoAlquilerMensual = Math.round(ingresosMensuales);
 
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         const tipo = ot.tipoService || 'OTRO';
         if (!porTipo[tipo]) porTipo[tipo] = { count: 0, costo: 0 };
         porTipo[tipo].count++;
-        porTipo[tipo].costo += ot.costoTotal;
+        porTipo[tipo].costo += Number(ot.costoTotal);
       }
 
       return {

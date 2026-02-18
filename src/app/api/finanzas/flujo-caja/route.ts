@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       if (p.pagadoAt) {
         const key = p.pagadoAt.toISOString().slice(0, 10);
         if (flujoDiario[key]) {
-          flujoDiario[key].ingresos += p.monto;
+          flujoDiario[key].ingresos += Number(p.monto);
         }
       }
     }
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     for (const g of gastos) {
       const key = g.fecha.toISOString().slice(0, 10);
       if (flujoDiario[key]) {
-        flujoDiario[key].gastos += g.monto;
+        flujoDiario[key].gastos += Number(g.monto);
       }
     }
 

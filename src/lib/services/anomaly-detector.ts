@@ -40,7 +40,7 @@ export async function detectarGastosInusuales(): Promise<number> {
     const avgMap = new Map<string, number>();
     for (const row of avgByCategory) {
       if (row._avg.monto !== null && row._count >= 3) {
-        avgMap.set(row.categoria, row._avg.monto);
+        avgMap.set(row.categoria, Number(row._avg.monto));
       }
     }
 
@@ -53,7 +53,7 @@ export async function detectarGastosInusuales(): Promise<number> {
       const avg = avgMap.get(gasto.categoria);
       if (!avg || avg === 0) continue;
 
-      const ratio = gasto.monto / avg;
+      const ratio = Number(gasto.monto) / avg;
       let severidad: string | null = null;
 
       if (ratio >= 3) {
@@ -71,12 +71,12 @@ export async function detectarGastosInusuales(): Promise<number> {
           tipo: "GASTO_INUSUAL",
           severidad,
           titulo: `Gasto inusual en ${gasto.categoria}`,
-          descripcion: `El gasto "${gasto.concepto}" por $${gasto.monto.toLocaleString("es-AR")} es ${ratio.toFixed(1)}x el promedio de la categoría ($${avg.toLocaleString("es-AR")}).`,
+          descripcion: `El gasto "${gasto.concepto}" por $${Number(gasto.monto).toLocaleString("es-AR")} es ${ratio.toFixed(1)}x el promedio de la categoría ($${avg.toLocaleString("es-AR")}).`,
           entidadTipo: "Gasto",
           entidadId: gasto.id,
-          montoInvolucrado: new Prisma.Decimal(gasto.monto),
+          montoInvolucrado: new Prisma.Decimal(Number(gasto.monto)),
           datosAnalisis: {
-            montoGasto: gasto.monto,
+            montoGasto: Number(gasto.monto),
             promedioCategoria: avg,
             ratio: Math.round(ratio * 100) / 100,
             categoria: gasto.categoria,
@@ -142,15 +142,15 @@ export async function detectarPagosDuplicados(
         data: {
           tipo: "PAGO_DUPLICADO",
           severidad: "ALTA",
-          titulo: `Posible pago duplicado por $${pago.monto.toLocaleString("es-AR")}`,
-          descripcion: `El pago ${pago.id} tiene ${duplicates.length} pago(s) con el mismo monto ($${pago.monto.toLocaleString("es-AR")}) para el mismo contrato dentro de 48 horas.`,
+          titulo: `Posible pago duplicado por $${Number(pago.monto).toLocaleString("es-AR")}`,
+          descripcion: `El pago ${pago.id} tiene ${duplicates.length} pago(s) con el mismo monto ($${Number(pago.monto).toLocaleString("es-AR")}) para el mismo contrato dentro de 48 horas.`,
           entidadTipo: "Pago",
           entidadId: pago.id,
-          montoInvolucrado: new Prisma.Decimal(pago.monto),
+          montoInvolucrado: new Prisma.Decimal(Number(pago.monto)),
           datosAnalisis: {
             pagoId: pago.id,
             contratoId: pago.contratoId,
-            monto: pago.monto,
+            monto: Number(pago.monto),
             duplicadosIds: duplicates.map((d: { id: string }) => d.id),
             fechaPago: pago.createdAt.toISOString(),
           },
@@ -212,14 +212,14 @@ export async function detectarFacturasSinPago(): Promise<number> {
           tipo: "FACTURA_SIN_PAGO",
           severidad,
           titulo: `Factura ${factura.numero} sin cobro hace ${Math.floor(ageDays)} días`,
-          descripcion: `La factura ${factura.numero} (tipo ${factura.tipo}) por $${factura.montoTotal.toLocaleString("es-AR")} fue emitida hace ${Math.floor(ageDays)} días y el pago vinculado tiene estado "${factura.pago?.estado ?? "desconocido"}".`,
+          descripcion: `La factura ${factura.numero} (tipo ${factura.tipo}) por $${Number(factura.montoTotal).toLocaleString("es-AR")} fue emitida hace ${Math.floor(ageDays)} días y el pago vinculado tiene estado "${factura.pago?.estado ?? "desconocido"}".`,
           entidadTipo: "Factura",
           entidadId: factura.id,
-          montoInvolucrado: new Prisma.Decimal(factura.montoTotal),
+          montoInvolucrado: new Prisma.Decimal(Number(factura.montoTotal)),
           datosAnalisis: {
             facturaNumero: factura.numero,
             tipo: factura.tipo,
-            montoTotal: factura.montoTotal,
+            montoTotal: Number(factura.montoTotal),
             diasSinCobro: Math.floor(ageDays),
             pagoEstado: factura.pago?.estado,
             pagoId: factura.pagoId,
@@ -272,10 +272,10 @@ export async function detectarMargenBajo(): Promise<number> {
 
     for (const moto of motosAlquiladas) {
       const ingresos = moto.contratos.reduce(
-        (sum: number, c) => sum + c.pagos.reduce((s: number, p) => s + p.monto, 0),
+        (sum: number, c) => sum + c.pagos.reduce((s: number, p) => s + Number(p.monto), 0),
         0
       );
-      const gastos = moto.gastos.reduce((sum: number, g) => sum + g.monto, 0);
+      const gastos = moto.gastos.reduce((sum: number, g) => sum + Number(g.monto), 0);
 
       if (ingresos === 0) continue; // No income data yet — skip
 
@@ -383,7 +383,7 @@ export async function detectarStockCritico(
           entidadTipo: "Repuesto",
           entidadId: repuesto.id,
           montoInvolucrado: new Prisma.Decimal(
-            repuesto.precioCompra * repuesto.stockMinimo
+            Number(repuesto.precioCompra) * repuesto.stockMinimo
           ),
           datosAnalisis: {
             repuestoNombre: repuesto.nombre,
@@ -439,18 +439,19 @@ export async function detectarDesviacionPresupuesto(): Promise<number> {
 
     const gastosMap = new Map<string, number>();
     for (const g of gastosReales) {
-      gastosMap.set(g.categoria, g._sum.monto ?? 0);
+      gastosMap.set(g.categoria, Number(g._sum.monto ?? 0));
     }
 
     const periodoId = `${anioActual}-${String(mesActual).padStart(2, "0")}`;
 
     for (const presupuesto of presupuestos) {
       const real = gastosMap.get(presupuesto.categoria) ?? 0;
-      if (presupuesto.montoPresupuestado === 0) continue;
+      if (Number(presupuesto.montoPresupuestado) === 0) continue;
 
+      const montoPresupuestadoNum = Number(presupuesto.montoPresupuestado);
       const desvio =
-        ((real - presupuesto.montoPresupuestado) /
-          presupuesto.montoPresupuestado) *
+        ((real - montoPresupuestadoNum) /
+          montoPresupuestadoNum) *
         100;
 
       let severidad: string | null = null;
@@ -470,16 +471,16 @@ export async function detectarDesviacionPresupuesto(): Promise<number> {
           tipo: "DESVIO_PRESUPUESTO",
           severidad,
           titulo: `Desvío presupuestario en ${presupuesto.categoria} (+${desvio.toFixed(0)}%)`,
-          descripcion: `La categoría ${presupuesto.categoria} lleva $${real.toLocaleString("es-AR")} gastados vs $${presupuesto.montoPresupuestado.toLocaleString("es-AR")} presupuestados (${periodoId}). Desvío del ${desvio.toFixed(1)}%.`,
+          descripcion: `La categoría ${presupuesto.categoria} lleva $${real.toLocaleString("es-AR")} gastados vs $${montoPresupuestadoNum.toLocaleString("es-AR")} presupuestados (${periodoId}). Desvío del ${desvio.toFixed(1)}%.`,
           entidadTipo: "PresupuestoMensual",
           entidadId,
           montoInvolucrado: new Prisma.Decimal(
-            real - presupuesto.montoPresupuestado
+            real - montoPresupuestadoNum
           ),
           datosAnalisis: {
             periodo: periodoId,
             categoria: presupuesto.categoria,
-            presupuestado: presupuesto.montoPresupuestado,
+            presupuestado: montoPresupuestadoNum,
             real,
             desvioPorcentaje: Math.round(desvio * 100) / 100,
           },
@@ -536,13 +537,13 @@ export async function detectarFlujoCajaNegativo(): Promise<number> {
 
     // Pagos comprometidos: facturas compra pendientes (not yet paid) — approximate with upcoming gastos
     // Since there's no direct "upcoming expense" field, we use recent gastos as a baseline projection
-    const pagosComprometidos = gastosRecientes._sum.monto ?? 0;
+    const pagosComprometidos = Number(gastosRecientes._sum.monto ?? 0);
 
     const saldoActual =
-      (ingresosRecientes._sum.monto ?? 0) - (gastosRecientes._sum.monto ?? 0);
+      Number(ingresosRecientes._sum.monto ?? 0) - Number(gastosRecientes._sum.monto ?? 0);
     const proyeccion =
       saldoActual +
-      (cobrosEsperados._sum.monto ?? 0) -
+      Number(cobrosEsperados._sum.monto ?? 0) -
       pagosComprometidos;
 
     if (proyeccion >= 0) return 0;
@@ -558,18 +559,18 @@ export async function detectarFlujoCajaNegativo(): Promise<number> {
         tipo: "FLUJO_CAJA_NEGATIVO",
         severidad: "CRITICA",
         titulo: `Flujo de caja negativo proyectado: -$${Math.abs(proyeccion).toLocaleString("es-AR")}`,
-        descripcion: `Proyección de flujo de caja a 30 días: saldo actual $${saldoActual.toLocaleString("es-AR")} + cobros esperados $${(cobrosEsperados._sum.monto ?? 0).toLocaleString("es-AR")} - gastos proyectados $${pagosComprometidos.toLocaleString("es-AR")} = -$${Math.abs(proyeccion).toLocaleString("es-AR")}.`,
+        descripcion: `Proyección de flujo de caja a 30 días: saldo actual $${saldoActual.toLocaleString("es-AR")} + cobros esperados $${Number(cobrosEsperados._sum.monto ?? 0).toLocaleString("es-AR")} - gastos proyectados $${pagosComprometidos.toLocaleString("es-AR")} = -$${Math.abs(proyeccion).toLocaleString("es-AR")}.`,
         entidadTipo: "FlujoCaja",
         entidadId: periodoId,
         montoInvolucrado: new Prisma.Decimal(Math.abs(proyeccion)),
         datosAnalisis: {
           periodo: periodoId,
           saldoActual,
-          cobrosEsperados: cobrosEsperados._sum.monto ?? 0,
+          cobrosEsperados: Number(cobrosEsperados._sum.monto ?? 0),
           pagosComprometidos,
           proyeccion,
-          ingresosUltimos30Dias: ingresosRecientes._sum.monto ?? 0,
-          gastosUltimos30Dias: gastosRecientes._sum.monto ?? 0,
+          ingresosUltimos30Dias: Number(ingresosRecientes._sum.monto ?? 0),
+          gastosUltimos30Dias: Number(gastosRecientes._sum.monto ?? 0),
         },
         autoDetectada: true,
       },
@@ -759,13 +760,13 @@ export async function detectarPatronesSospechosos(): Promise<number> {
           tipo: "PATRON_SOSPECHOSO",
           severidad: "MEDIA",
           titulo: `Pago en horario inusual (${hora}:00hs)`,
-          descripcion: `El pago ${pago.id} por $${pago.monto.toLocaleString("es-AR")} fue aprobado a las ${hora}:${String(pago.pagadoAt.getMinutes()).padStart(2, "0")}hs, fuera del horario habitual (06:00-22:00).`,
+          descripcion: `El pago ${pago.id} por $${Number(pago.monto).toLocaleString("es-AR")} fue aprobado a las ${hora}:${String(pago.pagadoAt.getMinutes()).padStart(2, "0")}hs, fuera del horario habitual (06:00-22:00).`,
           entidadTipo: "Pago",
           entidadId: `hora-${pago.id}`,
-          montoInvolucrado: new Prisma.Decimal(pago.monto),
+          montoInvolucrado: new Prisma.Decimal(Number(pago.monto)),
           datosAnalisis: {
             pagoId: pago.id,
-            monto: pago.monto,
+            monto: Number(pago.monto),
             horaLocal: hora,
             fechaPago: pago.pagadoAt.toISOString(),
             contratoId: pago.contratoId,
@@ -799,7 +800,7 @@ export async function detectarPatronesSospechosos(): Promise<number> {
       }
       reembolsosPorCliente
         .get(clienteId)!
-        .push({ id: pago.id, monto: pago.monto });
+        .push({ id: pago.id, monto: Number(pago.monto) });
     }
 
     const entries = Array.from(reembolsosPorCliente.entries());

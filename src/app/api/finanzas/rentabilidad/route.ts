@@ -32,14 +32,14 @@ export async function GET() {
           },
           _sum: { monto: true },
         });
-        const ingresos = pagosAprobados._sum.monto ?? 0;
+        const ingresos = Number(pagosAprobados._sum.monto) || 0;
 
         // Total expenses (gastos + mantenimientos without associated gasto)
         const gastosDirectos = await prisma.gasto.aggregate({
           where: { motoId: moto.id },
           _sum: { monto: true },
         });
-        const gastos = gastosDirectos._sum.monto ?? 0;
+        const gastos = Number(gastosDirectos._sum.monto) || 0;
 
         // Days rented
         const contratos = await prisma.contrato.findMany({
@@ -73,7 +73,7 @@ export async function GET() {
           modelo: moto.modelo,
           patente: moto.patente,
           estado: moto.estado,
-          precioMensual: moto.precioMensual,
+          precioMensual: Number(moto.precioMensual),
           ingresos,
           gastos,
           rentabilidad,

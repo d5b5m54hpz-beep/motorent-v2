@@ -93,9 +93,9 @@ export async function POST(
     }
 
     // Calculate amounts
-    const subtotal = factura.subtotal;
-    const totalIVA = factura.iva21 + factura.iva105 + factura.iva27;
-    const total = factura.total;
+    const subtotal = Number(factura.subtotal);
+    const totalIVA = Number(factura.iva21) + Number(factura.iva105) + Number(factura.iva27);
+    const total = Number(factura.total);
 
     // Validate debe = haber
     const totalDebe = subtotal + totalIVA;
@@ -135,7 +135,7 @@ export async function POST(
               cuentaId: cuentaIVA.id,
               debe: totalIVA,
               haber: 0,
-              descripcion: `IVA Crédito Fiscal (21%: $${factura.iva21}, 10.5%: $${factura.iva105}, 27%: $${factura.iva27})`,
+              descripcion: `IVA Crédito Fiscal (21%: $${Number(factura.iva21)}, 10.5%: $${Number(factura.iva105)}, 27%: $${Number(factura.iva27)})`,
             },
             // HABER: Proveedores
             {

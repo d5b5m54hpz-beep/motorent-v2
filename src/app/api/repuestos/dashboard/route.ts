@@ -24,11 +24,11 @@ export async function GET() {
     const sinStock = repuestos.filter((r) => r.stock === 0 && r.activo).length;
 
     const valorInventario = repuestos.reduce(
-      (sum, r) => sum + r.stock * r.precioCompra,
+      (sum, r) => sum + r.stock * Number(r.precioCompra),
       0
     );
     const valorVenta = repuestos.reduce(
-      (sum, r) => sum + r.stock * r.precioVenta,
+      (sum, r) => sum + r.stock * Number(r.precioVenta),
       0
     );
 
@@ -38,7 +38,7 @@ export async function GET() {
         acc[cat] = { categoria: cat, cantidad: 0, valor: 0 };
       }
       acc[cat].cantidad += 1;
-      acc[cat].valor += r.stock * r.precioCompra;
+      acc[cat].valor += r.stock * Number(r.precioCompra);
       return acc;
     }, {} as Record<string, { categoria: string; cantidad: number; valor: number }>);
 

@@ -398,7 +398,7 @@ export async function enviarFacturaEmail(facturaId: string): Promise<{
       modeloMoto: moto.modelo,
       numeroFactura: numeroCompleto,
       fechaEmision: formatDate(factura.createdAt),
-      montoTotal: formatCurrency(factura.montoTotal),
+      montoTotal: formatCurrency(Number(factura.montoTotal)),
       estado: factura.emitida ? "Emitida" : "Pendiente AFIP",
       appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
     };

@@ -86,19 +86,19 @@ async function getLibroMayor(desde: Date, hasta: Date) {
 
       let saldoAcumulado = 0;
       const movimientos = lineas.map((linea) => {
-        saldoAcumulado += linea.debe - linea.haber;
+        saldoAcumulado += Number(linea.debe) - Number(linea.haber);
         return {
           fecha: linea.asiento.fecha,
           asientoNumero: linea.asiento.numero,
           descripcion: linea.asiento.descripcion,
-          debe: linea.debe,
-          haber: linea.haber,
+          debe: Number(linea.debe),
+          haber: Number(linea.haber),
           saldo: saldoAcumulado,
         };
       });
 
-      const totalDebe = lineas.reduce((sum, l) => sum + l.debe, 0);
-      const totalHaber = lineas.reduce((sum, l) => sum + l.haber, 0);
+      const totalDebe = lineas.reduce((sum, l) => sum + Number(l.debe), 0);
+      const totalHaber = lineas.reduce((sum, l) => sum + Number(l.haber), 0);
 
       return {
         cuenta: {
@@ -137,8 +137,8 @@ async function getBalanceSumasSaldos(desde: Date, hasta: Date) {
         },
       });
 
-      const totalDebe = lineas.reduce((sum, l) => sum + l.debe, 0);
-      const totalHaber = lineas.reduce((sum, l) => sum + l.haber, 0);
+      const totalDebe = lineas.reduce((sum, l) => sum + Number(l.debe), 0);
+      const totalHaber = lineas.reduce((sum, l) => sum + Number(l.haber), 0);
       const saldo = totalDebe - totalHaber;
 
       return {
@@ -193,8 +193,8 @@ async function getPosicionIVA(desde: Date, hasta: Date) {
     },
   });
 
-  const totalDebito = ivaDebito.reduce((sum, l) => sum + l.haber - l.debe, 0);
-  const totalCredito = ivaCredito.reduce((sum, l) => sum + l.debe - l.haber, 0);
+  const totalDebito = ivaDebito.reduce((sum, l) => sum + Number(l.haber) - Number(l.debe), 0);
+  const totalCredito = ivaCredito.reduce((sum, l) => sum + Number(l.debe) - Number(l.haber), 0);
   const saldo = totalDebito - totalCredito;
 
   return NextResponse.json({
@@ -204,7 +204,7 @@ async function getPosicionIVA(desde: Date, hasta: Date) {
           fecha: l.asiento.fecha,
           asientoNumero: l.asiento.numero,
           descripcion: l.asiento.descripcion,
-          monto: l.haber - l.debe,
+          monto: Number(l.haber) - Number(l.debe),
         })),
         total: totalDebito,
       },
@@ -213,7 +213,7 @@ async function getPosicionIVA(desde: Date, hasta: Date) {
           fecha: l.asiento.fecha,
           asientoNumero: l.asiento.numero,
           descripcion: l.asiento.descripcion,
-          monto: l.debe - l.haber,
+          monto: Number(l.debe) - Number(l.haber),
         })),
         total: totalCredito,
       },
@@ -239,7 +239,7 @@ async function getEstadoResultados(desde: Date, hasta: Date) {
         },
       });
 
-      const total = lineas.reduce((sum, l) => sum + l.haber - l.debe, 0);
+      const total = lineas.reduce((sum, l) => sum + Number(l.haber) - Number(l.debe), 0);
 
       return {
         codigo: cuenta.codigo,
@@ -264,7 +264,7 @@ async function getEstadoResultados(desde: Date, hasta: Date) {
         },
       });
 
-      const total = lineas.reduce((sum, l) => sum + l.debe - l.haber, 0);
+      const total = lineas.reduce((sum, l) => sum + Number(l.debe) - Number(l.haber), 0);
 
       return {
         codigo: cuenta.codigo,

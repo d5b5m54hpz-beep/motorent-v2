@@ -147,7 +147,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
         // Calcular montos según tipo de factura
         const tipo = "B" as "A" | "B" | "C"; // Por defecto tipo B
-        const montoTotal = pagoActualizado.monto;
+        const montoTotal = Number(pagoActualizado.monto);
         const montoNeto = tipo === "A" ? montoTotal / 1.21 : montoTotal;
         const montoIva = tipo === "A" ? montoTotal - montoNeto : 0;
 

@@ -41,8 +41,8 @@ export async function runDailyAnalysis(): Promise<AnalysisResult> {
     prisma.pago.count({ where: { estado: "pendiente", vencimientoAt: { lt: today } } }),
   ]);
 
-  const ingresos = pagosAprobados._sum.monto ?? 0;
-  const egresos = gastosTotal._sum.monto ?? 0;
+  const ingresos = Number(pagosAprobados._sum.monto ?? 0);
+  const egresos = Number(gastosTotal._sum.monto ?? 0);
   const margen = ingresos > 0 ? ((ingresos - egresos) / ingresos) * 100 : 0;
   const ticketPromedio = pagosAprobados._count > 0 ? ingresos / pagosAprobados._count : 0;
 
@@ -95,10 +95,10 @@ export async function runWeeklyAnalysis(): Promise<AnalysisResult> {
     prisma.gasto.aggregate({ where: { fecha: { gte: startOfPrevWeek, lt: startOfWeek } }, _sum: { monto: true } }),
   ]);
 
-  const ingresos = thisWeekPagos._sum.monto ?? 0;
-  const egresos = thisWeekGastos._sum.monto ?? 0;
-  const prevIngresos = prevWeekPagos._sum.monto ?? 0;
-  const prevEgresos = prevWeekGastos._sum.monto ?? 0;
+  const ingresos = Number(thisWeekPagos._sum.monto ?? 0);
+  const egresos = Number(thisWeekGastos._sum.monto ?? 0);
+  const prevIngresos = Number(prevWeekPagos._sum.monto ?? 0);
+  const prevEgresos = Number(prevWeekGastos._sum.monto ?? 0);
 
   const metricas = { ingresos, egresos, margenOperativo: ingresos > 0 ? Math.round(((ingresos - egresos) / ingresos) * 10000) / 100 : 0 };
 
@@ -137,10 +137,10 @@ export async function runMonthlyAnalysis(): Promise<AnalysisResult> {
     prisma.contrato.count({ where: { estado: "activo" } }),
   ]);
 
-  const ingresos = thisMonthPagos._sum.monto ?? 0;
-  const egresos = thisMonthGastos._sum.monto ?? 0;
-  const prevYearIngresos = prevYearPagos._sum.monto ?? 0;
-  const prevYearEgresos = prevYearGastos._sum.monto ?? 0;
+  const ingresos = Number(thisMonthPagos._sum.monto ?? 0);
+  const egresos = Number(thisMonthGastos._sum.monto ?? 0);
+  const prevYearIngresos = Number(prevYearPagos._sum.monto ?? 0);
+  const prevYearEgresos = Number(prevYearGastos._sum.monto ?? 0);
 
   const metricas = {
     ingresos, egresos,

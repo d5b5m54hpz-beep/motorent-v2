@@ -87,8 +87,8 @@ export async function GET(req: NextRequest) {
     let countMargen = 0;
 
     repuestos.forEach((r) => {
-      const costo = r.costoPromedioArs;
-      const precio = r.precioVenta;
+      const costo = Number(r.costoPromedioArs);
+      const precio = Number(r.precioVenta);
       const stock = r.stock;
 
       // Valor inventario
@@ -169,10 +169,10 @@ export async function GET(req: NextRequest) {
 
       const data = categorias.get(cat)!;
       data.totalProductos++;
-      data.valorInventario += r.precioVenta * r.stock;
+      data.valorInventario += Number(r.precioVenta) * r.stock;
 
-      if (r.precioVenta > 0) {
-        const margen = (r.precioVenta - r.costoPromedioArs) / r.precioVenta;
+      if (Number(r.precioVenta) > 0) {
+        const margen = (Number(r.precioVenta) - Number(r.costoPromedioArs)) / Number(r.precioVenta);
         data.sumaMargen += margen;
       }
     });
@@ -204,9 +204,9 @@ export async function GET(req: NextRequest) {
     let optimo = 0;
 
     repuestos.forEach((r) => {
-      if (r.precioVenta === 0) return;
+      if (Number(r.precioVenta) === 0) return;
 
-      const margen = (r.precioVenta - r.costoPromedioArs) / r.precioVenta;
+      const margen = (Number(r.precioVenta) - Number(r.costoPromedioArs)) / Number(r.precioVenta);
       const config = configMap.get(r.categoria || "");
       const margenMinimo = config?.margenMinimo || 0.25;
       const margenObjetivo = config?.margenObjetivo || 0.40;
@@ -219,9 +219,9 @@ export async function GET(req: NextRequest) {
 
     // ─── 9. TOP 5 PEORES Y MEJORES MÁRGENES ────────────────────────
     const repuestosConMargen = repuestos
-      .filter((r) => r.precioVenta > 0)
+      .filter((r) => Number(r.precioVenta) > 0)
       .map((r) => {
-        const margen = (r.precioVenta - r.costoPromedioArs) / r.precioVenta;
+        const margen = (Number(r.precioVenta) - Number(r.costoPromedioArs)) / Number(r.precioVenta);
         const config = configMap.get(r.categoria || "");
         const margenMinimo = config?.margenMinimo || 0.25;
 
@@ -229,8 +229,8 @@ export async function GET(req: NextRequest) {
           repuestoId: r.id,
           nombre: r.nombre,
           categoria: r.categoria,
-          costo: r.costoPromedioArs,
-          precioVenta: r.precioVenta,
+          costo: Number(r.costoPromedioArs),
+          precioVenta: Number(r.precioVenta),
           margen,
           margenMinimo,
           diferencia: margen - margenMinimo,
@@ -252,14 +252,14 @@ export async function GET(req: NextRequest) {
       const mesFin = startOfMonth(subMonths(now, i - 1));
 
       // Snapshot de costos en ese mes (simplificado - usar último valor conocido)
-      const repuestosMes = repuestos.filter((r) => r.precioVenta > 0);
+      const repuestosMes = repuestos.filter((r) => Number(r.precioVenta) > 0);
 
       const costoPromedio = repuestosMes.length > 0
-        ? repuestosMes.reduce((sum, r) => sum + r.costoPromedioArs, 0) / repuestosMes.length
+        ? repuestosMes.reduce((sum, r) => sum + Number(r.costoPromedioArs), 0) / repuestosMes.length
         : 0;
 
       const precioPromedio = repuestosMes.length > 0
-        ? repuestosMes.reduce((sum, r) => sum + r.precioVenta, 0) / repuestosMes.length
+        ? repuestosMes.reduce((sum, r) => sum + Number(r.precioVenta), 0) / repuestosMes.length
         : 0;
 
       const margen = precioPromedio > 0
@@ -279,14 +279,14 @@ export async function GET(req: NextRequest) {
 
     // Alertas de margen bajo
     repuestos.forEach((r) => {
-      if (r.precioVenta === 0) return;
+      if (Number(r.precioVenta) === 0) return;
 
-      const margen = (r.precioVenta - r.costoPromedioArs) / r.precioVenta;
+      const margen = (Number(r.precioVenta) - Number(r.costoPromedioArs)) / Number(r.precioVenta);
       const config = configMap.get(r.categoria || "");
       const margenMinimo = config?.margenMinimo || 0.25;
 
       if (margen < 0.10) {
-        const precioSugerido = Math.ceil(r.costoPromedioArs / (1 - 0.10));
+        const precioSugerido = Math.ceil(Number(r.costoPromedioArs) / (1 - 0.10));
         alertas.push({
           tipo: "MARGEN_CRITICO",
           severidad: "ALTA",
@@ -295,7 +295,7 @@ export async function GET(req: NextRequest) {
           accion: `Aumentar precio a $${precioSugerido.toLocaleString("es-AR")} para alcanzar 10% mínimo`,
         });
       } else if (margen < margenMinimo) {
-        const precioSugerido = Math.ceil(r.costoPromedioArs / (1 - margenMinimo));
+        const precioSugerido = Math.ceil(Number(r.costoPromedioArs) / (1 - margenMinimo));
         alertas.push({
           tipo: "MARGEN_BAJO_MINIMO",
           severidad: "ALTA",
@@ -337,7 +337,7 @@ export async function GET(req: NextRequest) {
     if (ultimoEmbarque?.tipoCambioArsUsd) {
       // TC actual (en producción vendría de API externa, aquí asumimos 1200 ARS/USD)
       const tcActual = 1200; // TODO: Obtener de API externa (dolarapi.com, etc.)
-      const tcAnterior = ultimoEmbarque.tipoCambioArsUsd;
+      const tcAnterior = Number(ultimoEmbarque.tipoCambioArsUsd);
       const variacionTC = ((tcActual - tcAnterior) / tcAnterior) * 100;
       const umbralAlerta = 10; // 10% de variación
 
@@ -368,15 +368,15 @@ export async function GET(req: NextRequest) {
     });
 
     const ultimosCambios = ultimosCambiosRaw.map((h) => {
-      const cambio = h.precioAnterior && h.precioAnterior > 0
-        ? ((h.precioNuevo - h.precioAnterior) / h.precioAnterior) * 100
+      const cambio = h.precioAnterior && Number(h.precioAnterior) > 0
+        ? ((Number(h.precioNuevo) - Number(h.precioAnterior)) / Number(h.precioAnterior)) * 100
         : 0;
 
       return {
         repuesto: h.repuesto.nombre,
         fecha: format(new Date(h.createdAt), "dd/MM/yyyy"),
-        precioAnterior: h.precioAnterior || 0,
-        precioNuevo: h.precioNuevo,
+        precioAnterior: Number(h.precioAnterior) || 0,
+        precioNuevo: Number(h.precioNuevo),
         cambio: cambio > 0 ? `+${cambio.toFixed(1)}%` : `${cambio.toFixed(1)}%`,
         motivo: h.tipoCambio,
         loteId: h.loteId,

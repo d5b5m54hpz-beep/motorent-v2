@@ -114,7 +114,7 @@ export async function POST(
         descuentoAplicadoPct = pricingData.descuentoPorcentaje || 0;
       } else {
         // Fallback: usar precio base del repuesto
-        precioUnitario = repuesto.precioVenta || 0;
+        precioUnitario = Number(repuesto.precioVenta) || 0;
       }
     } else {
       // Sin rider: usar lista interna (costo + margen mínimo)
@@ -138,16 +138,16 @@ export async function POST(
           orderBy: [{ cantidadMinima: 'desc' }, { vigenciaDesde: 'desc' }],
         });
 
-        precioUnitario = itemLista?.precioArs || repuesto.costoPromedioArs * 1.05;
+        precioUnitario = Number(itemLista?.precioArs) || Number(repuesto.costoPromedioArs) * 1.05;
         listaId = listaInterna.id;
       } else {
         // Fallback: costo + 5%
-        precioUnitario = repuesto.costoPromedioArs * 1.05;
+        precioUnitario = Number(repuesto.costoPromedioArs) * 1.05;
       }
     }
 
     // 5. Calcular margen
-    const costoUnitario = repuesto.costoPromedioArs;
+    const costoUnitario = Number(repuesto.costoPromedioArs);
     const margenUnitario = precioUnitario > 0 ? (precioUnitario - costoUnitario) / precioUnitario : 0;
 
     // 6. Crear RepuestoOrdenTrabajo

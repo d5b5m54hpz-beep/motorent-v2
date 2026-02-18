@@ -44,8 +44,8 @@ export async function POST(
     }
 
     // 1. Calculate CIF
-    const seguroUsd = embarque.seguroUsd || (embarque.totalFobUsd + embarque.fleteUsd) * 0.01;
-    const cifUsd = embarque.totalFobUsd + embarque.fleteUsd + seguroUsd;
+    const seguroUsd = Number(embarque.seguroUsd) || (Number(embarque.totalFobUsd) + Number(embarque.fleteUsd)) * 0.01;
+    const cifUsd = Number(embarque.totalFobUsd) + Number(embarque.fleteUsd) + seguroUsd;
 
     // 2. Calculate totals for allocation
     const totalPesoEmbarque = embarque.items.reduce((sum, i) => sum + (i.pesoTotalKg || 0), 0);
@@ -62,9 +62,11 @@ export async function POST(
       embarque.items.map(async (item) => {
         // 3. Calculate allocation factor
         let factorAsignacion: number;
+        const itemSubtotalFob = Number(item.subtotalFobUsd);
+        const embarqueTotalFob = Number(embarque.totalFobUsd);
         switch (metodoAsignacion) {
           case "POR_VALOR":
-            factorAsignacion = item.subtotalFobUsd / embarque.totalFobUsd;
+            factorAsignacion = itemSubtotalFob / embarqueTotalFob;
             break;
           case "POR_PESO":
             factorAsignacion = (item.pesoTotalKg || 0) / (totalPesoEmbarque || 1);
@@ -74,18 +76,18 @@ export async function POST(
             break;
           case "HIBRIDO":
             // Flete por volumen, resto por valor
-            factorAsignacion = item.subtotalFobUsd / embarque.totalFobUsd;
+            factorAsignacion = itemSubtotalFob / embarqueTotalFob;
             break;
           default:
-            factorAsignacion = item.subtotalFobUsd / embarque.totalFobUsd;
+            factorAsignacion = itemSubtotalFob / embarqueTotalFob;
         }
 
         // 4. Assign shared costs
-        const fleteAsignado = embarque.fleteUsd * factorAsignacion;
+        const fleteAsignado = Number(embarque.fleteUsd) * factorAsignacion;
         const seguroAsignado = seguroUsd * factorAsignacion;
 
         // 5. CIF del item
-        const cifItem = item.subtotalFobUsd + fleteAsignado + seguroAsignado;
+        const cifItem = itemSubtotalFob + fleteAsignado + seguroAsignado;
 
         // 6. Arancel específico del item
         const categoriaConfig = item.repuesto?.categoria ? categoriasMap.get(item.repuesto.categoria) : null;
@@ -111,7 +113,7 @@ export async function POST(
         const logisticaItem = logisticaTotal * factorAsignacion;
 
         // 12. COSTO NO RECUPERABLE (el verdadero costo del inventario)
-        const costoNoRecuperable = item.subtotalFobUsd + fleteAsignado + seguroAsignado
+        const costoNoRecuperable = itemSubtotalFob + fleteAsignado + seguroAsignado
           + derechosItem + tasaEstItem + tasasFijasItem + logisticaItem;
 
         // 13. Costo por unidad
@@ -123,7 +125,7 @@ export async function POST(
         const desembolsoUnitarioUsd = desembolsoTotal / item.cantidad;
 
         // Calculate margin
-        const precioVenta = item.repuesto?.precioVenta || 0;
+        const precioVenta = Number(item.repuesto?.precioVenta) || 0;
         const margenActual = precioVenta > 0 ? (precioVenta - costoLandedUnitarioArs) / precioVenta : 0;
         const margenObjetivo = categoriaConfig?.margenObjetivo ?? 0.45;
         const margenMinimo = categoriaConfig?.margenMinimo ?? 0.25;
@@ -136,12 +138,12 @@ export async function POST(
           repuestoId: item.repuestoId,
           nombre: item.repuesto?.nombre || "Sin repuesto vinculado",
           cantidad: item.cantidad,
-          fobUnitarioUsd: item.precioFobUnitarioUsd,
+          fobUnitarioUsd: Number(item.precioFobUnitarioUsd),
           costoLandedUnitarioUsd: Number(costoLandedUnitarioUsd.toFixed(2)),
           costoLandedUnitarioArs: Number(costoLandedUnitarioArs.toFixed(2)),
           desembolsoUnitarioUsd: Number(desembolsoUnitarioUsd.toFixed(2)),
           desglose: {
-            fob: Number(item.precioFobUnitarioUsd.toFixed(2)),
+            fob: Number(Number(item.precioFobUnitarioUsd).toFixed(2)),
             flete: Number((fleteAsignado / item.cantidad).toFixed(2)),
             seguro: Number((seguroAsignado / item.cantidad).toFixed(2)),
             derechos: Number((derechosItem / item.cantidad).toFixed(2)),
