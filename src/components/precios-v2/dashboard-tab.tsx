@@ -11,23 +11,34 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 type DashboardData = {
   kpis: {
-    margenPromedio: number;
-    itemsBajoMargen: number;
+    margenPromedioPortfolio: number;
+    margenPromedioSimple: number;
+    repuestosBajoMinimo: number;
+    repuestosSinPrecio: number;
+    repuestosMargenCritico: number;
     valorInventarioCosto: number;
     valorInventarioPrecio: number;
+    totalRepuestos: number;
+    margenBrutoInventario: number;
+    cambiosPreciosPeriodo: number;
+    embarquesEnTransito: number;
+    ultimoAjusteBulk: string | null;
+    tendenciaMargen: number;
   };
-  distribucion: {
+  distribucionMargenes: {
     critico: number;
     bajo: number;
     aceptable: number;
     optimo: number;
-    alto: number;
   };
-  margenPorCategoria: Array<{
+  porCategoria: Array<{
     categoria: string;
     totalProductos: number;
     margenPromedio: number;
     margenObjetivo: number;
+    margenMinimo: number;
+    valorInventario: number;
+    estado: string;
   }>;
 };
 
@@ -61,7 +72,7 @@ export function DashboardTab() {
   const fetchDashboard = async () => {
     setIsLoadingDashboard(true);
     try {
-      const res = await fetch("/api/precios-repuestos/dashboard");
+      const res = await fetch("/api/pricing-repuestos/dashboard-margenes");
       if (!res.ok) throw new Error("Error al cargar dashboard");
       const data = await res.json();
       setDashboardData(data);
@@ -76,7 +87,7 @@ export function DashboardTab() {
   const fetchSugerencias = async () => {
     setIsLoadingSugerencias(true);
     try {
-      const res = await fetch("/api/precios-repuestos/generar-sugerencias", {
+      const res = await fetch("/api/pricing-repuestos/sugerencias", {
         method: "POST",
       });
       if (!res.ok) throw new Error("Error al generar sugerencias");
@@ -93,7 +104,7 @@ export function DashboardTab() {
   const aplicarSugerencia = async (sugerencia: Sugerencia) => {
     setIsApplying(sugerencia.repuestoId);
     try {
-      const res = await fetch("/api/precios-repuestos/aplicar-sugerencia", {
+      const res = await fetch("/api/pricing-repuestos/aplicar-sugerencia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -141,19 +152,18 @@ export function DashboardTab() {
     );
   }
 
-  const { kpis, distribucion, margenPorCategoria } = dashboardData;
+  const { kpis, distribucionMargenes, porCategoria } = dashboardData;
 
   // Datos para gráfico de distribución
   const distribucionData = [
-    { rango: "Crítico\n<10%", cantidad: distribucion.critico, fill: "#ef4444" },
-    { rango: "Bajo\n10-25%", cantidad: distribucion.bajo, fill: "#f59e0b" },
-    { rango: "Aceptable\n25-45%", cantidad: distribucion.aceptable, fill: "#10b981" },
-    { rango: "Óptimo\n45-60%", cantidad: distribucion.optimo, fill: "#059669" },
-    { rango: "Alto\n>60%", cantidad: distribucion.alto, fill: "#3b82f6" },
+    { rango: "Crítico\n<10%", cantidad: distribucionMargenes.critico, fill: "#ef4444" },
+    { rango: "Bajo\n10-25%", cantidad: distribucionMargenes.bajo, fill: "#f59e0b" },
+    { rango: "Aceptable\n25-45%", cantidad: distribucionMargenes.aceptable, fill: "#10b981" },
+    { rango: "Óptimo\n45%+", cantidad: distribucionMargenes.optimo, fill: "#059669" },
   ];
 
   // Datos para gráfico de categorías
-  const categoriaData = margenPorCategoria.slice(0, 8).map((cat) => ({
+  const categoriaData = porCategoria.slice(0, 8).map((cat) => ({
     categoria: cat.categoria || "Sin categoría",
     margen: cat.margenPromedio * 100,
     fill:
@@ -175,10 +185,10 @@ export function DashboardTab() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(kpis.margenPromedio * 100).toFixed(1)}%
+              {(kpis.margenPromedioPortfolio * 100).toFixed(1)}%
             </div>
             <p className="text-xs text-muted-foreground">
-              {kpis.margenPromedio >= 0.40 ? "✓" : "⚠"} Objetivo: 45%
+              {kpis.margenPromedioPortfolio >= 0.40 ? "✓" : "⚠"} Objetivo: 45%
             </p>
           </CardContent>
         </Card>
@@ -189,7 +199,7 @@ export function DashboardTab() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{kpis.itemsBajoMargen}</div>
+            <div className="text-2xl font-bold text-red-600">{kpis.repuestosBajoMinimo}</div>
             <p className="text-xs text-muted-foreground">requieren atención</p>
           </CardContent>
         </Card>

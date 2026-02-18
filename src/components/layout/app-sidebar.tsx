@@ -160,7 +160,9 @@ export function AppSidebar({ user }: Props) {
   // Categories with subitems
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
+    { title: "Patentamiento", href: "/admin/motos/patentamiento", icon: FileCheck },
     { title: "Tarifas de Alquiler", href: "/admin/precios", icon: Tag },
+    { title: "Amortización", href: "/admin/flota/amortizacion", icon: TrendingUp },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
     { title: "Talleres", href: "/admin/talleres", icon: Factory },
   ];
@@ -183,6 +185,7 @@ export function AppSidebar({ user }: Props) {
 
   const finanzas: NavItem[] = [
     { title: "Dashboard Financiero", href: "/admin/finanzas", icon: BarChart3 },
+    { title: "Indicadores", href: "/admin/finanzas/indicadores", icon: Activity },
     { title: "Flujo de Caja", href: "/admin/finanzas/flujo-caja", icon: Banknote },
     { title: "Gastos", href: "/admin/gastos", icon: Wallet },
     { title: "Rentabilidad", href: "/admin/finanzas/rentabilidad", icon: TrendingUp },
@@ -198,6 +201,7 @@ export function AppSidebar({ user }: Props) {
   ];
 
   const rrhh: NavItem[] = [
+    { title: "Dashboard RRHH", href: "/admin/rrhh", icon: Users },
     { title: "Empleados", href: "/admin/rrhh/empleados", icon: UserCog },
     { title: "Ausencias", href: "/admin/rrhh/ausencias", icon: Calendar },
     { title: "Liquidación", href: "/admin/rrhh/liquidacion", icon: Banknote },

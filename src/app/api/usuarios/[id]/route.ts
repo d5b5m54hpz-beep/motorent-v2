@@ -35,8 +35,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // Solo permitir ver usuarios ADMIN y OPERADOR
-    if (usuario.role !== "ADMIN" && usuario.role !== "OPERADOR") {
+    // Solo permitir ver usuarios no-CLIENTE
+    if (usuario.role === "CLIENTE") {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     }
 
     // No permitir modificar CLIENTEs desde este endpoint
-    if (usuario.role !== "ADMIN" && usuario.role !== "OPERADOR") {
+    if (usuario.role === "CLIENTE") {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
@@ -120,6 +120,12 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         image: true,
         createdAt: true,
         updatedAt: true,
+        profiles: {
+          select: {
+            profileId: true,
+            profile: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
@@ -164,7 +170,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     }
 
     // No permitir eliminar CLIENTEs desde este endpoint
-    if (usuario.role !== "ADMIN" && usuario.role !== "OPERADOR") {
+    if (usuario.role === "CLIENTE") {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 

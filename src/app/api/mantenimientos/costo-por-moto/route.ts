@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
       // Monthly rental income: prefer contract montoPeriodo, fallback to moto.precioMensual
       const ingresosMensuales = moto.contratos.length > 0
         ? moto.contratos.reduce((s, c) => s + (c.montoPeriodo || 0), 0) / moto.contratos.length
-        : moto.precioMensual || 0;
+        : Number(moto.precioMensual) || 0;
       const ingresoAlquilerMensual = Math.round(ingresosMensuales);
 
       // Monthly maintenance cost (spread over months since creation)

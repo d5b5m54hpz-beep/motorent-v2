@@ -110,9 +110,9 @@ export function ImportDialog({ module, label = "Importar", onSuccess }: Props) {
 
       const data = await res.json();
       setPreview(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Error al procesar archivo");
+      toast.error(error instanceof Error ? error.message : "Error al procesar archivo");
     } finally {
       setLoading(false);
     }
@@ -143,9 +143,9 @@ export function ImportDialog({ module, label = "Importar", onSuccess }: Props) {
       setFile(null);
       setPreview(null);
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Import error:", error);
-      toast.error(error.message || "Error al importar datos");
+      toast.error(error instanceof Error ? error.message : "Error al importar datos");
     } finally {
       setUploading(false);
     }

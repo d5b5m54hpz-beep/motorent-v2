@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Depreciación mensual promedio (simplificado)
-    const deprecMensual = ((valorFlota._sum.valorCompra || 0) - (valorFlota._sum.valorResidual || 0)) / 60; // 5 años = 60 meses
+    const deprecMensual = (Number(valorFlota._sum.valorCompra || 0) - Number(valorFlota._sum.valorResidual || 0)) / 60; // 5 años = 60 meses
 
     // Mantenimientos próximos
     const mantenimientosProximos = await prisma.ordenTrabajo.findMany({
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       })),
       total,
       tasaOcupacion: total > 0 ? Math.round((alquiladas / total) * 100) : 0,
-      valorFlota: Math.round(valorFlota._sum.valorCompra || 0),
+      valorFlota: Math.round(Number(valorFlota._sum.valorCompra || 0)),
       depreciacionMensual: Math.round(deprecMensual),
       mantenimientosProximos: mantenimientosProximos.map((m) => ({
         moto: `${m.moto.marca} ${m.moto.modelo} (${m.moto.patente})`,

@@ -41,8 +41,8 @@ export async function GET(req: NextRequest) {
 
     const now = new Date();
     const amortizaciones = motos.map((moto) => {
-      const valorCompra = moto.valorCompra || 0;
-      const valorResidual = moto.valorResidual || valorCompra * 0.1; // 10% default
+      const valorCompra = Number(moto.valorCompra || 0);
+      const valorResidual = Number(moto.valorResidual || 0) || valorCompra * 0.1; // 10% default
       const vidaUtilAnios = moto.vidaUtilAnios || 5; // AFIP default
       const vidaUtilMeses = vidaUtilAnios * 12;
 

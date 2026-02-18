@@ -163,8 +163,8 @@ export const flotaTools: ToolMetadata[] = [
       const alquiladas = byEstado["alquilada"] ?? 0;
 
       // Calcular depreciación (simplified)
-      const valorCompraTotal = valorTotal._sum.valorCompra ?? 0;
-      const valorResidualTotal = valorTotal._sum.valorResidual ?? 0;
+      const valorCompraTotal = Number(valorTotal._sum.valorCompra ?? 0);
+      const valorResidualTotal = Number(valorTotal._sum.valorResidual ?? 0);
 
       return {
         total,
@@ -258,8 +258,8 @@ export const flotaTools: ToolMetadata[] = [
       const ahora = new Date();
 
       const detalle = motos.map((m) => {
-        const valorCompra = m.valorCompra ?? 0;
-        const valorResidual = m.valorResidual ?? 0;
+        const valorCompra = Number(m.valorCompra ?? 0);
+        const valorResidual = Number(m.valorResidual ?? 0);
         const vidaUtilMeses = (m.vidaUtilAnios ?? 5) * 12;
         const cuotaMensual = (valorCompra - valorResidual) / vidaUtilMeses;
 

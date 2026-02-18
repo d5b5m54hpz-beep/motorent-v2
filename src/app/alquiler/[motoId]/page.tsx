@@ -191,9 +191,9 @@ export default function AlquilerPage({ params }: { params: Promise<{ motoId: str
       const contrato = await contratoRes.json();
       toast.success("¡Contrato creado exitosamente!");
       router.push(`/alquiler/exito?contratoId=${contrato.id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating contract:", error);
-      toast.error(error.message || "Error al crear contrato");
+      toast.error(error instanceof Error ? error.message : "Error al crear contrato");
     } finally {
       setSubmitting(false);
     }

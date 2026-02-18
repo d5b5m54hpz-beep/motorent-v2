@@ -125,13 +125,14 @@ export const finanzasTools: ToolMetadata[] = [
           const meses = Math.max(1, Math.min(6, (now.getTime() - moto.createdAt.getTime()) / (1000 * 60 * 60 * 24 * 30)));
           const costoMensual = (gastos._sum.monto ?? 0) / meses;
           const sugerido = costoMensual * (1 + margen / 100);
+          const precioMensualNum = Number(moto.precioMensual);
           return {
             moto: `${moto.marca} ${moto.modelo} (${moto.patente})`,
             costoOperativoMensual: Math.round(costoMensual),
-            precioActual: moto.precioMensual,
+            precioActual: precioMensualNum,
             precioSugerido: Math.round(sugerido),
-            diferencia: Math.round(moto.precioMensual - sugerido),
-            subpreciada: moto.precioMensual < sugerido * 0.95,
+            diferencia: Math.round(precioMensualNum - sugerido),
+            subpreciada: precioMensualNum < sugerido * 0.95,
           };
         })
       );

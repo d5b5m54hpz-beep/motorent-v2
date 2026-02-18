@@ -49,15 +49,16 @@ export async function GET(req: NextRequest) {
         const precioSugeridoSemanal = precioSugeridoMensual / 4;
 
         // Break-even: days rented needed to cover monthly costs
-        const precioDiarioActual = moto.precioMensual / 30;
+        const precioMensualNum = Number(moto.precioMensual);
+        const precioDiarioActual = precioMensualNum / 30;
         const puntoEquilibrio = precioDiarioActual > 0
           ? Math.ceil(costoOperativoMensual / precioDiarioActual)
           : 30;
 
-        const diferencia = moto.precioMensual - precioSugeridoMensual;
+        const diferencia = precioMensualNum - precioSugeridoMensual;
         let status: "subpreciada" | "ok" | "sobrepreciada" = "ok";
-        if (moto.precioMensual < precioSugeridoMensual * 0.95) status = "subpreciada";
-        else if (moto.precioMensual > precioSugeridoMensual * 1.4) status = "sobrepreciada";
+        if (precioMensualNum < precioSugeridoMensual * 0.95) status = "subpreciada";
+        else if (precioMensualNum > precioSugeridoMensual * 1.4) status = "sobrepreciada";
 
         return {
           id: moto.id,
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
           modelo: moto.modelo,
           patente: moto.patente,
           costoOperativoMensual: Math.round(costoOperativoMensual),
-          precioActual: moto.precioMensual,
+          precioActual: precioMensualNum,
           precioSugeridoMensual: Math.round(precioSugeridoMensual),
           precioSugeridoDiario: Math.round(precioSugeridoDiario),
           precioSugeridoSemanal: Math.round(precioSugeridoSemanal),
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest) {
     );
 
     const precioPromedioFlota = motos.length > 0
-      ? Math.round(motos.reduce((s, m) => s + m.precioMensual, 0) / motos.length)
+      ? Math.round(motos.reduce((s, m) => s + Number(m.precioMensual), 0) / motos.length)
       : 0;
 
     const margenPromedioActual = result.length > 0

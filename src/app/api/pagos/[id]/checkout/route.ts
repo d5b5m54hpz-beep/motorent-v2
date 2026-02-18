@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
-import { requireRole } from "@/lib/authz";
+import { auth } from "@/lib/auth";
 import { createPaymentPreference } from "@/lib/mercadopago";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -15,8 +15,10 @@ export async function POST(req: NextRequest, context: RouteContext) {
   );
   if (error) return error;
 
-  // Need role for ownership check below
-  const { role } = await requireRole(["CLIENTE", "ADMIN"]);
+  // Get role from session for ownership check below
+  // (session is already validated by requirePermission above)
+  const session = await auth();
+  const role = session?.user?.role;
 
   const { id } = await context.params;
 

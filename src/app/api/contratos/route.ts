@@ -208,11 +208,18 @@ export async function POST(req: NextRequest) {
     const fin = new Date(fechaFin);
 
     const calculo = calcularPreciosContrato(
-      moto.precioMensual,
+      Number(moto.precioMensual),
       inicio,
       fin,
       frecuenciaPago,
-      pricingConfig
+      {
+        precioBaseMensual: Number(pricingConfig.precioBaseMensual),
+        descuentoSemanal: Number(pricingConfig.descuentoSemanal),
+        descuentoMeses3: Number(pricingConfig.descuentoMeses3),
+        descuentoMeses6: Number(pricingConfig.descuentoMeses6),
+        descuentoMeses9: Number(pricingConfig.descuentoMeses9),
+        descuentoMeses12: Number(pricingConfig.descuentoMeses12),
+      }
     );
 
     // Generar fechas de vencimiento

@@ -267,9 +267,9 @@ export function CrearEmbarqueWizard({ open, onOpenChange, onSuccess }: CrearEmba
 
       setParsedItems(parsedWithMatches);
       toast.success(`${data.totalItems} items procesados correctamente`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setParseStatus("❌ Error al procesar");
-      toast.error(error.message || "Error al procesar archivo");
+      toast.error(error instanceof Error ? error.message : "Error al procesar archivo");
       console.error(error);
     } finally {
       setUploadingPackingList(false);

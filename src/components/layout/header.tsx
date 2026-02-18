@@ -19,7 +19,6 @@ const routeLabels: Record<string, string> = {
   "/admin/clientes": "Clientes",
   "/admin/usuarios": "Usuarios",
   "/admin/alertas": "Alertas",
-  "/admin/pricing": "Pricing",
 };
 
 export function Header() {

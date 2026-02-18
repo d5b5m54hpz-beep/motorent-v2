@@ -31,7 +31,14 @@ export async function POST(req: NextRequest) {
       new Date(fechaInicio),
       new Date(fechaFin),
       frecuenciaPago,
-      pricingConfig
+      {
+        precioBaseMensual: Number(pricingConfig.precioBaseMensual),
+        descuentoSemanal: Number(pricingConfig.descuentoSemanal),
+        descuentoMeses3: Number(pricingConfig.descuentoMeses3),
+        descuentoMeses6: Number(pricingConfig.descuentoMeses6),
+        descuentoMeses9: Number(pricingConfig.descuentoMeses9),
+        descuentoMeses12: Number(pricingConfig.descuentoMeses12),
+      }
     );
 
     return NextResponse.json(calculo);

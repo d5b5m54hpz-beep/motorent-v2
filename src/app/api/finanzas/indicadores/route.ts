@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       where: { estado: { not: "baja" } },
       _sum: { valorCompra: true },
     });
-    const activoNoCorriente = flota._sum.valorCompra || 0;
+    const activoNoCorriente = Number(flota._sum.valorCompra || 0);
 
     const totalActivos = activoCorriente + activoNoCorriente;
 

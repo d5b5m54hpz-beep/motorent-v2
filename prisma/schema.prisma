@@ -99,12 +99,14 @@ model Moto {
   anio           Int
   color          String?
   kilometraje    Int             @default(0)
-  precioMensual  Float           @default(0)
+  precioMensual  Decimal         @default(0) @db.Decimal(12,2)
   cilindrada     Int?
-  tipo           String? // naked | touring | sport | scooter | custom
+  // Valores: naked | touring | sport | scooter | custom
+  tipo           String?
   descripcion    String?
   imagen         String?
-  estado         String          @default("disponible") // disponible | alquilada | mantenimiento | baja
+  // Valores: disponible | alquilada | mantenimiento | baja
+  estado         String          @default("disponible")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   contratos      Contrato[]
@@ -127,9 +129,9 @@ model Moto {
   cedulaAzul        String?
 
   // ─── Financiero / Amortización ──────────────────────────────────────────
-  valorCompra       Float?    // Costo adquisición (CIF si importada)
+  valorCompra       Decimal?  @db.Decimal(12,2) // Costo adquisición (CIF si importada)
   fechaCompra       DateTime?
-  valorResidual     Float?    // Valor residual estimado
+  valorResidual     Decimal?  @db.Decimal(12,2) // Valor residual estimado
   vidaUtilAnios     Int?      @default(5) // AFIP: 5 años para vehículos
   metodoAmortizacion String?  @default("LINEAL")
 
@@ -153,10 +155,12 @@ model Moto {
   estadoSeguro           String?   @default("SIN_SEGURO") // SIN_SEGURO | EN_TRAMITE | ASEGURADA
   aseguradora            String?
   numeroPoliza           String?
-  tipoCobertura          String?   // RESPONSABILIDAD_CIVIL, TERCEROS_COMPLETO, TODO_RIESGO (legacy)
+  // Valores: RESPONSABILIDAD_CIVIL | TERCEROS_COMPLETO | TODO_RIESGO
+  tipoCobertura          String?
   fechaInicioSeguro      DateTime?
   fechaVencimientoSeguro DateTime?
-  vencimientoPoliza      DateTime? // LEGACY - usar fechaVencimientoSeguro
+  // @deprecated Use fechaVencimientoSeguro instead. Remove after data migration.
+  vencimientoPoliza      DateTime?
   notasSeguro            String?
 
   // ─── Mantenimientos (nuevo módulo) ──────────────────────────────────────
@@ -190,7 +194,8 @@ model Contrato {
   descuentoAplicado Float    @default(0)
   notas             String?
   renovacionAuto    Boolean  @default(false)
-  estado            String   @default("pendiente") // pendiente | activo | finalizado | cancelado | finalizado_compra
+  // Valores: pendiente | activo | finalizado | cancelado | finalizado_compra
+  estado            String   @default("pendiente")
 
   // ─── Opción a Compra ────────────────────────────────────────────────────
   esOpcionCompra    Boolean  @default(false)
@@ -212,7 +217,8 @@ model Pago {
   contratoId    String
   monto         Float
   metodo        String    @default("pendiente") // transferencia | tarjeta | mercadopago | efectivo | pendiente
-  estado        String    @default("pendiente") // pendiente | aprobado | rechazado | reembolsado | cancelado
+  // Valores: pendiente | aprobado | rechazado | reembolsado | cancelado
+  estado        String    @default("pendiente")
   referencia    String?
   mpPaymentId   String? // ID de transacción de MercadoPago
   comprobante   String? // URL o texto del comprobante
@@ -405,12 +411,12 @@ enum CategoriaGasto {
 
 model PricingConfig {
   id                String   @id @unique @default("default")
-  precioBaseMensual Float
-  descuentoSemanal  Float
-  descuentoMeses3   Float
-  descuentoMeses6   Float
-  descuentoMeses9   Float
-  descuentoMeses12  Float
+  precioBaseMensual Decimal @db.Decimal(12,2)
+  descuentoSemanal  Decimal @db.Decimal(5,2)
+  descuentoMeses3   Decimal @db.Decimal(5,2)
+  descuentoMeses6   Decimal @db.Decimal(5,2)
+  descuentoMeses9   Decimal @db.Decimal(5,2)
+  descuentoMeses12  Decimal @db.Decimal(5,2)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -1438,6 +1444,7 @@ model PuntajeRider {
 
 // ─── LECTURAS DE KM (IoT) ──────────────────────────────────────
 
+// TODO: Modelo definido pero sin endpoints — evaluar si se necesita
 model LecturaKm {
   id              String   @id @default(cuid())
   motoId          String
@@ -1459,6 +1466,7 @@ enum FuenteKm {
 
 // ─── NOTIFICACIONES DE MANTENIMIENTO ──────────────────────────────────────
 
+// TODO: Modelo sin implementar — evaluar si se necesita
 model NotificacionMantenimiento {
   id        String   @id @default(cuid())
   citaId    String
@@ -1605,6 +1613,7 @@ model ItemRecepcion {
 
 // ─── CONFIGURACIÓN DE CATEGORÍA ─────────────────────────────────
 
+// TODO: Modelo sin implementar — evaluar si se necesita
 model CategoriaRepuestoConfig {
   id              String   @id @default(cuid())
   categoria       String   @unique // "FRENOS", "MOTOR", "FILTROS", etc.
@@ -2186,7 +2195,8 @@ model BusinessEvent {
   metadata      Json?     // Info adicional (IP, user agent, etc)
   userId        String?   // Quien disparó el evento (null = sistema)
   parentEventId String?   // Para eventos que son consecuencia de otro
-  status        String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  // Valores: PENDING | PROCESSING | COMPLETED | FAILED
+  status        String    @default("PENDING")
   error         String?   // Si un handler falló (JSON array de errores)
   processedAt   DateTime?
   createdAt     DateTime  @default(now())

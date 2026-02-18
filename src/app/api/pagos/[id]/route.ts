@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { registrarPagoSchema } from "@/lib/validations";
@@ -92,7 +91,11 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
     // Verificar permisos: solo ADMIN puede modificar pagos aprobados
     if (existing.estado === "aprobado" || existing.estado === "reembolsado") {
-      const { error: adminError } = await requireRole(["ADMIN"]);
+      const { error: adminError } = await requirePermission(
+        OPERATIONS.payment.approve,
+        "execute"
+        // No fallback roles: only ADMIN (implicit) can modify approved/refunded payments
+      );
       if (adminError) {
         return NextResponse.json(
           { error: "Solo ADMIN puede modificar pagos aprobados o reembolsados" },

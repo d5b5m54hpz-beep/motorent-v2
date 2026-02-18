@@ -174,19 +174,23 @@ export type PricingInput = z.infer<typeof pricingSchema>;
 
 // ─── Usuarios ────────────────────────────────────────────────────────────────
 
+const allRoles = ["ADMIN", "OPERADOR", "CLIENTE", "CONTADOR", "RRHH_MANAGER", "COMERCIAL", "VIEWER"] as const;
+
 export const createUsuarioSchema = z.object({
   email: z.string().email("Email inválido"),
   name: z.string().min(1, "Nombre es requerido"),
   password: z.string().min(6, "Contraseña debe tener al menos 6 caracteres"),
-  role: z.enum(["ADMIN", "OPERADOR", "CLIENTE"]),
+  role: z.enum(allRoles),
+  profileIds: z.array(z.string()).optional(),
 });
 
 export type CreateUsuarioInput = z.infer<typeof createUsuarioSchema>;
 
 export const updateUsuarioSchema = z.object({
   name: z.string().min(1, "Nombre es requerido").optional(),
-  role: z.enum(["ADMIN", "OPERADOR", "CLIENTE"]).optional(),
+  role: z.enum(allRoles).optional(),
   password: z.string().min(6, "Contraseña debe tener al menos 6 caracteres").optional(),
+  profileIds: z.array(z.string()).optional(),
 }).refine((data) => Object.keys(data).length > 0, {
   message: "Al menos un campo debe ser actualizado",
 });

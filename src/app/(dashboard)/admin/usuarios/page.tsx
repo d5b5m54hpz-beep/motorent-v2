@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
@@ -12,6 +12,32 @@ import { UsuarioForm } from "./usuario-form";
 import { DeleteUsuarioDialog } from "./delete-usuario-dialog";
 import { ResetPasswordDialog } from "./reset-password-dialog";
 import type { Usuario } from "./types";
+
+/**
+ * Determine the legacy role based on assigned permission profile names.
+ * Higher-access profiles take priority.
+ */
+function resolveRoleFromProfiles(
+  profileNames: string[],
+  currentRole: string
+): string {
+  const lower = profileNames.map((n) => n.toLowerCase());
+
+  if (lower.some((n) => n.includes("administrador"))) return "ADMIN";
+  if (lower.some((n) => n.includes("operador"))) return "OPERADOR";
+  if (lower.some((n) => n.includes("contador"))) return "CONTADOR";
+  if (lower.some((n) => n.includes("rrhh") || n.includes("recursos humanos"))) return "RRHH_MANAGER";
+  if (lower.some((n) => n.includes("comercial"))) return "COMERCIAL";
+  if (lower.some((n) => n.includes("visualizador") || n.includes("viewer") || n.includes("solo lectura"))) return "VIEWER";
+
+  return currentRole;
+}
+
+type PermissionProfile = {
+  id: string;
+  name: string;
+  description: string | null;
+};
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -27,10 +53,13 @@ export default function UsuariosPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
+  // Cache of profiles for role sync
+  const [allProfiles, setAllProfiles] = useState<PermissionProfile[]>([]);
+
   // Filtros
   const roleActivo = searchParams.get("role") || "todos";
 
-  const fetchUsuarios = async () => {
+  const fetchUsuarios = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -54,11 +83,19 @@ export default function UsuariosPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [roleActivo]);
 
   useEffect(() => {
     fetchUsuarios();
-  }, [roleActivo]);
+  }, [fetchUsuarios]);
+
+  // Fetch profiles once for role sync
+  useEffect(() => {
+    fetch("/api/system/permissions/profiles")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setAllProfiles(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   const handleRoleChange = (role: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -90,23 +127,88 @@ export default function UsuariosPage() {
     setResetPasswordDialogOpen(true);
   };
 
-  const handleFormSubmit = async (data: any) => {
+  /**
+   * Sync permission profile assignments for a user.
+   * Adds newly selected profiles and removes deselected ones.
+   */
+  async function syncProfileAssignments(
+    userId: string,
+    newProfileIds: string[],
+    existingProfileIds: string[]
+  ) {
+    const toAdd = newProfileIds.filter((id) => !existingProfileIds.includes(id));
+    const toRemove = existingProfileIds.filter((id) => !newProfileIds.includes(id));
+
+    const promises: Promise<Response>[] = [];
+
+    for (const profileId of toAdd) {
+      promises.push(
+        fetch("/api/system/permissions/assign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, profileId }),
+        })
+      );
+    }
+
+    for (const profileId of toRemove) {
+      promises.push(
+        fetch("/api/system/permissions/assign", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, profileId }),
+        })
+      );
+    }
+
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+  }
+
+  const handleFormSubmit = async (data: Record<string, unknown>) => {
     setIsSubmitting(true);
     try {
       const isEdit = !!selectedUsuario;
-      const url = isEdit ? `/api/usuarios/${selectedUsuario.id}` : "/api/usuarios";
+      const profileIds = (data.profileIds as string[]) || [];
+
+      // Resolve role from selected profiles
+      const profileNames = profileIds
+        .map((id) => allProfiles.find((p) => p.id === id)?.name)
+        .filter(Boolean) as string[];
+
+      const baseRole = (data.role as string) || (isEdit ? selectedUsuario!.role : "OPERADOR");
+      const syncedRole = profileIds.length > 0
+        ? resolveRoleFromProfiles(profileNames, baseRole)
+        : baseRole;
+
+      // Build user payload (without profileIds)
+      const { profileIds: _removed, ...userData } = data;
+      const userPayload = { ...userData, role: syncedRole };
+
+      const url = isEdit ? `/api/usuarios/${selectedUsuario!.id}` : "/api/usuarios";
       const method = isEdit ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(userPayload),
       });
 
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Error al guardar usuario");
       }
+
+      const savedUser = await res.json();
+      const userId = savedUser.id;
+
+      // Sync profile assignments
+      const existingProfileIds = isEdit
+        ? (selectedUsuario!.profiles || []).map((p) => p.profile.id)
+        : [];
+
+      await syncProfileAssignments(userId, profileIds, existingProfileIds);
 
       toast.success(isEdit ? "Usuario actualizado correctamente" : "Usuario creado correctamente");
       setFormDialogOpen(false);

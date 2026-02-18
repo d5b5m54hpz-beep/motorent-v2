@@ -2,7 +2,7 @@ import { toast } from "sonner";
 
 export async function exportRepuestos(format: "csv" | "json") {
   try {
-    const res = await fetch(`/api/repuestos/export?format=${format}`);
+    const res = await fetch(`/api/export/repuestos?format=${format}`);
     if (!res.ok) throw new Error("Error exporting");
 
     const blob = await res.blob();

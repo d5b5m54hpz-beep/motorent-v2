@@ -52,7 +52,7 @@ export default function PreciosPage() {
     try {
       const [motosRes, configRes] = await Promise.all([
         fetch("/api/motos?limit=1000"),
-        fetch("/api/pricing-config"),
+        fetch("/api/pricing"),
       ]);
 
       if (motosRes.ok) {

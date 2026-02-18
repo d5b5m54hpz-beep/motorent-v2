@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { withEvent, OPERATIONS } from "@/lib/events";
 import { motoSchema } from "@/lib/validations";

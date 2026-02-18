@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
-import { z } from "zod";
 
 // ─── GET: Obtener estado de recepción de un embarque ─────────────────
 export async function GET(

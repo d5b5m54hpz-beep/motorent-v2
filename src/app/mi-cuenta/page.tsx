@@ -129,9 +129,9 @@ function MiCuentaContent() {
       const updated = await res.json();
       setPerfil(updated);
       toast.success("Perfil actualizado correctamente");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error:", error);
-      toast.error(error.message || "Error al guardar perfil");
+      toast.error(error instanceof Error ? error.message : "Error al guardar perfil");
     } finally {
       setSaving(false);
     }
@@ -153,9 +153,9 @@ function MiCuentaContent() {
 
       // Redirect to MercadoPago checkout
       window.location.href = data.init_point;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error:", error);
-      toast.error(error.message || "Error al procesar el pago");
+      toast.error(error instanceof Error ? error.message : "Error al procesar el pago");
       setPayingPagoId(null);
     }
   }

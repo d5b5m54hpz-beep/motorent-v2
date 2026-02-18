@@ -197,12 +197,12 @@ export default async function HomePage() {
                       Semanal
                     </Badge>
                     <div className="text-3xl font-bold">
-                      {pricing.descuentoSemanal}%
+                      {Number(pricing.descuentoSemanal)}%
                       <span className="text-lg font-normal text-muted-foreground"> OFF</span>
                     </div>
                     <p className="mt-4 text-muted-foreground">
                       Pagá cada semana y obtené un descuento adicional del{" "}
-                      {pricing.descuentoSemanal}%
+                      {Number(pricing.descuentoSemanal)}%
                     </p>
                   </div>
                 </CardContent>
@@ -216,11 +216,11 @@ export default async function HomePage() {
                       Quincenal
                     </Badge>
                     <div className="text-3xl font-bold">
-                      {pricing.descuentoSemanal}%
+                      {Number(pricing.descuentoSemanal)}%
                       <span className="text-lg font-normal text-muted-foreground"> OFF</span>
                     </div>
                     <p className="mt-4 text-muted-foreground">
-                      Pagá cada quincena y obtené un descuento del {pricing.descuentoSemanal}%
+                      Pagá cada quincena y obtené un descuento del {Number(pricing.descuentoSemanal)}%
                     </p>
                   </div>
                 </CardContent>
@@ -247,9 +247,9 @@ export default async function HomePage() {
               <div className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-sm">
                 <Shield className="h-4 w-4 text-primary" />
                 <span>
-                  <strong>Descuentos por duración:</strong> 3 meses ({pricing.descuentoMeses3}%), 6
-                  meses ({pricing.descuentoMeses6}%), 9 meses ({pricing.descuentoMeses9}%), 12
-                  meses ({pricing.descuentoMeses12}%)
+                  <strong>Descuentos por duración:</strong> 3 meses ({Number(pricing.descuentoMeses3)}%), 6
+                  meses ({Number(pricing.descuentoMeses6)}%), 9 meses ({Number(pricing.descuentoMeses9)}%), 12
+                  meses ({Number(pricing.descuentoMeses12)}%)
                 </span>
               </div>
             </div>

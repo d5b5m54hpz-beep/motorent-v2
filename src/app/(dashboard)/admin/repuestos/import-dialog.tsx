@@ -104,7 +104,7 @@ export function ImportDialog({ open, onOpenChange, onSuccess }: ImportDialogProp
 
     setIsProcessing(true);
     try {
-      const res = await fetch("/api/repuestos/import", {
+      const res = await fetch("/api/import/repuestos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repuestos: validRows }),

@@ -70,7 +70,7 @@ export function ListaPreciosTab() {
         margen: margenFiltro,
       });
 
-      const res = await fetch(`/api/precios-repuestos/lista?${params}`);
+      const res = await fetch(`/api/pricing-repuestos/lista?${params}`);
       if (!res.ok) throw new Error("Error al cargar repuestos");
       const data = await res.json();
       setRepuestos(data.data || []);
@@ -85,7 +85,7 @@ export function ListaPreciosTab() {
 
   const actualizarPrecio = async (repuestoId: string, nuevoPrecio: number) => {
     try {
-      const res = await fetch(`/api/precios-repuestos/${repuestoId}/precio`, {
+      const res = await fetch(`/api/pricing-repuestos/${repuestoId}/precio`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ precio: nuevoPrecio }),
