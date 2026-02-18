@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { registrarPagoSchema } from "@/lib/validations";
-import { checkAndFinalizeContrato } from "@/lib/services/contrato-finalization";
+
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -148,18 +148,13 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         },
       });
 
-      // Check if all pagos settled → finalize contrato + release moto
-      if (estado === "APROBADO") {
-        await checkAndFinalizeContrato(tx, existing.contratoId, existing.contrato.motoId);
-      }
-
       return pagoActualizado;
     });
 
     // Emit events for state transitions
     if (estado !== previousEstado) {
       if (estado === "APROBADO") {
-        eventBus.emit(
+        await eventBus.emit(
           OPERATIONS.payment.approve,
           "Pago",
           id,
@@ -171,11 +166,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
             contratoId: resultado.contratoId,
           },
           userId
-        ).catch((err) => {
-          console.error("Error emitting payment.approve event:", err);
-        });
+        );
       } else if (estado === "RECHAZADO") {
-        eventBus.emit(
+        await eventBus.emit(
           OPERATIONS.payment.reject,
           "Pago",
           id,
@@ -186,11 +179,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
             contratoId: resultado.contratoId,
           },
           userId
-        ).catch((err) => {
-          console.error("Error emitting payment.reject event:", err);
-        });
+        );
       } else if (estado === "REEMBOLSADO") {
-        eventBus.emit(
+        await eventBus.emit(
           OPERATIONS.payment.refund,
           "Pago",
           id,
@@ -201,9 +192,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
             contratoId: resultado.contratoId,
           },
           userId
-        ).catch((err) => {
-          console.error("Error emitting payment.refund event:", err);
-        });
+        );
       }
     }
 

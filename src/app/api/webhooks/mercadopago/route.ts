@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPaymentInfo, verifyWebhookSignature } from "@/lib/mercadopago";
 import { eventBus, OPERATIONS } from "@/lib/events";
-import { checkAndFinalizeContrato } from "@/lib/services/contrato-finalization";
 
 // Este endpoint NO requiere autenticación (MercadoPago lo llama directamente)
 export async function POST(req: NextRequest) {
@@ -20,13 +19,14 @@ export async function POST(req: NextRequest) {
 
     const paymentId = body.data?.id;
     if (!paymentId) {
-      return NextResponse.json({ error: "Missing payment ID" }, { status: 400 });
+      return NextResponse.json({ received: true, error: "Missing payment ID" });
     }
 
-    // Verificar signature (opcional en test)
+    // Verificar HMAC signature (mandatory in production, skip in dev if no secret)
     const isValid = verifyWebhookSignature(xSignature, xRequestId, paymentId);
     if (!isValid) {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      console.error(`[MP Webhook] Invalid signature for payment ${paymentId}`);
+      return NextResponse.json({ received: true, error: "Invalid signature" });
     }
 
     // Consultar información del pago en MercadoPago
@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
     // Buscar el pago en nuestra DB por external_reference
     const pagoId = mpPayment.external_reference;
     if (!pagoId) {
-      return NextResponse.json({ error: "Missing external_reference" }, { status: 400 });
+      console.error(`[MP Webhook] Missing external_reference for MP payment ${paymentId}`);
+      return NextResponse.json({ received: true, error: "Missing external_reference" });
     }
 
     const pago = await prisma.pago.findUnique({
@@ -52,7 +53,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (!pago) {
-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      console.error(`[MP Webhook] Pago not found for external_reference: ${pagoId}`);
+      return NextResponse.json({ received: true, error: "Payment not found" });
     }
 
     // Verificar idempotencia: si ya fue procesado, retornar OK
@@ -68,10 +70,7 @@ export async function POST(req: NextRequest) {
         console.error(
           `[MP Webhook] Amount mismatch for pago ${pagoId}: expected ${expectedAmount}, got ${paidAmount}`
         );
-        return NextResponse.json(
-          { error: "Amount mismatch", expected: expectedAmount, received: paidAmount },
-          { status: 400 }
-        );
+        return NextResponse.json({ received: true, error: "Amount mismatch", expected: expectedAmount, paid: paidAmount });
       }
     }
 
@@ -84,24 +83,19 @@ export async function POST(req: NextRequest) {
     if (mpPayment.status === "approved") {
       const previousEstado = pago.estado;
 
-      await prisma.$transaction(async (tx) => {
-        await tx.pago.update({
-          where: { id: pagoId },
-          data: {
-            estado: "APROBADO",
-            metodo: "MERCADOPAGO",
-            mpPaymentId: String(mpPayment.id),
-            pagadoAt: new Date(),
-            referencia: mpPayment.id ? String(mpPayment.id) : undefined,
-          },
-        });
-
-        // Check if all pagos settled → finalize contrato + release moto
-        await checkAndFinalizeContrato(tx, pago.contratoId, pago.contrato.motoId);
+      await prisma.pago.update({
+        where: { id: pagoId },
+        data: {
+          estado: "APROBADO",
+          metodo: "MERCADOPAGO",
+          mpPaymentId: String(mpPayment.id),
+          pagadoAt: new Date(),
+          referencia: mpPayment.id ? String(mpPayment.id) : undefined,
+        },
       });
 
-      // Emit payment.approve → triggers invoicing (factura), accounting, notifications
-      eventBus.emit(
+      // Emit payment.approve → triggers invoicing (factura + contrato finalization), accounting, notifications
+      await eventBus.emit(
         OPERATIONS.payment.approve,
         "Pago",
         pagoId,
@@ -113,9 +107,7 @@ export async function POST(req: NextRequest) {
           contratoId: pago.contratoId,
         },
         null // No userId for webhook-initiated events
-      ).catch((err) => {
-        console.error("Error emitting payment.approve from MP webhook:", err);
-      });
+      );
 
     } else if (mpPayment.status === "rejected") {
       const previousEstado = pago.estado;
@@ -130,7 +122,7 @@ export async function POST(req: NextRequest) {
       });
 
       // Emit payment.reject → triggers notifications
-      eventBus.emit(
+      await eventBus.emit(
         OPERATIONS.payment.reject,
         "Pago",
         pagoId,
@@ -142,8 +134,16 @@ export async function POST(req: NextRequest) {
           statusDetail: mpPayment.status_detail,
         },
         null
-      ).catch((err) => {
-        console.error("Error emitting payment.reject from MP webhook:", err);
+      );
+
+    } else if (mpPayment.status === "cancelled") {
+      await prisma.pago.update({
+        where: { id: pagoId },
+        data: {
+          estado: "CANCELADO",
+          mpPaymentId: String(mpPayment.id),
+          notas: `Pago cancelado por MercadoPago. Motivo: ${mpPayment.status_detail || "cancelled"}`,
+        },
       });
 
     } else if (mpPayment.status === "pending" || mpPayment.status === "in_process") {

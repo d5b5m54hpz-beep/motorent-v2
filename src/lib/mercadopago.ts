@@ -89,10 +89,19 @@ export function verifyWebhookSignature(
 ): boolean {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
 
-  // Si no hay secret configurado o no viene signature, skip validation
-  if (!secret || !xSignature || !xRequestId) {
-    console.warn("⚠️  Webhook sin signature o sin secret configurado, verificación omitida");
+  // In production, HMAC verification is mandatory
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured in production — rejecting");
+      return false;
+    }
+    console.warn("[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured (dev mode) — skipping verification");
     return true;
+  }
+
+  if (!xSignature || !xRequestId) {
+    console.error("[MP Webhook] Missing x-signature or x-request-id headers");
+    return false;
   }
 
   try {
@@ -107,8 +116,8 @@ export function verifyWebhookSignature(
     const hash = parts["v1"];
 
     if (!ts || !hash) {
-      console.warn("⚠️  Formato de x-signature inválido");
-      return true;
+      console.error("[MP Webhook] Invalid x-signature format");
+      return false;
     }
 
     // Build the manifest string as per MP docs
@@ -119,7 +128,7 @@ export function verifyWebhookSignature(
 
     return hmac === hash;
   } catch (error) {
-    console.error("Error verificando webhook signature:", error);
-    return true; // Fail open to not lose payments
+    console.error("[MP Webhook] Error verifying signature:", error);
+    return false;
   }
 }

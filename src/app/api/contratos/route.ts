@@ -197,6 +197,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!moto.precioMensual || Number(moto.precioMensual) <= 0) {
+      return NextResponse.json(
+        { error: "La moto no tiene un precio mensual válido configurado" },
+        { status: 400 }
+      );
+    }
+
     // Validar que no haya contratos activos superpuestos para la misma moto
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaFin);

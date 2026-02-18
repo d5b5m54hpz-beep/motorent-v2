@@ -25,6 +25,7 @@ export const OPERATIONS = {
       update: "rental.contract.update",
       activate: "rental.contract.activate",
       terminate: "rental.contract.terminate",
+      finalize: "rental.contract.finalize",
       exercise_purchase: "rental.contract.exercise_purchase",
     },
     client: {

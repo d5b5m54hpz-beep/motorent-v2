@@ -15,6 +15,20 @@ export async function POST(req: NextRequest) {
   try {
     const { precioBaseMensual, fechaInicio, fechaFin, frecuenciaPago } = await req.json();
 
+    if (!precioBaseMensual || precioBaseMensual <= 0) {
+      return NextResponse.json(
+        { error: "precioBaseMensual debe ser mayor a 0" },
+        { status: 400 }
+      );
+    }
+
+    if (!fechaInicio || !fechaFin || !frecuenciaPago) {
+      return NextResponse.json(
+        { error: "Faltan campos requeridos: fechaInicio, fechaFin, frecuenciaPago" },
+        { status: 400 }
+      );
+    }
+
     const pricingConfig = await prisma.pricingConfig.findUnique({
       where: { id: "default" },
     });

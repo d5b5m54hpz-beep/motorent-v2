@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { enviarFacturaEmail } from "@/lib/email";
 import { eventBus, type EventContext } from "../event-bus";
+import { checkAndFinalizeContratoFromHandler } from "@/lib/services/contrato-finalization";
 
 /**
  * Invoicing handlers — react to events that should trigger
@@ -25,14 +26,14 @@ export async function handlePaymentApprovedInvoicing(ctx: EventContext): Promise
       return;
     }
 
-    // Fetch pago details
+    // Fetch pago details (include motoId for contrato finalization)
     const pago = await prisma.pago.findUnique({
       where: { id: ctx.entityId },
       include: {
         contrato: {
           include: {
             cliente: { select: { nombre: true, dni: true } },
-            moto: { select: { marca: true, modelo: true, patente: true } },
+            moto: { select: { id: true, marca: true, modelo: true, patente: true } },
           },
         },
       },
@@ -94,6 +95,26 @@ export async function handlePaymentApprovedInvoicing(ctx: EventContext): Promise
     enviarFacturaEmail(factura.id).catch((err) => {
       console.error("[Invoicing] Error sending factura email (non-blocking):", err);
     });
+
+    // Check if all pagos are settled → finalize contrato + release moto
+    if (pago.contratoId && pago.contrato?.motoId) {
+      const finalized = await checkAndFinalizeContratoFromHandler(
+        pago.contratoId,
+        pago.contrato.motoId
+      );
+
+      if (finalized) {
+        console.log(`[Invoicing] Contrato ${pago.contratoId.slice(0, 8)} finalizado — all pagos settled`);
+        await eventBus.emit(
+          "rental.contract.finalize",
+          "Contrato",
+          pago.contratoId,
+          { motoId: pago.contrato.motoId, reason: "all_pagos_settled" },
+          ctx.userId,
+          ctx.event.id
+        );
+      }
+    }
   } catch (err) {
     console.error("[Invoicing] handlePaymentApprovedInvoicing error:", err);
   }

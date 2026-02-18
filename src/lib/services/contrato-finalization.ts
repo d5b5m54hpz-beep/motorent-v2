@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 type TxClient = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
 
@@ -30,6 +31,38 @@ export async function checkAndFinalizeContrato(
   });
 
   await tx.moto.update({
+    where: { id: motoId },
+    data: { estado: "DISPONIBLE" },
+  });
+
+  return true;
+}
+
+/**
+ * Non-transactional version for use in event handlers.
+ * Uses the global prisma client directly.
+ */
+export async function checkAndFinalizeContratoFromHandler(
+  contratoId: string,
+  motoId: string
+): Promise<boolean> {
+  const pagos = await prisma.pago.findMany({
+    where: { contratoId },
+    select: { estado: true },
+  });
+
+  const allSettled = pagos.every(
+    (p) => p.estado === "APROBADO" || p.estado === "CANCELADO"
+  );
+
+  if (!allSettled) return false;
+
+  await prisma.contrato.update({
+    where: { id: contratoId },
+    data: { estado: "FINALIZADO" },
+  });
+
+  await prisma.moto.update({
     where: { id: motoId },
     data: { estado: "DISPONIBLE" },
   });
