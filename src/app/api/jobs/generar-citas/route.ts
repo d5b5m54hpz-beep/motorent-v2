@@ -1,17 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { nanoid } from 'nanoid';
+import { requireCron } from '@/lib/auth/require-cron';
 
 /**
  * Cron job: Generador automático de citas mensuales de mantenimiento
- * Se ejecuta el día 1 de cada mes a las 00:00 (configurado en vercel.json)
- *
- * Lógica:
- * - Busca todas las motos activas con fechaInicioOperaciones
- * - Calcula si cumple un mes desde la última cita o inicio de operaciones
- * - Crea cita para el día 15 del mes con estado PROGRAMADA
+ * Se ejecuta el día 1 de cada mes a las 00:00
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const cronError = requireCron(req);
+  if (cronError) return cronError;
   try {
     const now = new Date();
     const currentMonth = now.getMonth();

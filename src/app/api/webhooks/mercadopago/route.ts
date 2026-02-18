@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPaymentInfo, verifyWebhookSignature } from "@/lib/mercadopago";
+import { eventBus, OPERATIONS } from "@/lib/events";
+import { checkAndFinalizeContrato } from "@/lib/services/contrato-finalization";
 
 // Este endpoint NO requiere autenticación (MercadoPago lo llama directamente)
 export async function POST(req: NextRequest) {
@@ -58,10 +60,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, message: "Already processed" });
     }
 
+    // Verificar monto: el monto pagado debe coincidir con el esperado
+    if (mpPayment.status === "approved" && mpPayment.transaction_amount != null) {
+      const expectedAmount = Number(pago.monto);
+      const paidAmount = Number(mpPayment.transaction_amount);
+      if (Math.abs(paidAmount - expectedAmount) > 0.01) {
+        console.error(
+          `[MP Webhook] Amount mismatch for pago ${pagoId}: expected ${expectedAmount}, got ${paidAmount}`
+        );
+        return NextResponse.json(
+          { error: "Amount mismatch", expected: expectedAmount, received: paidAmount },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Verificar que el pago no esté en estado terminal
+    if (pago.estado === "REEMBOLSADO" || pago.estado === "CANCELADO") {
+      return NextResponse.json({ received: true, message: "Payment in terminal state" });
+    }
+
     // Procesar según el estado del pago
     if (mpPayment.status === "approved") {
+      const previousEstado = pago.estado;
+
       await prisma.$transaction(async (tx) => {
-        // Actualizar el pago
         await tx.pago.update({
           where: { id: pagoId },
           data: {
@@ -73,55 +96,30 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Generar factura automáticamente (mismo código que en pagos/[id]/route.ts)
-        const ultimaFactura = await tx.factura.findFirst({
-          orderBy: { numero: "desc" },
-        });
+        // Check if all pagos settled → finalize contrato + release moto
+        await checkAndFinalizeContrato(tx, pago.contratoId, pago.contrato.motoId);
+      });
 
-        const proximoNumero = ultimaFactura
-          ? String(parseInt(ultimaFactura.numero) + 1).padStart(8, "0")
-          : "00000001";
-
-        const tipo = "B" as "A" | "B" | "C";
-        const montoTotal = Number(pago.monto);
-        const montoNeto = tipo === "A" ? montoTotal / 1.21 : montoTotal;
-        const montoIva = tipo === "A" ? montoTotal - montoNeto : 0;
-
-        await tx.factura.create({
-          data: {
-            numero: proximoNumero,
-            tipo,
-            puntoVenta: 1,
-            montoNeto,
-            montoIva,
-            montoTotal,
-            emitida: false,
-            pagoId: pago.id,
-            razonSocial: pago.contrato.cliente.nombre,
-            cuit: pago.contrato.cliente.dni || "",
-          },
-        });
-
-        // Verificar si es el último pago del contrato
-        const allPagos = pago.contrato.pagos;
-        const pagosAprobados = allPagos.filter((p) => p.estado === "APROBADO" || p.id === pagoId);
-
-        if (pagosAprobados.length === allPagos.length) {
-          // Todos los pagos están aprobados, finalizar contrato
-          await tx.contrato.update({
-            where: { id: pago.contratoId },
-            data: { estado: "FINALIZADO" },
-          });
-
-          // Liberar la moto
-          await tx.moto.update({
-            where: { id: pago.contrato.motoId },
-            data: { estado: "DISPONIBLE" },
-          });
-        }
+      // Emit payment.approve → triggers invoicing (factura), accounting, notifications
+      eventBus.emit(
+        OPERATIONS.payment.approve,
+        "Pago",
+        pagoId,
+        {
+          previousEstado,
+          newEstado: "APROBADO",
+          monto: pago.monto,
+          metodo: "MERCADOPAGO",
+          contratoId: pago.contratoId,
+        },
+        null // No userId for webhook-initiated events
+      ).catch((err) => {
+        console.error("Error emitting payment.approve from MP webhook:", err);
       });
 
     } else if (mpPayment.status === "rejected") {
+      const previousEstado = pago.estado;
+
       await prisma.pago.update({
         where: { id: pagoId },
         data: {
@@ -130,6 +128,24 @@ export async function POST(req: NextRequest) {
           notas: `Pago rechazado por MercadoPago. Motivo: ${mpPayment.status_detail}`,
         },
       });
+
+      // Emit payment.reject → triggers notifications
+      eventBus.emit(
+        OPERATIONS.payment.reject,
+        "Pago",
+        pagoId,
+        {
+          previousEstado,
+          newEstado: "RECHAZADO",
+          monto: pago.monto,
+          contratoId: pago.contratoId,
+          statusDetail: mpPayment.status_detail,
+        },
+        null
+      ).catch((err) => {
+        console.error("Error emitting payment.reject from MP webhook:", err);
+      });
+
     } else if (mpPayment.status === "pending" || mpPayment.status === "in_process") {
       await prisma.pago.update({
         where: { id: pagoId },

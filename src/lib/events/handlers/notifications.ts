@@ -6,6 +6,41 @@ import { eventBus, type EventContext } from "../event-bus";
  * sending emails via Resend, or pushing notifications.
  */
 
+// ─── Contract Created ────────────────────────────────────────────────────────
+export async function handleContractCreated(ctx: EventContext): Promise<void> {
+  if (ctx.operationId !== "rental.contract.create") return;
+
+  try {
+    const contrato = await prisma.contrato.findUnique({
+      where: { id: ctx.entityId },
+      include: {
+        cliente: { select: { nombre: true } },
+        moto: { select: { marca: true, modelo: true, patente: true } },
+      },
+    });
+
+    if (!contrato) return;
+
+    await prisma.alerta.create({
+      data: {
+        tipo: "CONTRATO_CREADO",
+        mensaje: `Nuevo contrato ${contrato.id.slice(0, 8)} — ${contrato.moto.marca} ${contrato.moto.modelo} (${contrato.moto.patente}) para ${contrato.cliente.nombre}. Total: $${Number(contrato.montoTotal).toLocaleString("es-AR")}`,
+        contratoId: contrato.id,
+        metadata: {
+          clienteId: contrato.clienteId,
+          motoId: contrato.motoId,
+          montoTotal: contrato.montoTotal,
+          frecuenciaPago: contrato.frecuenciaPago,
+        },
+      },
+    });
+
+    console.log(`[Notifications] Contract created: ${ctx.entityId}`);
+  } catch (err) {
+    console.error("[Notifications] handleContractCreated error:", err);
+  }
+}
+
 // ─── Contract Activated ──────────────────────────────────────────────────────
 export async function handleContractActivated(ctx: EventContext): Promise<void> {
   if (ctx.operationId !== "rental.contract.activate") return;
@@ -446,6 +481,9 @@ export function registerNotificationHandlers(): void {
   });
 
   // Contract events — specific handlers
+  eventBus.registerHandler("rental.contract.create", handleContractCreated, {
+    priority: 200,
+  });
   eventBus.registerHandler("rental.contract.activate", handleContractActivated, {
     priority: 200,
   });

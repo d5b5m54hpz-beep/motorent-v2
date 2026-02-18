@@ -168,12 +168,19 @@ export async function POST(req: NextRequest) {
 
     const { motoId, fechaInicio, fechaFin, frecuenciaPago, deposito, notas, renovacionAuto } = parsed.data;
 
-    // Validar cliente existe
+    // Validar cliente existe y está aprobado
     const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });
     if (!cliente) {
       return NextResponse.json(
         { error: "Cliente no encontrado" },
         { status: 404 }
+      );
+    }
+
+    if (cliente.estado !== "APROBADO") {
+      return NextResponse.json(
+        { error: "El cliente debe estar aprobado para crear un contrato" },
+        { status: 400 }
       );
     }
 
@@ -186,6 +193,27 @@ export async function POST(req: NextRequest) {
     if (moto.estado !== "DISPONIBLE") {
       return NextResponse.json(
         { error: "La moto no esta disponible para alquiler" },
+        { status: 409 }
+      );
+    }
+
+    // Validar que no haya contratos activos superpuestos para la misma moto
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+
+    const contratoSuperpuesto = await prisma.contrato.findFirst({
+      where: {
+        motoId,
+        estado: { in: ["PENDIENTE", "ACTIVO"] },
+        fechaInicio: { lt: fin },
+        fechaFin: { gt: inicio },
+      },
+      select: { id: true },
+    });
+
+    if (contratoSuperpuesto) {
+      return NextResponse.json(
+        { error: "Ya existe un contrato activo para esta moto en el periodo solicitado" },
         { status: 409 }
       );
     }
@@ -203,9 +231,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Calcular precios
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-
     const calculo = calcularPreciosContrato(
       Number(moto.precioMensual),
       inicio,

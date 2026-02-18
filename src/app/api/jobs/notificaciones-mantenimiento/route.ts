@@ -1,16 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireCron } from '@/lib/auth/require-cron';
 
 /**
- * Cron job: Sistema de notificaciones de mantenimiento
- * Se ejecuta diariamente a las 08:00 (configurado en vercel.json)
- *
- * Lógica:
- * - Busca citas programadas para los próximos 3 días sin notificar
- * - Marca citas como NOTIFICADA y crea alerta en sistema
- * - Busca citas vencidas (pasaron y no se completaron)
+ * Cron job: Notificaciones de mantenimiento
+ * Se ejecuta diariamente a las 08:00
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const cronError = requireCron(req);
+  if (cronError) return cronError;
   try {
     const now = new Date();
     const tresDiasDespues = new Date(now);

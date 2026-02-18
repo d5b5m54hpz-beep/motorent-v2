@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { getColumns } from "./columns";
 import { EmpleadoForm } from "./empleado-form";
 import { DeleteEmpleadoDialog } from "./delete-empleado-dialog";
+import { EmpleadoDetailSheet } from "./empleado-detail-sheet";
 import { EmpleadoListItem } from "./types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -21,6 +22,7 @@ export default function EmpleadosPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [selectedEmpleado, setSelectedEmpleado] = useState<EmpleadoListItem | null>(null);
 
   async function fetchData() {
@@ -60,8 +62,9 @@ export default function EmpleadosPage() {
       setSelectedEmpleado(empleado);
       setDeleteOpen(true);
     },
-    onView: () => {
-      // TODO: Implement detail view
+    onView: (empleado) => {
+      setSelectedEmpleado(empleado);
+      setDetailOpen(true);
     },
   });
 
@@ -124,6 +127,12 @@ export default function EmpleadosPage() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onSuccess={handleSuccess}
+      />
+
+      <EmpleadoDetailSheet
+        empleado={selectedEmpleado}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
       />
     </div>
   );

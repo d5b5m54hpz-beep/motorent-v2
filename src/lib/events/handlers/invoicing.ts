@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { enviarFacturaEmail } from "@/lib/email";
 import { eventBus, type EventContext } from "../event-bus";
 
 /**
@@ -88,6 +89,11 @@ export async function handlePaymentApprovedInvoicing(ctx: EventContext): Promise
       ctx.userId,
       ctx.event.id // parent event
     );
+
+    // Send factura email (fire-and-forget)
+    enviarFacturaEmail(factura.id).catch((err) => {
+      console.error("[Invoicing] Error sending factura email (non-blocking):", err);
+    });
   } catch (err) {
     console.error("[Invoicing] handlePaymentApprovedInvoicing error:", err);
   }

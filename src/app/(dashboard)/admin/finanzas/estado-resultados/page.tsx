@@ -135,11 +135,48 @@ export default function EstadoResultadosPage() {
   }, [periodo, customDesde, customHasta, comparar]);
 
   const handleExportExcel = () => {
-    // TODO: Implementar export a Excel
+    if (!data) return;
+    const rows = [
+      ["Estado de Resultados - MotoLibre"],
+      [`Período: ${data.periodo.desde} al ${data.periodo.hasta}`],
+      [],
+      ["Concepto", "Monto", "% Ingresos"],
+      ["INGRESOS OPERATIVOS", "", ""],
+      ["  Alquileres de Motos", data.ingresos.alquileres.toString(), ((data.ingresos.alquileres / data.ingresos.total) * 100).toFixed(1) + "%"],
+      ["  Venta de Repuestos", data.ingresos.repuestos.toString(), ((data.ingresos.repuestos / data.ingresos.total) * 100).toFixed(1) + "%"],
+      ["TOTAL INGRESOS", data.ingresos.total.toString(), "100.0%"],
+      [],
+      ["COSTOS DIRECTOS", "", ""],
+      ["  Mantenimiento y Operación", (-data.costosDirectos.mantenimiento).toString(), (data.costosDirectos.mantenimiento / data.ingresos.total * 100).toFixed(1) + "%"],
+      ["  Depreciación Flota", (-data.costosDirectos.depreciacion).toString(), (data.costosDirectos.depreciacion / data.ingresos.total * 100).toFixed(1) + "%"],
+      ["TOTAL COSTOS DIRECTOS", (-data.costosDirectos.total).toString(), data.costosDirectos.porcentaje.toFixed(1) + "%"],
+      [],
+      ["MARGEN BRUTO", data.margenBruto.valor.toString(), data.margenBruto.porcentaje.toFixed(1) + "%"],
+      [],
+      ["GASTOS OPERATIVOS", "", ""],
+      ["  Sueldos y Cargas Sociales", (-data.gastosOperativos.sueldos).toString(), (data.gastosOperativos.sueldos / data.ingresos.total * 100).toFixed(1) + "%"],
+      ["  Otros Gastos", (-data.gastosOperativos.otros).toString(), (data.gastosOperativos.otros / data.ingresos.total * 100).toFixed(1) + "%"],
+      ["TOTAL GASTOS OPERATIVOS", (-data.gastosOperativos.total).toString(), data.gastosOperativos.porcentaje.toFixed(1) + "%"],
+      [],
+      ["EBITDA", data.ebitda.valor.toString(), data.ebitda.porcentaje.toFixed(1) + "%"],
+      ["EBIT", data.ebit.valor.toString(), data.ebit.porcentaje.toFixed(1) + "%"],
+      ["Impuestos", (-data.impuestos.valor).toString(), data.impuestos.porcentaje.toFixed(1) + "%"],
+      [],
+      ["RESULTADO NETO", data.resultadoNeto.valor.toString(), data.resultadoNeto.porcentaje.toFixed(1) + "%"],
+    ];
+
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `estado-resultados-${data.periodo.desde}-${data.periodo.hasta}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleExportPDF = () => {
-    // TODO: Implementar export a PDF
+    window.print();
   };
 
   if (isLoading) {

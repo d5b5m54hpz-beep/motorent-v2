@@ -3,9 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { registrarPagoSchema } from "@/lib/validations";
-import { enviarFacturaEmail } from "@/lib/email";
+import { checkAndFinalizeContrato } from "@/lib/services/contrato-finalization";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+// State machine: valid transitions for EstadoPago
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  PENDIENTE: ["APROBADO", "RECHAZADO", "CANCELADO", "VENCIDO"],
+  APROBADO: ["REEMBOLSADO"],
+  RECHAZADO: ["PENDIENTE", "CANCELADO"],
+  VENCIDO: ["PENDIENTE", "CANCELADO"],
+  REEMBOLSADO: [], // terminal
+  CANCELADO: [],   // terminal
+};
 
 // GET /api/pagos/[id] — get single pago with full details
 export async function GET(req: NextRequest, context: RouteContext) {
@@ -104,14 +114,20 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       }
     }
 
+    // Validate state transition
+    const allowed = VALID_TRANSITIONS[existing.estado] || [];
+    if (!allowed.includes(estado)) {
+      return NextResponse.json(
+        { error: `Transición inválida: ${existing.estado} → ${estado}` },
+        { status: 400 }
+      );
+    }
+
     // Track whether this is a state transition (for event emission)
     const previousEstado = existing.estado;
 
     // Actualizar pago en transacción
-    let facturaId: string | null = null;
-
     const resultado = await prisma.$transaction(async (tx) => {
-      // Actualizar pago
       const pagoActualizado = await tx.pago.update({
         where: { id },
         data: {
@@ -132,65 +148,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         },
       });
 
-      // Si se aprobó, generar factura automáticamente
-      if (estado === "APROBADO" && existing.estado !== "APROBADO") {
-        // Solo si no estaba aprobado antes (para evitar duplicados)
-
-        // Obtener el último número de factura para calcular el siguiente
-        const ultimaFactura = await tx.factura.findFirst({
-          orderBy: { numero: "desc" },
-        });
-
-        const proximoNumero = ultimaFactura
-          ? String(parseInt(ultimaFactura.numero) + 1).padStart(8, "0")
-          : "00000001";
-
-        // Calcular montos según tipo de factura
-        const tipo = "B" as "A" | "B" | "C"; // Por defecto tipo B
-        const montoTotal = Number(pagoActualizado.monto);
-        const montoNeto = tipo === "A" ? montoTotal / 1.21 : montoTotal;
-        const montoIva = tipo === "A" ? montoTotal - montoNeto : 0;
-
-        // Crear la factura
-        const factura = await tx.factura.create({
-          data: {
-            numero: proximoNumero,
-            tipo,
-            puntoVenta: 1,
-            montoNeto,
-            montoIva,
-            montoTotal,
-            emitida: false, // Hasta que se integre AFIP
-            pagoId: pagoActualizado.id,
-          },
-        });
-
-        // Guardar el ID de la factura para enviar email después
-        facturaId = factura.id;
-      }
-
-      // Verificar si todos los pagos del contrato están aprobados
+      // Check if all pagos settled → finalize contrato + release moto
       if (estado === "APROBADO") {
-        const todosLosPagos = await tx.pago.findMany({
-          where: { contratoId: existing.contratoId },
-        });
-
-        const todosPagados = todosLosPagos.every(
-          (p) => p.estado === "APROBADO" || p.estado === "CANCELADO"
-        );
-
-        if (todosPagados) {
-          // Marcar contrato como finalizado y moto como disponible
-          await tx.contrato.update({
-            where: { id: existing.contratoId },
-            data: { estado: "FINALIZADO" },
-          });
-
-          await tx.moto.update({
-            where: { id: existing.contrato.motoId },
-            data: { estado: "DISPONIBLE" },
-          });
-        }
+        await checkAndFinalizeContrato(tx, existing.contratoId, existing.contrato.motoId);
       }
 
       return pagoActualizado;
@@ -245,13 +205,6 @@ export async function PUT(req: NextRequest, context: RouteContext) {
           console.error("Error emitting payment.refund event:", err);
         });
       }
-    }
-
-    // Enviar email con factura (fire and forget - no bloquea la respuesta)
-    if (facturaId) {
-      enviarFacturaEmail(facturaId).catch((error) => {
-        console.error("Error sending factura email (non-blocking):", error);
-      });
     }
 
     return NextResponse.json(resultado);

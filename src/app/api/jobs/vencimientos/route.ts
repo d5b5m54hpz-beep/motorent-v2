@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-// Verify cron secret to prevent unauthorized access
-function verifyCron(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) return true; // Allow in dev
-  return authHeader === `Bearer ${process.env.CRON_SECRET}`;
-}
+import { requireCron } from "@/lib/auth/require-cron";
 
 // GET /api/jobs/vencimientos
-// Runs daily at 3:00 AM (configured in vercel.json)
-// Marks payments as "vencido" when past due date
+// Runs daily at 3:00 AM — marks payments as VENCIDO when past due date
 export async function GET(req: NextRequest) {
-  if (!verifyCron(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const cronError = requireCron(req);
+  if (cronError) return cronError;
 
   const now = new Date();
 

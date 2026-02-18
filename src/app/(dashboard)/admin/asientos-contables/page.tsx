@@ -160,7 +160,7 @@ export default function AsientosContablesPage() {
     () =>
       getColumns({
         onView: (a) => setViewAsiento(a),
-        onEdit: () => toast.info("Edición de asientos: próximamente"),
+        onEdit: () => toast.info("Los asientos contables son generados automáticamente por el sistema y no se pueden editar manualmente"),
         onDelete: (a) => setDeleteAsiento(a),
       }),
     []

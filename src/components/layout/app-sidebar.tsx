@@ -161,8 +161,10 @@ export function AppSidebar({ user }: Props) {
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
     { title: "Patentamiento", href: "/admin/motos/patentamiento", icon: FileCheck },
-    { title: "Tarifas de Alquiler", href: "/admin/precios", icon: Tag },
-    { title: "Amortización", href: "/admin/flota/amortizacion", icon: TrendingUp },
+    { title: "Precios por Moto", href: "/admin/precios", icon: Tag },
+    { title: "Config de Precios", href: "/admin/pricing", icon: Settings },
+    { title: "Pricing Inteligente", href: "/admin/finanzas/pricing", icon: TrendingUp },
+    { title: "Amortización", href: "/admin/flota/amortizacion", icon: BarChart3 },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
     { title: "Talleres", href: "/admin/talleres", icon: Factory },
   ];
@@ -171,8 +173,7 @@ export function AppSidebar({ user }: Props) {
     { title: "Inventario", href: "/admin/repuestos", icon: Package },
     { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
     { title: "Importaciones", href: "/admin/importaciones", icon: Ship },
-    { title: "Costeo", href: "/admin/pricing-repuestos?tab=costeo", icon: Calculator },
-    { title: "Precios Repuestos", href: "/admin/pricing-repuestos?tab=precios", icon: Tag },
+    { title: "Pricing Repuestos", href: "/admin/pricing-repuestos", icon: Calculator },
   ];
 
   const comercial: NavItem[] = [

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, DollarSign } from "lucide-react";
 import { DataTable } from "@/components/data-table/data-table";
 import { ColumnDef } from "@tanstack/react-table";
+import { EmitirNotaDialog } from "./emitir-nota-dialog";
 
 type NotaCredito = {
   id: string;
@@ -86,6 +87,7 @@ export default function NotasCreditoPage() {
   const [notasCredito, setNotasCredito] = useState<NotaCredito[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ emitidas: 0, pendientes: 0, aplicadas: 0, totalMonto: 0 });
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchNotasCredito();
@@ -133,7 +135,7 @@ export default function NotasCreditoPage() {
             Gestión de notas de crédito emitidas a clientes
           </p>
         </div>
-        <Button size="lg">
+        <Button size="lg" onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-5 w-5" />
           Emitir Nota de Crédito
         </Button>
@@ -186,6 +188,12 @@ export default function NotasCreditoPage() {
       <Card className="p-6">
         <DataTable columns={columns} data={notasCredito} />
       </Card>
+
+      <EmitirNotaDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={fetchNotasCredito}
+      />
     </div>
   );
 }
