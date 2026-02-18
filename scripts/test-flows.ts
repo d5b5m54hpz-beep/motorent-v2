@@ -291,7 +291,7 @@ async function testFlujoValidaciones() {
 
   const ts = Date.now();
 
-  // 1. Intentar crear contrato con cliente NO aprobado
+  // 1. Intentar crear contrato con cliente NO aprobado → 400
   const { data: clienteNuevo } = await api("POST", "/api/clientes", {
     nombre: `Test Validacion ${ts}`,
     dni: `${ts}`.slice(-8),
@@ -310,13 +310,14 @@ async function testFlujoValidaciones() {
     return;
   }
 
+  const motoVal = motoList[0];
   const fechaInicio = new Date();
   const fechaFin = new Date();
   fechaFin.setMonth(fechaFin.getMonth() + 1);
 
   const { status: statusNoAprobado } = await api("POST", "/api/contratos", {
     clienteId: clienteNuevo.id,
-    motoId: motoList[0].id,
+    motoId: motoVal.id,
     frecuenciaPago: "MENSUAL",
     fechaInicio: fechaInicio.toISOString(),
     fechaFin: fechaFin.toISOString(),
@@ -326,7 +327,67 @@ async function testFlujoValidaciones() {
     `Contrato rechazado con cliente no aprobado (status ${statusNoAprobado})`
   );
 
-  // 2. Intentar preview con precioBaseMensual <= 0
+  // 2. Intentar crear contrato con moto que ya tiene contrato activo → 409
+  // First, approve the client and create a valid contrato to make the moto ALQUILADA
+  await api("PUT", `/api/clientes/${clienteNuevo.id}`, {
+    nombre: `Test Validacion ${ts}`,
+    email: `testval_${ts}@e2e.com`,
+    estado: "APROBADO",
+  });
+  const { ok: contratoValOk } = await api("POST", "/api/contratos", {
+    clienteId: clienteNuevo.id,
+    motoId: motoVal.id,
+    frecuenciaPago: "MENSUAL",
+    fechaInicio: fechaInicio.toISOString(),
+    fechaFin: fechaFin.toISOString(),
+  });
+  assert(contratoValOk, "Contrato creado para test de moto ocupada");
+
+  // Now try to create another contrato with the same moto → should be 409
+  const { data: clienteOtro } = await api("POST", "/api/clientes", {
+    nombre: `Test Validacion2 ${ts}`,
+    dni: `${ts + 1}`.slice(-8),
+    email: `testval2_${ts}@e2e.com`,
+    telefono: "0000000001",
+  });
+  await api("PUT", `/api/clientes/${clienteOtro.id}`, {
+    nombre: `Test Validacion2 ${ts}`,
+    email: `testval2_${ts}@e2e.com`,
+    estado: "APROBADO",
+  });
+
+  const { status: statusMotoOcupada } = await api("POST", "/api/contratos", {
+    clienteId: clienteOtro.id,
+    motoId: motoVal.id,
+    frecuenciaPago: "MENSUAL",
+    fechaInicio: fechaInicio.toISOString(),
+    fechaFin: fechaFin.toISOString(),
+  });
+  assert(
+    statusMotoOcupada === 409,
+    `Contrato rechazado con moto ya alquilada (status ${statusMotoOcupada})`
+  );
+
+  // 3. Intentar transición de estado inválida: APROBADO → APROBADO → 400
+  const { data: pagosResp } = await api("GET", "/api/pagos?estado=APROBADO&limit=1");
+  const pagosAprobados = pagosResp.data || [];
+
+  if (Array.isArray(pagosAprobados) && pagosAprobados.length > 0) {
+    const pagoAprobado = pagosAprobados[0];
+    const { status: statusInvalido } = await api(
+      "PUT",
+      `/api/pagos/${pagoAprobado.id}`,
+      { estado: "APROBADO", metodo: "TRANSFERENCIA" }
+    );
+    assert(
+      statusInvalido === 400,
+      `Transición inválida APROBADO→APROBADO rechazada (status ${statusInvalido})`
+    );
+  } else {
+    console.log("    [SKIP] No hay pagos aprobados para test de transición inválida");
+  }
+
+  // 4. Intentar preview con precioBaseMensual <= 0
   const { status: statusPrecio } = await api("POST", "/api/contratos/preview", {
     precioBaseMensual: 0,
     fechaInicio: fechaInicio.toISOString(),
@@ -338,7 +399,7 @@ async function testFlujoValidaciones() {
     `Preview rechazado con precio 0 (status ${statusPrecio})`
   );
 
-  // 3. Intentar preview sin campos requeridos
+  // 5. Intentar preview sin campos requeridos
   const { status: statusIncompleto } = await api(
     "POST",
     "/api/contratos/preview",
@@ -359,15 +420,15 @@ async function testFlujoJobs() {
   section("FLUJO 3: Jobs de Cron");
 
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    console.log("  [SKIP] CRON_SECRET no configurado, saltando test de jobs");
-    return;
-  }
 
+  // requireCron allows all requests when CRON_SECRET is not set (dev mode).
+  // If CRON_SECRET is set, we test with Bearer auth and also verify rejection without auth.
   async function cronApi(path: string) {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      headers: { Authorization: `Bearer ${cronSecret}` },
-    });
+    const headers: Record<string, string> = {};
+    if (cronSecret) {
+      headers["Authorization"] = `Bearer ${cronSecret}`;
+    }
+    const res = await fetch(`${BASE_URL}${path}`, { headers });
     const data = await res.json().catch(() => ({}));
     const icon = res.ok ? "\u2713" : "\u2717";
     console.log(`  ${icon} GET ${path} -> ${res.status}`);
@@ -375,25 +436,33 @@ async function testFlujoJobs() {
     return { status: res.status, data, ok: res.ok };
   }
 
+  if (!cronSecret) {
+    console.log("  (CRON_SECRET not set — dev mode, jobs accept all requests)\n");
+  }
+
   // 1. Job vencimientos
   const { ok: vencOk, data: vencData } = await cronApi("/api/jobs/vencimientos");
-  assert(vencOk, `Job vencimientos ejecutado: ${JSON.stringify(vencData)}`);
+  assert(vencOk, `Job vencimientos ejecutado: ${JSON.stringify(vencData).slice(0, 150)}`);
 
   // 2. Job contratos-por-vencer
   const { ok: contVencOk, data: contVencData } = await cronApi("/api/jobs/contratos-por-vencer");
-  assert(contVencOk, `Job contratos-por-vencer: ${JSON.stringify(contVencData)}`);
+  assert(contVencOk, `Job contratos-por-vencer: ${JSON.stringify(contVencData).slice(0, 150)}`);
 
   // 3. Job notificaciones-mantenimiento
   const { ok: notifOk, data: notifData } = await cronApi("/api/jobs/notificaciones-mantenimiento");
-  assert(notifOk, `Job notificaciones-mantenimiento: ${JSON.stringify(notifData)}`);
+  assert(notifOk, `Job notificaciones-mantenimiento: ${JSON.stringify(notifData).slice(0, 150)}`);
 
   // 4. Job generar-citas
   const { ok: citasOk, data: citasData } = await cronApi("/api/jobs/generar-citas");
-  assert(citasOk, `Job generar-citas: ${JSON.stringify(citasData)}`);
+  assert(citasOk, `Job generar-citas: ${JSON.stringify(citasData).slice(0, 150)}`);
 
-  // 5. Verificar que jobs SIN auth fallan
-  const resSinAuth = await fetch(`${BASE_URL}/api/jobs/vencimientos`);
-  assert(resSinAuth.status === 401, `Job sin auth rechazado (status ${resSinAuth.status})`);
+  // 5. Verificar que jobs SIN auth fallan (only when CRON_SECRET is set)
+  if (cronSecret) {
+    const resSinAuth = await fetch(`${BASE_URL}/api/jobs/vencimientos`);
+    assert(resSinAuth.status === 401, `Job sin auth rechazado (status ${resSinAuth.status})`);
+  } else {
+    console.log("    [SKIP] Auth rejection test (no CRON_SECRET configured)");
+  }
 
   console.log("\n  FLUJO 3 COMPLETADO\n");
 }
