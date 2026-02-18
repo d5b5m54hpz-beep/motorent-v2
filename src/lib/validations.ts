@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+// ─── Shared Constants ────────────────────────────────────────────────────────
+
+export const CUIT_REGEX = /^\d{2}-\d{8}-\d$/;
+
 // ─── Motos ───────────────────────────────────────────────────────────────────
 
 export const motoEstados = ["disponible", "alquilada", "mantenimiento", "baja"] as const;
@@ -646,3 +650,91 @@ export const presupuestoSchema = z.object({
 });
 
 export type PresupuestoInput = z.infer<typeof presupuestoSchema>;
+
+// ─── Talleres ─────────────────────────────────────────────────────────────────
+
+export const tiposTaller = ["INTERNO", "EXTERNO"] as const;
+
+export const tallerSchema = z.object({
+  nombre: z.string().min(1, "Nombre es requerido"),
+  direccion: z.string().optional(),
+  telefono: z.string().optional(),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  tipo: z.enum(tiposTaller),
+  activo: z.boolean().default(true),
+  capacidadDiaria: z.coerce.number().int().min(1).default(10),
+  horarioApertura: z.string().optional(),
+  horarioCierre: z.string().optional(),
+  diasOperacion: z.array(z.string()).optional(),
+});
+
+export type TallerInput = z.infer<typeof tallerSchema>;
+
+// ─── Mecánicos ────────────────────────────────────────────────────────────────
+
+export const mecanicoSchema = z.object({
+  nombre: z.string().min(1, "Nombre es requerido"),
+  tallerId: z.string().min(1, "Taller es requerido"),
+  especialidad: z.string().optional(),
+  telefono: z.string().optional(),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  activo: z.boolean().default(true),
+  tarifaHora: z.coerce.number().min(0).optional(),
+});
+
+export type MecanicoInput = z.infer<typeof mecanicoSchema>;
+
+// ─── Órdenes de Trabajo (Mantenimiento) ───────────────────────────────────────
+
+export const tiposOT = ["PREVENTIVO", "CORRECTIVO", "EMERGENCIA"] as const;
+
+export const ordenMantenimientoSchema = z.object({
+  motoId: z.string().min(1, "Moto es requerida"),
+  tipoOT: z.enum(tiposOT),
+  descripcion: z.string().optional(),
+  kmAlIngreso: z.coerce.number().int().min(0, "Km al ingreso es requerido"),
+  tallerId: z.string().optional(),
+  mecanicoId: z.string().optional(),
+  prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]).optional(),
+  fechaProgramada: z.string().optional(),
+});
+
+export type OrdenMantenimientoInput = z.infer<typeof ordenMantenimientoSchema>;
+
+// ─── Citas de Mantenimiento ───────────────────────────────────────────────────
+
+export const citaMantenimientoSchema = z.object({
+  motoId: z.string().min(1, "Moto es requerida"),
+  riderId: z.string().optional(),
+  fechaProgramada: z.string().min(1, "Fecha programada es requerida"),
+  lugarId: z.string().optional(),
+});
+
+export type CitaMantenimientoInput = z.infer<typeof citaMantenimientoSchema>;
+
+// ─── Embarques de Importación ─────────────────────────────────────────────────
+
+export const metodosFleteEmbarque = ["MARITIMO_FCL", "MARITIMO_LCL", "AEREO"] as const;
+
+export const itemEmbarqueSchema = z.object({
+  repuestoId: z.string().optional(),
+  cantidad: z.coerce.number().int().min(1, "Cantidad mínima es 1"),
+  precioFobUnitarioUsd: z.coerce.number().min(0, "Precio FOB debe ser positivo"),
+  pesoTotalKg: z.coerce.number().min(0).optional(),
+  volumenTotalCbm: z.coerce.number().min(0).optional(),
+  ncmCodigo: z.string().optional(),
+  arancelPorcentaje: z.coerce.number().min(0).optional(),
+});
+
+export const embarqueSchema = z.object({
+  proveedorId: z.string().optional(),
+  metodoFlete: z.enum(metodosFleteEmbarque),
+  fechaSalida: z.string().optional(),
+  fechaLlegadaEstimada: z.string().optional(),
+  numeroContenedor: z.string().optional(),
+  tipoContenedor: z.string().optional(),
+  notas: z.string().max(2000, "Notas muy largas").optional(),
+  items: z.array(itemEmbarqueSchema).min(1, "Debe tener al menos 1 item"),
+});
+
+export type EmbarqueInput = z.infer<typeof embarqueSchema>;

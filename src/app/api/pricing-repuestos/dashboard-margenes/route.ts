@@ -4,6 +4,20 @@ import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
 import { subDays, subMonths, format, startOfMonth } from "date-fns";
 
+interface CategoriaConfig {
+  categoria: string;
+  margenObjetivo: number;
+  margenMinimo: number;
+}
+
+interface DashboardAlerta {
+  tipo: string;
+  severidad: "ALTA" | "MEDIA" | "BAJA";
+  mensaje: string;
+  repuestoId?: string;
+  accion: string;
+}
+
 export async function GET(req: NextRequest) {
   const { error } = await requirePermission(OPERATIONS.pricing.parts.view, "view", ["OPERADOR", "CONTADOR"]);
   if (error) return error;
@@ -139,7 +153,7 @@ export async function GET(req: NextRequest) {
       totalProductos: number;
       sumaMargen: number;
       valorInventario: number;
-      config: any;
+      config: CategoriaConfig | undefined;
     }>();
 
     repuestos.forEach((r) => {
@@ -261,7 +275,7 @@ export async function GET(req: NextRequest) {
     }
 
     // ─── 11. ALERTAS ACTIVAS ───────────────────────────────────────
-    const alertas: any[] = [];
+    const alertas: DashboardAlerta[] = [];
 
     // Alertas de margen bajo
     repuestos.forEach((r) => {

@@ -77,9 +77,8 @@ export function ExportAdvancedDropdown({
     exportToExcel(motos, filename);
   };
 
-  const exportToPDF = (motos: Moto[], filename: string) => {
+  const exportToPDF = (_motos: Moto[], _filename: string) => {
     // Placeholder - implementar con jsPDF o similar
-    console.log("Export to PDF:", filename, motos.length, "motos");
     alert("Exportación a PDF - próximamente");
   };
 

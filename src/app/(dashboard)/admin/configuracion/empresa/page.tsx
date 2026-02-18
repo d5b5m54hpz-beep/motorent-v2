@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { CUIT_REGEX } from "@/lib/validations";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ import { Loader2, Building2, Save } from "lucide-react";
 
 const configuracionSchema = z.object({
   razonSocial: z.string().min(1, "Razón social requerida"),
-  cuit: z.string().regex(/^\d{2}-\d{8}-\d{1}$/, "CUIT inválido (formato: XX-XXXXXXXX-X)").optional().or(z.literal("")),
+  cuit: z.string().regex(CUIT_REGEX, "CUIT inválido (formato: XX-XXXXXXXX-X)").optional().or(z.literal("")),
   condicionIva: z.enum(["RESPONSABLE_INSCRIPTO", "MONOTRIBUTISTA", "EXENTO", "NO_RESPONSABLE", "CONSUMIDOR_FINAL"]),
   domicilioComercial: z.string().optional(),
   domicilioFiscal: z.string().optional(),

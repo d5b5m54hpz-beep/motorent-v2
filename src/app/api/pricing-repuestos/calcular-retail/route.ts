@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
 import { randomUUID } from "crypto";
+
+interface RetailCalculationItem {
+  repuestoId: string;
+  nombre: string;
+  categoria: string | null;
+  costo: number;
+  precioActual: number;
+  precioCalculado: number;
+  margenActual: number;
+  margenNuevo: number;
+  reglaAplicada: string;
+  cambio: string;
+  cambioPct: number;
+}
 
 function redondearPrecio(precio: number, metodo?: string | null): number {
   if (!metodo || metodo === "NONE") return precio;
@@ -29,7 +44,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Construir filtro
-    const where: any = { activo: true };
+    const where: Prisma.RepuestoWhereInput = { activo: true };
 
     if (repuestoIds && repuestoIds.length > 0) {
       where.id = { in: repuestoIds };
@@ -68,7 +83,7 @@ export async function POST(req: NextRequest) {
     const categoriasConfig = await prisma.categoriaRepuestoConfig.findMany();
     const configMap = new Map(categoriasConfig.map((c) => [c.categoria, c]));
 
-    const items: any[] = [];
+    const items: RetailCalculationItem[] = [];
     let suben = 0;
     let bajan = 0;
     let sinCambio = 0;

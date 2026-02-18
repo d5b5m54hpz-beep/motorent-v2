@@ -93,7 +93,6 @@ const config = {
                 email: upserted.email,
               },
             });
-            console.log("✅ Cliente auto-created for user:", upserted.email);
           }
         }
       }

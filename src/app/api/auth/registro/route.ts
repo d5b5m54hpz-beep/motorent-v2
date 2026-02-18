@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { z } from "zod";
+import { registerSchema } from "@/lib/validations";
 import { Role } from "@prisma/client";
-
-const registroSchema = z.object({
-  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-});
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const parsed = registroSchema.safeParse(body);
+    const parsed = registerSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -25,7 +19,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { nombre, email, password } = parsed.data;
+    const { name: nombre, email, password } = parsed.data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -61,8 +55,6 @@ export async function POST(req: NextRequest) {
         email,
       },
     });
-
-    console.log("✅ New user registered:", email);
 
     return NextResponse.json(
       {

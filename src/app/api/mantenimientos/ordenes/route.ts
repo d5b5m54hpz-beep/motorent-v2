@@ -2,66 +2,76 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/require-permission';
 import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
+import { ordenMantenimientoSchema } from '@/lib/validations';
+import { z } from 'zod';
 
-// GET /api/mantenimientos/ordenes — Listar OTs con filtros
+// GET /api/mantenimientos/ordenes — Listar OTs con filtros (paginated)
 export async function GET(req: NextRequest) {
   try {
     const { error } = await requirePermission(OPERATIONS.maintenance.workorder.view, "view", ["OPERADOR"]);
     if (error) return error;
 
     const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
     const estado = searchParams.get('estado');
     const tipoOT = searchParams.get('tipo');
     const motoId = searchParams.get('motoId');
     const tallerId = searchParams.get('tallerId');
 
-    const ordenes = await prisma.ordenTrabajo.findMany({
-      where: {
-        ...(estado && { estado: estado as any }),
-        ...(tipoOT && { tipoOT: tipoOT as any }),
-        ...(motoId && { motoId }),
-        ...(tallerId && { tallerId }),
-      },
-      include: {
-        moto: {
-          select: {
-            id: true,
-            marca: true,
-            modelo: true,
-            patente: true,
-          },
-        },
-        rider: {
-          select: {
-            id: true,
-            nombre: true,
-          },
-        },
-        taller: {
-          select: {
-            id: true,
-            nombre: true,
-          },
-        },
-        mecanico: {
-          select: {
-            id: true,
-            nombre: true,
-          },
-        },
-        plan: {
-          select: {
-            id: true,
-            nombre: true,
-            tipo: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
+    const where: Record<string, unknown> = {};
+    if (estado) where.estado = estado;
+    if (tipoOT) where.tipoOT = tipoOT;
+    if (motoId) where.motoId = motoId;
+    if (tallerId) where.tallerId = tallerId;
 
-    return NextResponse.json({ data: ordenes });
+    const [data, total] = await Promise.all([
+      prisma.ordenTrabajo.findMany({
+        where,
+        include: {
+          moto: {
+            select: {
+              id: true,
+              marca: true,
+              modelo: true,
+              patente: true,
+            },
+          },
+          rider: {
+            select: {
+              id: true,
+              nombre: true,
+            },
+          },
+          taller: {
+            select: {
+              id: true,
+              nombre: true,
+            },
+          },
+          mecanico: {
+            select: {
+              id: true,
+              nombre: true,
+            },
+          },
+          plan: {
+            select: {
+              id: true,
+              nombre: true,
+              tipo: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.ordenTrabajo.count({ where }),
+    ]);
+
+    return NextResponse.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error: unknown) {
     console.error('Error fetching ordenes:', error);
     return NextResponse.json(
@@ -78,11 +88,16 @@ export async function POST(req: NextRequest) {
     if (error) return error;
 
     const body = await req.json();
-    const { motoId, tipoOT, descripcion, kmAlIngreso } = body;
+    const parsed = ordenMantenimientoSchema.safeParse(body);
 
-    if (!motoId || !tipoOT || kmAlIngreso === undefined) {
-      return NextResponse.json({ error: 'motoId, tipoOT y kmAlIngreso son requeridos' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+
+    const { motoId, tipoOT, descripcion, kmAlIngreso } = parsed.data;
 
     // Generar número de OT
     const lastOT = await prisma.ordenTrabajo.findFirst({
@@ -113,6 +128,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ data: orden }, { status: 201 });
   } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: error.errors },
+        { status: 400 }
+      );
+    }
     console.error('Error creating orden:', error);
     return NextResponse.json(
       { error: 'Error al crear orden de trabajo', details: error instanceof Error ? error.message : 'Unknown' },

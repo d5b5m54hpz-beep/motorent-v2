@@ -4,7 +4,7 @@ import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { ubicacionDepositoSchema } from "@/lib/validations";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const { error } = await requirePermission(
     OPERATIONS.inventory.location.view,
     "view",
@@ -13,24 +13,38 @@ export async function GET() {
   if (error) return error;
 
   try {
-    const ubicaciones = await prisma.ubicacionDeposito.findMany({
-      orderBy: [{ estante: "asc" }, { fila: "asc" }, { posicion: "asc" }],
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const skip = (page - 1) * limit;
+
+    const [ubicaciones, total] = await Promise.all([
+      prisma.ubicacionDeposito.findMany({
+        orderBy: [{ estante: "asc" }, { fila: "asc" }, { posicion: "asc" }],
+        skip,
+        take: limit,
+      }),
+      prisma.ubicacionDeposito.count(),
+    ]);
+
+    // Fix N+1: batch count repuestos per ubicacion using groupBy
+    const codigos = ubicaciones.map((ub) => ub.codigo);
+    const repuestoCounts = await prisma.repuesto.groupBy({
+      by: ["ubicacion"],
+      where: { ubicacion: { in: codigos }, activo: true },
+      _count: { id: true },
     });
 
-    const ubicacionesConRepuestos = await Promise.all(
-      ubicaciones.map(async (ub) => {
-        const cantidadRepuestos = await prisma.repuesto.count({
-          where: { ubicacion: ub.codigo, activo: true },
-        });
-
-        return {
-          ...ub,
-          cantidadRepuestos,
-        };
-      })
+    const countMap = new Map(
+      repuestoCounts.map((r) => [r.ubicacion, r._count.id])
     );
 
-    return NextResponse.json(ubicacionesConRepuestos);
+    const data = ubicaciones.map((ub) => ({
+      ...ub,
+      cantidadRepuestos: countMap.get(ub.codigo) || 0,
+    }));
+
+    return NextResponse.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error: unknown) {
     console.error("Error fetching ubicaciones:", error);
     return NextResponse.json(

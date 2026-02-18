@@ -3,6 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
 
+interface PricingSugerencia {
+  repuestoId: string;
+  codigo: string | null;
+  nombre: string;
+  categoria: string | null;
+  tipo: "DEFINIR" | "SUBIR" | "BAJAR";
+  severidad: "CRITICO" | "ALTO" | "INFO";
+  costoLanded: number;
+  precioActual: number;
+  margenActual: number;
+  precioSugerido: number;
+  margenSugerido: number;
+  motivo: string;
+}
+
 export async function POST() {
   const { error } = await requirePermission(OPERATIONS.pricing.parts.view, "execute", ["OPERADOR"]);
   if (error) return error;
@@ -35,7 +50,7 @@ export async function POST() {
     );
 
     // ─── 3. GENERAR SUGERENCIAS BASADAS EN LÓGICA PURA ────────────
-    const sugerencias: any[] = [];
+    const sugerencias: PricingSugerencia[] = [];
 
     repuestos.forEach((r) => {
       const costo = r.costoPromedioArs;

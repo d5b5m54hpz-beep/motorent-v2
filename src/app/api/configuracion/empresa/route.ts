@@ -3,10 +3,11 @@ import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { CUIT_REGEX } from "@/lib/validations";
 
 const configuracionEmpresaSchema = z.object({
   razonSocial: z.string().min(1, "Razón social requerida"),
-  cuit: z.string().regex(/^\d{2}-\d{8}-\d{1}$/, "CUIT inválido (formato: XX-XXXXXXXX-X)").optional().or(z.literal("")),
+  cuit: z.string().regex(CUIT_REGEX, "CUIT inválido (formato: XX-XXXXXXXX-X)").optional().or(z.literal("")),
   condicionIva: z.enum(["RESPONSABLE_INSCRIPTO", "MONOTRIBUTISTA", "EXENTO", "NO_RESPONSABLE", "CONSUMIDOR_FINAL"]),
   domicilioComercial: z.string().optional(),
   domicilioFiscal: z.string().optional(),

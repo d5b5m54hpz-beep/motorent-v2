@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
 
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── 1. OBTENER REPUESTOS DE LA CATEGORÍA ──────────────────────
-    const where: any = { activo: true, precioVenta: { gt: 0 } };
+    const where: Prisma.RepuestoWhereInput = { activo: true, precioVenta: { gt: 0 } };
     if (categoria !== "TODOS") {
       where.categoria = categoria;
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   const repuestoId = searchParams.get("repuestoId");
 
   try {
-    const where: any = {};
+    const where: Prisma.HistorialPrecioRepuestoWhereInput = {};
     if (repuestoId) where.repuestoId = repuestoId;
 
     const [data, total] = await Promise.all([

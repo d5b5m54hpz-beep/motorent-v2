@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
+import { embarqueSchema } from "@/lib/validations";
+import { z } from "zod";
 
 export async function GET(req: NextRequest) {
   const { error } = await requirePermission(OPERATIONS.import_shipment.view, "view", ["OPERADOR", "CONTADOR"]);
@@ -15,8 +18,8 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("search");
 
   try {
-    const where: any = {};
-    if (estado) where.estado = estado;
+    const where: Prisma.EmbarqueImportacionWhereInput = {};
+    if (estado) where.estado = estado as Prisma.EmbarqueImportacionWhereInput["estado"];
     if (proveedorId) where.proveedorId = proveedorId;
     if (search) {
       where.OR = [
@@ -62,7 +65,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    console.log("Creating embarque with body:", JSON.stringify(body, null, 2));
+    const parsed = embarqueSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Datos inválidos", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
 
     const {
       proveedorId,
@@ -73,7 +83,7 @@ export async function POST(req: NextRequest) {
       tipoContenedor,
       items,
       notas,
-    } = body;
+    } = parsed.data;
 
     // Get last referencia number
     const lastEmbarque = await prisma.embarqueImportacion.findFirst({
@@ -90,7 +100,7 @@ export async function POST(req: NextRequest) {
 
     // Calculate FOB total and prepare items data
     let totalFobUsd = 0;
-    const itemsData = items.map((item: any) => {
+    const itemsData = items.map((item) => {
       const subtotal = item.cantidad * item.precioFobUnitarioUsd;
       totalFobUsd += subtotal;
       return {
@@ -104,8 +114,6 @@ export async function POST(req: NextRequest) {
         arancelPorcentaje: item.arancelPorcentaje || null,
       };
     });
-
-    console.log("📝 Items to create:", itemsData.length);
 
     const embarque = await prisma.embarqueImportacion.create({
       data: {
@@ -128,8 +136,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log("Embarque created successfully:", embarque.id);
-
     eventBus.emit(
       OPERATIONS.import_shipment.create,
       "Embarque",
@@ -140,13 +146,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(embarque);
   } catch (err: unknown) {
-    console.error("❌ Error creating embarque:", err);
-    if (err instanceof Error) {
-      console.error("Error details:", {
-        message: err.message,
-        stack: err.stack,
-      });
+    if (err instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Datos inválidos", details: err.errors },
+        { status: 400 }
+      );
     }
+    console.error("Error creating embarque:", err);
     return NextResponse.json(
       {
         error: "Error al crear embarque",

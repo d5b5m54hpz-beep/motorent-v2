@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { randomUUID } from "crypto";
+
+interface BulkPriceChange {
+  repuestoId: string;
+  precioActual?: number;
+  precioNuevo?: number;
+  precioCalculado?: number;
+}
 
 export async function POST(req: NextRequest) {
   const { error, userId } = await requirePermission(OPERATIONS.pricing.parts.bulk_update, "execute", ["OPERADOR"]);
@@ -48,8 +56,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let cambios: any[] = [];
-    let repuestosAfectados: any[] = [];
+    let cambios: BulkPriceChange[] = [];
+    const repuestosAfectados: string[] = [];
 
     // Caso 1: Lote pre-calculado (viene de calcular-retail)
     if (loteId) {
@@ -77,7 +85,7 @@ export async function POST(req: NextRequest) {
     // Caso 2: Ajuste por porcentaje
     else if (tipo === "PORCENTAJE" && porcentaje !== undefined) {
       // Construir filtro
-      const where: any = { activo: true };
+      const where: Prisma.RepuestoWhereInput = { activo: true };
 
       if (repuestoIds && repuestoIds.length > 0) {
         where.id = { in: repuestoIds };
@@ -137,7 +145,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const historialCreado: any[] = [];
+      const historialCreado: Record<string, unknown>[] = [];
 
       // Aplicar cada cambio
       for (const cambio of cambios) {
@@ -148,7 +156,7 @@ export async function POST(req: NextRequest) {
         if (!repuesto) continue;
 
         const precioAnterior = repuesto.precioVenta;
-        const precioNuevo = cambio.precioNuevo || cambio.precioCalculado;
+        const precioNuevo = cambio.precioNuevo || cambio.precioCalculado || 0;
         const costo = repuesto.costoPromedioArs || repuesto.precioCompra || 0;
 
         // Actualizar precio del repuesto (solo si es lista B2C)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
 
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     const soloImportadas = url.searchParams.get("soloImportadas") === "true";
     const soloPendientes = url.searchParams.get("soloPendientes") === "true";
 
-    const where: any = {};
+    const where: Prisma.MotoWhereInput = {};
 
     // Filtro de búsqueda (VIN o patente o dominio)
     if (search) {

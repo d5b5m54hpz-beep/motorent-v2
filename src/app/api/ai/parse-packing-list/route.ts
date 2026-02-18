@@ -15,12 +15,10 @@ function detectHeaderRow(jsonData: any[][]): number {
     });
 
     if (nonEmptyCells.length >= 3) {
-      console.log(`✓ Header row detectado en fila ${i + 1}:`, row);
       return i;
     }
   }
 
-  console.warn("⚠️ No se detectó header row, asumiendo fila 0");
   return 0;
 }
 
@@ -70,7 +68,6 @@ function detectProveedorFromHeaders(jsonData: any[][]): string | null {
         const hasKeyword = keywords.some(kw => textLower.includes(kw));
 
         if (hasKeyword) {
-          console.log(`✓ Proveedor detectado en fila ${i + 1}: "${text}"`);
           return text;
         }
       }
@@ -85,8 +82,6 @@ function parsePackingList(jsonData: any[][]): { items: any[], proveedorDetectado
   if (!jsonData || jsonData.length < 2) {
     throw new Error("Archivo vacío o sin suficientes datos");
   }
-
-  console.log(`📊 Procesando ${jsonData.length} filas...`);
 
   // 0. Detectar proveedor antes de headers
   const proveedorDetectado = detectProveedorFromHeaders(jsonData);
@@ -103,8 +98,6 @@ function parsePackingList(jsonData: any[][]): { items: any[], proveedorDetectado
   const headers = headerRow.map((h: any) =>
     String(h || "").toLowerCase().trim()
   );
-
-  console.log("Headers normalizados:", headers);
 
   // 3. Detectar índices de columnas por keywords (multilingual)
   // Para código: priorizar "part number" sobre keywords genéricos
@@ -159,15 +152,6 @@ function parsePackingList(jsonData: any[][]): { items: any[], proveedorDetectado
   const volumenIdx = findColumnIndex(headers, [
     "volume", "cbm", "m3", "m³", "volumen", "cubic"
   ]);
-
-  console.log("Índices detectados:", {
-    codigoIdx,
-    descripcionIdx,
-    cantidadIdx,
-    precioIdx,
-    pesoIdx,
-    volumenIdx
-  });
 
   // 4. Validar que se encontraron las columnas críticas
   if (codigoIdx === -1) {
@@ -250,15 +234,9 @@ function parsePackingList(jsonData: any[][]): { items: any[], proveedorDetectado
     });
   }
 
-  console.log(`✅ Parsing exitoso: ${items.length} items válidos encontrados`);
-
   // 6. Validar calidad de datos: detectar si los códigos son solo números (señal de error)
   const codigosNumericos = items.filter(item => /^\d+$/.test(item.codigoFabricante));
   if (codigosNumericos.length > items.length * 0.5) {
-    console.warn(`⚠️ ADVERTENCIA: ${codigosNumericos.length}/${items.length} códigos son solo números.`);
-    console.warn(`Primeros 5: ${codigosNumericos.slice(0, 5).map(i => i.codigoFabricante).join(", ")}`);
-    console.warn(`Esto puede indicar que se detectó "Item No." en lugar de "Part Number"`);
-
     throw new Error(
       `⚠️ ADVERTENCIA: Detecté ${codigosNumericos.length} códigos que son solo números (${codigosNumericos.slice(0, 5).map(i => i.codigoFabricante).join(", ")}).\n\n` +
       `Esto sugiere que el parser detectó la columna "Item No." en lugar de "Part Number".\n\n` +
@@ -284,8 +262,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se subió ningún archivo" }, { status: 400 });
     }
 
-    console.log("📂 Procesando archivo:", file.name, file.size, "bytes");
-
     // Leer archivo
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -296,8 +272,6 @@ export async function POST(req: NextRequest) {
 
     // Convertir a JSON array
     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
-
-    console.log(`📊 Datos extraídos: ${jsonData.length} filas del sheet "${sheetName}"`);
 
     if (!jsonData || jsonData.length < 2) {
       return NextResponse.json({
@@ -318,11 +292,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`✅ Parser completado: ${items.length} items`);
-    if (proveedorDetectado) {
-      console.log(`📋 Proveedor detectado: ${proveedorDetectado}`);
-    }
-
     return NextResponse.json({
       items,
       method: "parser",
@@ -331,8 +300,6 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error("❌ Error parsing packing list:", error);
-
     const errorMessage = error instanceof Error ? error.message : "Error desconocido";
 
     return NextResponse.json(

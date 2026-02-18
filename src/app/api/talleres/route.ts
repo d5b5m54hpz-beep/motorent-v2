@@ -2,41 +2,52 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/require-permission';
 import { eventBus, OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
+import { tallerSchema } from '@/lib/validations';
+import { z } from 'zod';
 
-// GET /api/talleres — Listar talleres
+// GET /api/talleres — Listar talleres (paginated)
 export async function GET(req: NextRequest) {
   try {
     const { error } = await requirePermission(OPERATIONS.workshop.view, "view", ["OPERADOR"]);
     if (error) return error;
 
     const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
     const tipo = searchParams.get('tipo');
     const activo = searchParams.get('activo');
 
-    const talleres = await prisma.taller.findMany({
-      where: {
-        ...(tipo && { tipo: tipo as any }),
-        ...(activo !== null && { activo: activo === 'true' }),
-      },
-      include: {
-        mecanicos: {
-          where: { activo: true },
-          select: {
-            id: true,
-            nombre: true,
-            especialidad: true,
-          },
-        },
-        _count: {
-          select: {
-            ordenesTrabajo: true,
-          },
-        },
-      },
-      orderBy: { nombre: 'asc' },
-    });
+    const where: Record<string, unknown> = {};
+    if (tipo) where.tipo = tipo;
+    if (activo !== null) where.activo = activo === 'true';
 
-    return NextResponse.json({ data: talleres });
+    const [data, total] = await Promise.all([
+      prisma.taller.findMany({
+        where,
+        include: {
+          mecanicos: {
+            where: { activo: true },
+            select: {
+              id: true,
+              nombre: true,
+              especialidad: true,
+            },
+          },
+          _count: {
+            select: {
+              ordenesTrabajo: true,
+            },
+          },
+        },
+        orderBy: { nombre: 'asc' },
+        skip,
+        take: limit,
+      }),
+      prisma.taller.count({ where }),
+    ]);
+
+    return NextResponse.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error: unknown) {
     console.error('Error fetching talleres:', error);
     return NextResponse.json(
@@ -53,21 +64,16 @@ export async function POST(req: NextRequest) {
     if (error) return error;
 
     const body = await req.json();
-    const {
-      nombre,
-      direccion,
-      telefono,
-      email,
-      tipo,
-      capacidadDiaria,
-      horarioApertura,
-      horarioCierre,
-      diasOperacion,
-    } = body;
+    const parsed = tallerSchema.safeParse(body);
 
-    if (!nombre || !tipo) {
-      return NextResponse.json({ error: 'Nombre y tipo son requeridos' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+
+    const { nombre, direccion, telefono, email, tipo, capacidadDiaria, horarioApertura, horarioCierre, diasOperacion } = parsed.data;
 
     const taller = await prisma.taller.create({
       data: {
@@ -76,7 +82,7 @@ export async function POST(req: NextRequest) {
         telefono,
         email,
         tipo,
-        capacidadDiaria: capacidadDiaria || 10,
+        capacidadDiaria,
         horarioApertura,
         horarioCierre,
         diasOperacion: diasOperacion || ['LUN', 'MAR', 'MIE', 'JUE', 'VIE'],
@@ -88,6 +94,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ data: taller }, { status: 201 });
   } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: error.errors },
+        { status: 400 }
+      );
+    }
     console.error('Error creating taller:', error);
     return NextResponse.json(
       { error: 'Error al crear taller', details: error instanceof Error ? error.message : 'Unknown' },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // ─── 1. CONSTRUIR FILTROS ──────────────────────────────────────
-    const where: any = { activo: true };
+    const where: Prisma.RepuestoWhereInput = { activo: true };
 
     if (search) {
       where.OR = [

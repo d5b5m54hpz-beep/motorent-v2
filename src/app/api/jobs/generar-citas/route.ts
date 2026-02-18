@@ -13,8 +13,6 @@ import { nanoid } from 'nanoid';
  */
 export async function GET() {
   try {
-    console.log('[CRON] Iniciando generación de citas mensuales...');
-
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -88,8 +86,6 @@ export async function GET() {
 
       citasCreadas++;
     }
-
-    console.log(`[CRON] Generadas ${citasCreadas} citas para el mes ${currentMonth + 1}/${currentYear}`);
 
     return NextResponse.json({
       success: true,

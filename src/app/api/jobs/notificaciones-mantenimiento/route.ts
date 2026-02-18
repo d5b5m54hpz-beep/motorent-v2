@@ -12,8 +12,6 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET() {
   try {
-    console.log('[CRON] Iniciando notificaciones de mantenimiento...');
-
     const now = new Date();
     const tresDiasDespues = new Date(now);
     tresDiasDespues.setDate(now.getDate() + 3);
@@ -143,12 +141,6 @@ export async function GET() {
 
       alertasKm++;
     }
-
-    console.log('[CRON] Notificaciones completadas:', {
-      notificacionesCreadas,
-      noAsistidos,
-      alertasKm,
-    });
 
     return NextResponse.json({
       success: true,

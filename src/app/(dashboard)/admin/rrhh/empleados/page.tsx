@@ -60,9 +60,8 @@ export default function EmpleadosPage() {
       setSelectedEmpleado(empleado);
       setDeleteOpen(true);
     },
-    onView: (empleado) => {
+    onView: () => {
       // TODO: Implement detail view
-      console.log("View empleado:", empleado);
     },
   });
 

@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
+import type { Repuesto, ListaPrecio, ReglaDescuento } from "@prisma/client";
+
+interface DescuentoAplicado {
+  nombre: string;
+  tipo: string;
+  valor: number;
+}
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 
@@ -26,8 +33,8 @@ function redondearPrecio(precio: number, metodo?: string | null): number {
 }
 
 async function calcularPrecioConMarkup(
-  repuesto: any,
-  listaPrecio: any
+  repuesto: Repuesto,
+  listaPrecio: ListaPrecio
 ): Promise<{ precio: number; reglaAplicada: string }> {
   const costo = repuesto.costoPromedioArs || repuesto.precioCompra || 0;
 
@@ -88,12 +95,12 @@ async function calcularPrecioConMarkup(
 }
 
 async function evaluarDescuentos(
-  repuesto: any,
+  repuesto: Repuesto,
   clienteId: string | undefined,
-  listaPrecio: any,
+  listaPrecio: ListaPrecio,
   cantidad: number
-): Promise<any[]> {
-  const descuentosAplicables: any[] = [];
+): Promise<ReglaDescuento[]> {
+  const descuentosAplicables: ReglaDescuento[] = [];
 
   // Obtener todas las reglas de descuento activas
   const reglas = await prisma.reglaDescuento.findMany({
@@ -202,7 +209,7 @@ async function evaluarDescuentos(
   return descuentosAplicables;
 }
 
-function aplicarDescuento(precio: number, descuento: any): number {
+function aplicarDescuento(precio: number, descuento: ReglaDescuento): number {
   if (descuento.tipoDescuento === "PORCENTAJE") {
     return precio * (1 - descuento.valorDescuento);
   } else {
@@ -241,7 +248,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Determinar lista de precios
-    let listaPrecio: any;
+    let listaPrecio: ListaPrecio | null | undefined;
 
     if (listaPrecioCodigo) {
       listaPrecio = await prisma.listaPrecio.findUnique({
@@ -353,7 +360,7 @@ export async function POST(req: NextRequest) {
     );
 
     let precioFinal = precioBase;
-    const descuentosAplicados: any[] = [];
+    const descuentosAplicados: DescuentoAplicado[] = [];
 
     // Primero: mejor descuento NO acumulable
     const noAcumulables = descuentosDisponibles.filter((d) => !d.acumulable);

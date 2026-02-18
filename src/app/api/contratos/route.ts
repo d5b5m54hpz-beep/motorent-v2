@@ -148,7 +148,6 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        console.log("Cliente auto-created for contract:", user.id);
       }
 
       clienteId = cliente.id;

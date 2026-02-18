@@ -136,12 +136,10 @@ export default function EstadoResultadosPage() {
 
   const handleExportExcel = () => {
     // TODO: Implementar export a Excel
-    console.log("Export to Excel");
   };
 
   const handleExportPDF = () => {
     // TODO: Implementar export a PDF
-    console.log("Export to PDF");
   };
 
   if (isLoading) {
