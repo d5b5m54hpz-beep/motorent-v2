@@ -34,7 +34,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Pago } from "./types";
 
 const registrarPagoFormSchema = z.object({
-  metodo: z.enum(["efectivo", "transferencia", "mercadopago"], {
+  metodo: z.enum(["EFECTIVO", "TRANSFERENCIA", "MERCADOPAGO"], {
     required_error: "Selecciona un método de pago",
   }),
   mpPaymentId: z.string().optional(),
@@ -64,7 +64,7 @@ export function RegistrarPagoDialog({
   const form = useForm<RegistrarPagoFormData>({
     resolver: zodResolver(registrarPagoFormSchema),
     defaultValues: {
-      metodo: "efectivo",
+      metodo: "EFECTIVO",
       mpPaymentId: "",
       comprobante: "",
       notas: "",
@@ -149,11 +149,11 @@ export function RegistrarPagoDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="efectivo">Efectivo</SelectItem>
-                        <SelectItem value="transferencia">
+                        <SelectItem value="EFECTIVO">Efectivo</SelectItem>
+                        <SelectItem value="TRANSFERENCIA">
                           Transferencia
                         </SelectItem>
-                        <SelectItem value="mercadopago">MercadoPago</SelectItem>
+                        <SelectItem value="MERCADOPAGO">MercadoPago</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -161,7 +161,7 @@ export function RegistrarPagoDialog({
                 )}
               />
 
-              {metodoSeleccionado === "mercadopago" && (
+              {metodoSeleccionado === "MERCADOPAGO" && (
                 <FormField
                   control={form.control}
                   name="mpPaymentId"

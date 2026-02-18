@@ -64,7 +64,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     const existing = await prisma.contrato.findUnique({
       where: { id },
       include: {
-        pagos: { where: { estado: "pagado" } },
+        pagos: { where: { estado: "APROBADO" } },
       },
     });
 
@@ -103,9 +103,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     if (estado && estado !== existing.estado) {
       let operationId: string = OPERATIONS.rental.contract.update;
 
-      if (estado === "activo" && existing.estado === "pendiente") {
+      if (estado === "ACTIVO" && existing.estado === "PENDIENTE") {
         operationId = OPERATIONS.rental.contract.activate;
-      } else if (estado === "cancelado" || estado === "finalizado") {
+      } else if (estado === "CANCELADO" || estado === "FINALIZADO") {
         operationId = OPERATIONS.rental.contract.terminate;
       }
 
@@ -156,7 +156,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       );
     }
 
-    if (contrato.estado === "cancelado") {
+    if (contrato.estado === "CANCELADO") {
       return NextResponse.json(
         { error: "El contrato ya esta cancelado" },
         { status: 409 }
@@ -170,22 +170,22 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       // Actualizar estado del contrato
       await tx.contrato.update({
         where: { id },
-        data: { estado: "cancelado" },
+        data: { estado: "CANCELADO" },
       });
 
       // Cancelar pagos pendientes
       await tx.pago.updateMany({
         where: {
           contratoId: id,
-          estado: "pendiente",
+          estado: "PENDIENTE",
         },
-        data: { estado: "cancelado" },
+        data: { estado: "CANCELADO" },
       });
 
       // Devolver moto a disponible
       await tx.moto.update({
         where: { id: contrato.motoId },
-        data: { estado: "disponible" },
+        data: { estado: "DISPONIBLE" },
       });
     });
 
@@ -194,7 +194,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       OPERATIONS.rental.contract.terminate,
       "Contrato",
       id,
-      { estadoAnterior, estadoNuevo: "cancelado", motoId: contrato.motoId },
+      { estadoAnterior, estadoNuevo: "CANCELADO", motoId: contrato.motoId },
       userId
     ).catch((err) => {
       console.error("Error emitting rental.contract.terminate event:", err);

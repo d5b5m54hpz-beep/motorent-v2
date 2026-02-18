@@ -67,7 +67,7 @@ model Cliente {
   codigoPostal        String?
   fechaNacimiento     DateTime?
   notas               String?
-  estado              String     @default("pendiente") // pendiente | aprobado | rechazado
+  estado              EstadoCliente @default(PENDIENTE)
   preRegistro         Json?
   aprobadoPor         String?
   aprobadoAt          DateTime?
@@ -91,6 +91,12 @@ model Cliente {
   gruposCliente       MiembroGrupoCliente[]
 }
 
+enum EstadoCliente {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
 model Moto {
   id             String          @id @default(cuid())
   marca          String
@@ -101,12 +107,10 @@ model Moto {
   kilometraje    Int             @default(0)
   precioMensual  Decimal         @default(0) @db.Decimal(12,2)
   cilindrada     Int?
-  // Valores: naked | touring | sport | scooter | custom
-  tipo           String?
+  tipo           TipoMoto?
   descripcion    String?
   imagen         String?
-  // Valores: disponible | alquilada | mantenimiento | baja
-  estado         String          @default("disponible")
+  estado         EstadoMoto      @default(DISPONIBLE)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   contratos      Contrato[]
@@ -133,7 +137,7 @@ model Moto {
   fechaCompra       DateTime?
   valorResidual     Decimal?  @db.Decimal(12,2) // Valor residual estimado
   vidaUtilAnios     Int?      @default(5) // AFIP: 5 años para vehículos
-  metodoAmortizacion String?  @default("LINEAL")
+  metodoAmortizacion MetodoAmortizacion? @default(LINEAL)
 
   // ─── Importación ────────────────────────────────────────────────────────
   esImportada       Boolean   @default(true)
@@ -144,23 +148,20 @@ model Moto {
   derechosImportacion Decimal? @db.Decimal(12,2)
 
   // ─── Estado legal ───────────────────────────────────────────────────────
-  estadoLegal       String?   @default("REGULAR") // REGULAR, DENUNCIA_ROBO, SINIESTRO_TOTAL, BAJA_DEFINITIVA, EN_PROCESO_PATENTAMIENTO, PRENDA
+  estadoLegal       EstadoLegalMoto? @default(REGULAR)
 
   // === PATENTAMIENTO ===
-  estadoPatentamiento    String?   @default("SIN_PATENTAR") // SIN_PATENTAR | EN_TRAMITE | PATENTADA
+  estadoPatentamiento    EstadoPatentamiento? @default(SIN_PATENTAR)
   fechaInicioTramitePatente DateTime?
   notasPatentamiento     String?
 
   // === SEGURO ===
-  estadoSeguro           String?   @default("SIN_SEGURO") // SIN_SEGURO | EN_TRAMITE | ASEGURADA
+  estadoSeguro           EstadoSeguro? @default(SIN_SEGURO)
   aseguradora            String?
-  numeroPoliza           String?
-  // Valores: RESPONSABILIDAD_CIVIL | TERCEROS_COMPLETO | TODO_RIESGO
-  tipoCobertura          String?
+  numeroPoliza           String?   @unique
+  tipoCobertura          TipoCobertura?
   fechaInicioSeguro      DateTime?
   fechaVencimientoSeguro DateTime?
-  // @deprecated Use fechaVencimientoSeguro instead. Remove after data migration.
-  vencimientoPoliza      DateTime?
   notasSeguro            String?
 
   // ─── Mantenimientos (nuevo módulo) ──────────────────────────────────────
@@ -181,21 +182,66 @@ model Moto {
   lecturasKm         LecturaKm[]
 }
 
+enum EstadoMoto {
+  DISPONIBLE
+  ALQUILADA
+  MANTENIMIENTO
+  BAJA
+}
+
+enum TipoMoto {
+  NAKED
+  TOURING
+  SPORT
+  SCOOTER
+  CUSTOM
+}
+
+enum EstadoLegalMoto {
+  REGULAR
+  DENUNCIA_ROBO
+  SINIESTRO_TOTAL
+  BAJA_DEFINITIVA
+  EN_PROCESO_PATENTAMIENTO
+  PRENDA
+}
+
+enum EstadoPatentamiento {
+  SIN_PATENTAR
+  EN_TRAMITE
+  PATENTADA
+}
+
+enum EstadoSeguro {
+  SIN_SEGURO
+  EN_TRAMITE
+  ASEGURADA
+}
+
+enum TipoCobertura {
+  RESPONSABILIDAD_CIVIL
+  TERCEROS_COMPLETO
+  TODO_RIESGO
+}
+
+enum MetodoAmortizacion {
+  LINEAL
+}
+
 model Contrato {
   id                String   @id @default(cuid())
   clienteId         String
   motoId            String
   fechaInicio       DateTime
   fechaFin          DateTime
-  frecuenciaPago    String   @default("mensual") // semanal | quincenal | mensual
+  frecuenciaPago    FrecuenciaPago @default(MENSUAL)
   montoPeriodo      Decimal  @db.Decimal(12,2) // Monto por período según frecuencia
   montoTotal        Decimal  @db.Decimal(12,2) // Monto total del contrato
   deposito          Decimal  @default(0) @db.Decimal(12,2)
   descuentoAplicado Decimal  @default(0) @db.Decimal(12,2)
   notas             String?
   renovacionAuto    Boolean  @default(false)
-  // Valores: pendiente | activo | finalizado | cancelado | finalizado_compra
-  estado            String   @default("pendiente")
+  estado            EstadoContrato @default(PENDIENTE)
 
   // ─── Opción a Compra ────────────────────────────────────────────────────
   esOpcionCompra    Boolean  @default(false)
@@ -210,17 +256,20 @@ model Contrato {
   moto              Moto     @relation(fields: [motoId], references: [id])
   pagos             Pago[]
   alertas           Alerta[]
+
+  @@index([clienteId])
+  @@index([motoId])
+  @@index([estado])
 }
 
 model Pago {
   id            String    @id @default(cuid())
   contratoId    String
   monto         Decimal   @db.Decimal(12,2)
-  metodo        String    @default("pendiente") // transferencia | tarjeta | mercadopago | efectivo | pendiente
-  // Valores: pendiente | aprobado | rechazado | reembolsado | cancelado
-  estado        String    @default("pendiente")
+  metodo        MetodoPago  @default(PENDIENTE)
+  estado        EstadoPago  @default(PENDIENTE)
   referencia    String?
-  mpPaymentId   String? // ID de transacción de MercadoPago
+  mpPaymentId   String? @unique // ID de transacción de MercadoPago
   comprobante   String? // URL o texto del comprobante
   notas         String? // Notas adicionales del pago
   pagadoAt      DateTime?
@@ -230,18 +279,22 @@ model Pago {
   contrato      Contrato  @relation(fields: [contratoId], references: [id])
   factura       Factura?
   alertas       Alerta[]
+
+  @@index([contratoId])
+  @@index([estado])
+  @@index([vencimientoAt])
 }
 
 model Factura {
   id             String    @id @default(cuid())
-  numero         String // Autoincremental 00000001, 00000002, etc.
+  numero         String    @unique // Autoincremental 00000001, 00000002, etc.
   tipo           String // A, B, C
   puntoVenta     Int       @default(1)
   montoNeto      Decimal  @db.Decimal(12,2) // Subtotal sin IVA (si tipo A)
   montoIva       Decimal  @db.Decimal(12,2) // IVA 21% (si tipo A)
   montoTotal     Decimal  @db.Decimal(12,2) // Total final
   cae            String? // Código de Autorización Electrónico de AFIP
-  caeVencimiento String? // Fecha de vencimiento del CAE
+  caeVencimiento DateTime? // Fecha de vencimiento del CAE
   razonSocial    String? // Razón social del cliente (opcional)
   cuit           String? // CUIT del cliente (opcional)
   emitida        Boolean   @default(false) // false = pendiente AFIP, true = emitida con CAE
@@ -251,6 +304,40 @@ model Factura {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   pago           Pago      @relation(fields: [pagoId], references: [id])
+
+  @@index([createdAt])
+}
+
+enum FrecuenciaPago {
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+}
+
+enum EstadoContrato {
+  PENDIENTE
+  ACTIVO
+  FINALIZADO
+  CANCELADO
+  FINALIZADO_COMPRA
+  VENCIDO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+  MERCADOPAGO
+  PENDIENTE
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  REEMBOLSADO
+  CANCELADO
+  VENCIDO
 }
 
 model Alerta {
@@ -354,6 +441,24 @@ model Repuesto {
 
   // ─── Relaciones nuevas recepción mercadería ───────────────────
   recepcionesItems   RecepcionItemEmbarque[]
+
+  @@index([proveedorId])
+  @@index([categoria])
+}
+
+// ─── Configuración de categorías de repuestos ───────────────────────────────
+
+model CategoriaRepuestoConfig {
+  id             String   @id @default(cuid())
+  categoria      String   @unique
+  nombre         String
+  margenObjetivo Float
+  margenMinimo   Float
+  markupDefault  Float
+  arancelImpo    Float
+  ncmDefault     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 // ─── Finanzas ───────────────────────────────────────────────────────────────
@@ -377,6 +482,11 @@ model Gasto {
   facturaCompra   FacturaCompra?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  @@index([motoId])
+  @@index([proveedorId])
+  @@index([fecha])
+  @@index([categoria])
 }
 
 model PresupuestoMensual {
@@ -636,8 +746,8 @@ model Empleado {
   dni                String    @unique
   cuil               String?   @unique
   fechaNacimiento    DateTime?
-  sexo               String? // M, F, X
-  estadoCivil        String? // SOLTERO, CASADO, DIVORCIADO, VIUDO, UNION_CONVIVENCIAL
+  sexo               SexoEmpleado?
+  estadoCivil        EstadoCivil?
   nacionalidad       String?   @default("Argentina")
   direccion          String?
   ciudad             String?
@@ -653,9 +763,9 @@ model Empleado {
   fechaEgreso    DateTime?
   estado         EstadoEmpleado @default(ACTIVO)
   cargo          String
-  departamento   String? // OPERACIONES, ADMINISTRACION, COMERCIAL, TALLER
+  departamento   Departamento?
   tipoContrato   TipoContrato   @default(TIEMPO_INDETERMINADO)
-  jornadaLaboral String? // COMPLETA, PARCIAL
+  jornadaLaboral JornadaLaboral? @default(COMPLETA)
   horasSemanales Int?           @default(48)
 
   // Datos salariales
@@ -753,7 +863,7 @@ model Ausencia {
   justificada Boolean      @default(false)
   certificado String?
   notas       String?
-  estado      String       @default("PENDIENTE") // PENDIENTE, APROBADA, RECHAZADA
+  estado      EstadoAusencia @default(PENDIENTE)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -765,7 +875,7 @@ model DocumentoEmpleado {
   id         String   @id @default(cuid())
   empleadoId String
   empleado   Empleado @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
-  tipo       String // DNI, CUIL, CONTRATO, ALTA_AFIP, ART, CV, CERTIFICADO, OTRO
+  tipo       TipoDocumentoEmpleado
   nombre     String
   url        String?
   notas      String?
@@ -817,6 +927,49 @@ enum EstadoRecibo {
   CONFIRMADO
   PAGADO
   ANULADO
+}
+
+enum SexoEmpleado {
+  M
+  F
+  X
+}
+
+enum EstadoCivil {
+  SOLTERO
+  CASADO
+  DIVORCIADO
+  VIUDO
+  UNION_CONVIVENCIAL
+}
+
+enum Departamento {
+  OPERACIONES
+  ADMINISTRACION
+  COMERCIAL
+  TALLER
+}
+
+enum JornadaLaboral {
+  COMPLETA
+  PARCIAL
+}
+
+enum EstadoAusencia {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+}
+
+enum TipoDocumentoEmpleado {
+  DNI
+  CUIL
+  CONTRATO
+  ALTA_AFIP
+  ART
+  CV
+  CERTIFICADO
+  OTRO
 }
 
 // ─── Auditoría y Controles Internos ─────────────────────────────────────────
@@ -898,7 +1051,7 @@ model DocumentoMoto {
   id               String    @id @default(cuid())
   motoId           String
   moto             Moto      @relation(fields: [motoId], references: [id], onDelete: Cascade)
-  tipo             String    // CEDULA_VERDE, CEDULA_AZUL, TITULO, POLIZA, VTV, DESPACHO_IMPORTACION, FACTURA_COMPRA, VERIFICACION_POLICIAL, FORMULARIO_01, FORMULARIO_12, CERTIFICADO_IMPORTACION
+  tipo             TipoDocumentoMoto
   nombre           String
   url              String?
   fechaEmision     DateTime?
@@ -930,7 +1083,7 @@ model BajaMoto {
   id              String   @id @default(cuid())
   motoId          String   @unique
   moto            Moto     @relation(fields: [motoId], references: [id], onDelete: Cascade)
-  tipoBaja        String   // ROBO, SINIESTRO, VENTA
+  tipoBaja        TipoBaja
   fechaBaja       DateTime
   motivo          String?
 
@@ -950,7 +1103,7 @@ model BajaMoto {
   compradorDNI    String?
   compradorTelefono String?
   precioVenta     Decimal? @db.Decimal(12,2)
-  formaPago       String? // EFECTIVO, TRANSFERENCIA, CHEQUE
+  formaPago       FormaPagoBaja?
 
   // ─── Documentación ──────────────────────────────────────────────────────
   archivoUrl      String?
@@ -968,7 +1121,7 @@ model BajaMoto {
 model NotaCredito {
   id                String   @id @default(cuid())
   numero            String   @unique // Auto-generado NC-0001
-  tipo              String   // DEVOLUCION_TOTAL, DEVOLUCION_PARCIAL, DESCUENTO, AJUSTE_PRECIO
+  tipo              TipoNotaCredito
   facturaOriginalId String?
   clienteId         String
   cliente           Cliente  @relation(fields: [clienteId], references: [id])
@@ -976,7 +1129,7 @@ model NotaCredito {
   montoNeto         Decimal? @db.Decimal(12,2)
   montoIva          Decimal? @db.Decimal(12,2)
   motivo            String
-  estado            String   @default("EMITIDA") // EMITIDA, APLICADA, REEMBOLSADA, ANULADA
+  estado            EstadoNotaCredito @default(EMITIDA)
   aplicadaAId       String?  // Factura/pago donde se aplicó
   fechaEmision      DateTime @default(now())
   fechaAplicacion   DateTime?
@@ -988,6 +1141,46 @@ model NotaCredito {
   @@index([clienteId])
   @@index([estado])
   @@index([numero])
+}
+
+enum TipoDocumentoMoto {
+  CEDULA_VERDE
+  CEDULA_AZUL
+  TITULO
+  POLIZA
+  VTV
+  DESPACHO_IMPORTACION
+  FACTURA_COMPRA
+  VERIFICACION_POLICIAL
+  FORMULARIO_01
+  FORMULARIO_12
+  CERTIFICADO_IMPORTACION
+}
+
+enum TipoBaja {
+  ROBO
+  SINIESTRO
+  VENTA
+}
+
+enum FormaPagoBaja {
+  EFECTIVO
+  TRANSFERENCIA
+  CHEQUE
+}
+
+enum TipoNotaCredito {
+  DEVOLUCION_TOTAL
+  DEVOLUCION_PARCIAL
+  DESCUENTO
+  AJUSTE_PRECIO
+}
+
+enum EstadoNotaCredito {
+  EMITIDA
+  APLICADA
+  REEMBOLSADA
+  ANULADA
 }
 
 // ==========================================
@@ -1553,6 +1746,9 @@ model OrdenCompra {
   updatedAt            DateTime          @updatedAt
   items                ItemOrdenCompra[]
   recepciones          RecepcionMercaderia[]
+
+  @@index([proveedorId])
+  @@index([estado])
 }
 
 enum EstadoOrdenCompra {
@@ -1610,23 +1806,6 @@ model ItemRecepcion {
 // ==========================================
 // COSTEO DE IMPORTACIÓN Y PRICING
 // ==========================================
-
-// ─── CONFIGURACIÓN DE CATEGORÍA ─────────────────────────────────
-
-// TODO: Modelo sin implementar — evaluar si se necesita
-model CategoriaRepuestoConfig {
-  id              String   @id @default(cuid())
-  categoria       String   @unique // "FRENOS", "MOTOR", "FILTROS", etc.
-  nombre          String   // Nombre legible
-  margenObjetivo  Float    @default(0.45) // 45% margen objetivo
-  margenMinimo    Float    @default(0.25) // 25% margen mínimo
-  markupDefault   Float    @default(1.8)  // Multiplicador default (1.8x = 80% markup)
-  arancelImpo     Float    @default(0.16) // 16% arancel para esta categoría
-  ncmDefault      String?  // NCM default para la categoría
-  notas           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
 
 // ─── EMBARQUES DE IMPORTACIÓN ───────────────────────────────────
 
@@ -1696,6 +1875,9 @@ model EmbarqueImportacion {
   recepcion            RecepcionMercaderiaEmbarque?
   portalToken          PortalProveedorToken?
   etiquetas            EtiquetaEmbarque[]
+
+  @@index([proveedorId])
+  @@index([estado])
 }
 
 enum EstadoEmbarque {
@@ -1748,6 +1930,9 @@ model ItemEmbarque {
 
   recepcionItem   RecepcionItemEmbarque?
   etiquetas       EtiquetaEmbarque[]
+
+  @@index([embarqueId])
+  @@index([repuestoId])
 }
 
 // ─── DESPACHOS ADUANEROS (parciales) ────────────────────────────
@@ -2195,8 +2380,7 @@ model BusinessEvent {
   metadata      Json?     // Info adicional (IP, user agent, etc)
   userId        String?   // Quien disparó el evento (null = sistema)
   parentEventId String?   // Para eventos que son consecuencia de otro
-  // Valores: PENDING | PROCESSING | COMPLETED | FAILED
-  status        String    @default("PENDING")
+  status        EstadoBusinessEvent @default(PENDING)
   error         String?   // Si un handler falló (JSON array de errores)
   processedAt   DateTime?
   createdAt     DateTime  @default(now())
@@ -2209,6 +2393,14 @@ model BusinessEvent {
   @@index([entityType, entityId])
   @@index([status])
   @@index([createdAt])
+  @@index([parentEventId])
+}
+
+enum EstadoBusinessEvent {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 // ─── Permissions ────────────────────────────────────────────────────────────
@@ -2274,7 +2466,7 @@ model UserProfile {
 model CuentaBancaria {
   id               String             @id @default(cuid())
   banco            String
-  tipoCuenta       String             // CC_PESOS | CA_PESOS | CC_USD | CA_USD
+  tipoCuenta       TipoCuentaBancaria
   cbu              String?            @unique
   alias            String?
   moneda           String             @default("ARS")
@@ -2295,9 +2487,9 @@ model ExtractoBancario {
   descripcion      String
   referencia       String?
   monto            Decimal         @db.Decimal(12, 2)
-  tipo             String          // CREDITO | DEBITO
+  tipo             TipoMovimientoBancario
   saldo            Decimal?        @db.Decimal(12, 2)
-  estado           String          @default("PENDIENTE") // PENDIENTE | CONCILIADO | NO_CONCILIADO
+  estado           EstadoExtracto  @default(PENDIENTE)
   conciliacionId   String?
   conciliacion     Conciliacion?   @relation(fields: [conciliacionId], references: [id])
   hash             String          @unique
@@ -2314,7 +2506,7 @@ model Conciliacion {
   cuentaBancaria     CuentaBancaria      @relation(fields: [cuentaBancariaId], references: [id])
   fechaDesde         DateTime
   fechaHasta         DateTime
-  estado             String              @default("EN_PROCESO") // EN_PROCESO | COMPLETADA | REVISION
+  estado             EstadoConciliacion   @default(EN_PROCESO)
   totalMovimientos   Int                 @default(0)
   totalConciliados   Int                 @default(0)
   totalNoConciliados Int                 @default(0)
@@ -2333,7 +2525,7 @@ model ConciliacionMatch {
   conciliacionId String
   conciliacion   Conciliacion @relation(fields: [conciliacionId], references: [id])
   extractoId     String
-  tipoMatch      String       // AUTO_EXACTO | AUTO_APROXIMADO | MANUAL
+  tipoMatch      TipoMatch
   confianza      Decimal      @db.Decimal(5, 2) // 0-100%
   pagoId         String?
   gastoId        String?
@@ -2347,17 +2539,15 @@ model ConciliacionMatch {
 
 model Anomalia {
   id               String    @id @default(cuid())
-  tipo             String    // GASTO_INUSUAL | PAGO_DUPLICADO | FACTURA_SIN_PAGO | MARGEN_BAJO |
-                             // STOCK_CRITICO | PATRON_SOSPECHOSO | DESVIO_PRESUPUESTO |
-                             // CONCILIACION_PENDIENTE | VENCIMIENTO_PROXIMO | FLUJO_CAJA_NEGATIVO
-  severidad        String    // BAJA | MEDIA | ALTA | CRITICA
+  tipo             TipoAnomalia
+  severidad        SeveridadAnomalia
   titulo           String
   descripcion      String
   entidadTipo      String?   // Pago, Gasto, Factura, Moto, etc.
   entidadId        String?
   montoInvolucrado Decimal?  @db.Decimal(12, 2)
   datosAnalisis    Json?
-  estado           String    @default("NUEVA") // NUEVA | EN_REVISION | RESUELTA | DESCARTADA
+  estado           EstadoAnomalia @default(NUEVA)
   resueltaPor      String?
   resolucion       String?
   autoDetectada    Boolean   @default(true)
@@ -2387,7 +2577,7 @@ model AnalisisFinanciero {
 model EventMetric {
   id               String   @id @default(cuid())
   periodo          String   // "2026-02-18" or "2026-02-18T14" (hourly)
-  granularidad     String   // HORA | DIA | SEMANA | MES
+  granularidad     GranularidadMetrica
   operationId      String
   totalEventos     Int      @default(0)
   exitosos         Int      @default(0)
@@ -2403,7 +2593,7 @@ model EventMetric {
 model SystemHealth {
   id               String   @id @default(cuid())
   timestamp        DateTime @default(now())
-  eventBusStatus   String   // HEALTHY | DEGRADED | DOWN
+  eventBusStatus   StatusEventBus
   dbLatencyMs      Int
   handlersActivos  Int
   eventsPendientes Int
@@ -2413,4 +2603,80 @@ model SystemHealth {
   metricas         Json?
 
   @@index([timestamp])
+}
+
+// ─── Enums: Banking & Reconciliation ─────────────────────────────────────────
+
+enum TipoCuentaBancaria {
+  CC_PESOS
+  CA_PESOS
+  CC_USD
+  CA_USD
+}
+
+enum TipoMovimientoBancario {
+  CREDITO
+  DEBITO
+}
+
+enum EstadoExtracto {
+  PENDIENTE
+  CONCILIADO
+  NO_CONCILIADO
+}
+
+enum EstadoConciliacion {
+  EN_PROCESO
+  COMPLETADA
+  REVISION
+}
+
+enum TipoMatch {
+  AUTO_EXACTO
+  AUTO_APROXIMADO
+  MANUAL
+}
+
+// ─── Enums: Anomaly Detection ────────────────────────────────────────────────
+
+enum TipoAnomalia {
+  GASTO_INUSUAL
+  PAGO_DUPLICADO
+  FACTURA_SIN_PAGO
+  MARGEN_BAJO
+  STOCK_CRITICO
+  PATRON_SOSPECHOSO
+  DESVIO_PRESUPUESTO
+  CONCILIACION_PENDIENTE
+  VENCIMIENTO_PROXIMO
+  FLUJO_CAJA_NEGATIVO
+}
+
+enum SeveridadAnomalia {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum EstadoAnomalia {
+  NUEVA
+  EN_REVISION
+  RESUELTA
+  DESCARTADA
+}
+
+// ─── Enums: Event Monitoring ─────────────────────────────────────────────────
+
+enum GranularidadMetrica {
+  HORA
+  DIA
+  SEMANA
+  MES
+}
+
+enum StatusEventBus {
+  HEALTHY
+  DEGRADED
+  DOWN
 }

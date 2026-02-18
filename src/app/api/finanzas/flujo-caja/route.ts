@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     // Obtener pagos (ingresos) del período
     const pagos = await prisma.pago.findMany({
       where: {
-        estado: "aprobado",
+        estado: "APROBADO",
         pagadoAt: { gte: fechaInicio },
       },
       select: { monto: true, pagadoAt: true },

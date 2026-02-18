@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     }
 
     // Verificar permisos: solo ADMIN puede modificar pagos aprobados
-    if (existing.estado === "aprobado" || existing.estado === "reembolsado") {
+    if (existing.estado === "APROBADO" || existing.estado === "REEMBOLSADO") {
       const { error: adminError } = await requirePermission(
         OPERATIONS.payment.approve,
         "execute"
@@ -120,7 +120,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
           mpPaymentId: mpPaymentId || existing.mpPaymentId,
           comprobante: comprobante || existing.comprobante,
           notas: notas || existing.notas,
-          pagadoAt: estado === "aprobado" ? new Date() : existing.pagadoAt,
+          pagadoAt: estado === "APROBADO" ? new Date() : existing.pagadoAt,
         },
         include: {
           contrato: {
@@ -133,7 +133,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       });
 
       // Si se aprobó, generar factura automáticamente
-      if (estado === "aprobado" && existing.estado !== "aprobado") {
+      if (estado === "APROBADO" && existing.estado !== "APROBADO") {
         // Solo si no estaba aprobado antes (para evitar duplicados)
 
         // Obtener el último número de factura para calcular el siguiente
@@ -170,25 +170,25 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       }
 
       // Verificar si todos los pagos del contrato están aprobados
-      if (estado === "aprobado") {
+      if (estado === "APROBADO") {
         const todosLosPagos = await tx.pago.findMany({
           where: { contratoId: existing.contratoId },
         });
 
         const todosPagados = todosLosPagos.every(
-          (p) => p.estado === "aprobado" || p.estado === "cancelado"
+          (p) => p.estado === "APROBADO" || p.estado === "CANCELADO"
         );
 
         if (todosPagados) {
           // Marcar contrato como finalizado y moto como disponible
           await tx.contrato.update({
             where: { id: existing.contratoId },
-            data: { estado: "finalizado" },
+            data: { estado: "FINALIZADO" },
           });
 
           await tx.moto.update({
             where: { id: existing.contrato.motoId },
-            data: { estado: "disponible" },
+            data: { estado: "DISPONIBLE" },
           });
         }
       }
@@ -198,7 +198,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
     // Emit events for state transitions
     if (estado !== previousEstado) {
-      if (estado === "aprobado") {
+      if (estado === "APROBADO") {
         eventBus.emit(
           OPERATIONS.payment.approve,
           "Pago",
@@ -214,7 +214,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         ).catch((err) => {
           console.error("Error emitting payment.approve event:", err);
         });
-      } else if (estado === "rechazado") {
+      } else if (estado === "RECHAZADO") {
         eventBus.emit(
           OPERATIONS.payment.reject,
           "Pago",
@@ -229,7 +229,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         ).catch((err) => {
           console.error("Error emitting payment.reject event:", err);
         });
-      } else if (estado === "reembolsado") {
+      } else if (estado === "REEMBOLSADO") {
         eventBus.emit(
           OPERATIONS.payment.refund,
           "Pago",

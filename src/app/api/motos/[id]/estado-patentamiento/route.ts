@@ -5,7 +5,7 @@ import { withEvent, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
 
 const estadoPatentamientoSchema = z.object({
-  estadoPatentamiento: z.enum(["NO_INICIADO", "EN_PROCESO", "OBSERVADO", "COMPLETADO"]),
+  estadoPatentamiento: z.enum(["SIN_PATENTAR", "EN_TRAMITE", "PATENTADA"]),
 });
 
 export async function PUT(
@@ -33,8 +33,8 @@ export async function PUT(
 
     const { estadoPatentamiento } = validation.data;
 
-    // Si se marca como COMPLETADO, validar que haya dominio/patente
-    if (estadoPatentamiento === "COMPLETADO") {
+    // Si se marca como PATENTADA, validar que haya dominio/patente
+    if (estadoPatentamiento === "PATENTADA") {
       const moto = await prisma.moto.findUnique({
         where: { id },
         select: { dominio: true, patente: true },
@@ -42,7 +42,7 @@ export async function PUT(
 
       if (!moto?.dominio && !moto?.patente) {
         return NextResponse.json(
-          { error: "Para marcar como COMPLETADO debe tener dominio o patente asignado" },
+          { error: "Para marcar como PATENTADA debe tener dominio o patente asignado" },
           { status: 400 }
         );
       }
@@ -64,7 +64,7 @@ export async function PUT(
         data: {
           estadoPatentamiento,
           fechaPatentamiento:
-            estadoPatentamiento === "COMPLETADO" ? new Date() : undefined,
+            estadoPatentamiento === "PATENTADA" ? new Date() : undefined,
         },
         include: {
           documentos: true,

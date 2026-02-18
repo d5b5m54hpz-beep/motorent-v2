@@ -62,7 +62,7 @@ export function ContratoForm({ contrato, onSubmit, isLoading }: Props) {
       motoId: contrato?.motoId ?? "",
       fechaInicio: formatDateForInput(contrato?.fechaInicio ?? null),
       fechaFin: formatDateForInput(contrato?.fechaFin ?? null),
-      frecuenciaPago: (contrato?.frecuenciaPago as ContratoInput["frecuenciaPago"]) ?? "mensual",
+      frecuenciaPago: (contrato?.frecuenciaPago as ContratoInput["frecuenciaPago"]) ?? "MENSUAL",
       deposito: contrato?.deposito ?? 0,
       notas: contrato?.notas ?? "",
       renovacionAuto: contrato?.renovacionAuto ?? false,
@@ -78,7 +78,7 @@ export function ContratoForm({ contrato, onSubmit, isLoading }: Props) {
       try {
         const [clientesRes, motosRes] = await Promise.all([
           fetch("/api/clientes?limit=100"),
-          fetch("/api/motos?limit=100&estado=disponible"),
+          fetch("/api/motos?limit=100&estado=DISPONIBLE"),
         ]);
 
         if (clientesRes.ok) {
@@ -265,7 +265,7 @@ export function ContratoForm({ contrato, onSubmit, isLoading }: Props) {
                     <SelectContent>
                       {frecuenciasPago.map((f) => (
                         <SelectItem key={f} value={f}>
-                          {f.charAt(0).toUpperCase() + f.slice(1)}
+                          {f.charAt(0) + f.slice(1).toLowerCase()}
                         </SelectItem>
                       ))}
                     </SelectContent>

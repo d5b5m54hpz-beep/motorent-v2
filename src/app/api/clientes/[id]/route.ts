@@ -107,9 +107,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     if (estadoNuevo && estadoNuevo !== estadoAnterior) {
       let operationId: string = OPERATIONS.rental.client.update;
 
-      if (estadoNuevo === "aprobado") {
+      if (estadoNuevo === "APROBADO") {
         operationId = OPERATIONS.rental.client.approve;
-      } else if (estadoNuevo === "rechazado") {
+      } else if (estadoNuevo === "RECHAZADO") {
         operationId = OPERATIONS.rental.client.reject;
       }
 
@@ -159,7 +159,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     const cliente = await prisma.cliente.findUnique({
       where: { id },
       include: {
-        contratos: { where: { estado: { in: ["activo", "pendiente"] } } },
+        contratos: { where: { estado: { in: ["ACTIVO", "PENDIENTE"] } } },
       },
     });
 

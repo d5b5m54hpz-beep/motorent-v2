@@ -70,7 +70,7 @@ export async function POST(req: Request) {
           where: {
             monto: montoNum,
             pagadoAt: { gte: fechaMin, lte: fechaMax },
-            estado: "aprobado",
+            estado: "APROBADO",
             id: { notIn: Array.from(matchedPagoIds) },
           },
         });
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
           where: {
             monto: { gte: montoLow, lte: montoHigh },
             pagadoAt: { gte: fechaMin, lte: fechaMax },
-            estado: "aprobado",
+            estado: "APROBADO",
             id: { notIn: Array.from(matchedPagoIds) },
           },
         });

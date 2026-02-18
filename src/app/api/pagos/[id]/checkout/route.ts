@@ -63,7 +63,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     }
 
     // Verificar que el pago está pendiente
-    if (pago.estado !== "pendiente") {
+    if (pago.estado !== "PENDIENTE") {
       return NextResponse.json(
         { error: `Este pago ya está ${pago.estado}` },
         { status: 400 }

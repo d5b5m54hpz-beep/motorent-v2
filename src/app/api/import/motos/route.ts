@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
           cilindrada: row.Cilindrada || row.cilindrada || undefined,
           tipo: row.Tipo || row.tipo || undefined,
           descripcion: row.Descripción || row["Descripcion"] || row.descripcion || "",
-          estado: row.Estado || row.estado || "disponible",
+          estado: row.Estado || row.estado || "DISPONIBLE",
           imagen: row.Imagen || row.imagen || "",
         };
 

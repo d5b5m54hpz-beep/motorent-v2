@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const margen = parseFloat(url.searchParams.get("margen") ?? "30") / 100;
 
     const motos = await prisma.moto.findMany({
-      where: { estado: { not: "baja" } },
+      where: { estado: { not: "BAJA" } },
       select: {
         id: true,
         marca: true,
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     const now = new Date();
     const totalMotos = motos.length;
-    const motosAlquiladas = motos.filter((m) => m.estado === "alquilada").length;
+    const motosAlquiladas = motos.filter((m) => m.estado === "ALQUILADA").length;
 
     const result = await Promise.all(
       motos.map(async (moto) => {

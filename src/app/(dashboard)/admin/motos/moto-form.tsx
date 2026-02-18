@@ -62,7 +62,7 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
       numeroMotor: moto?.numeroMotor ?? "",
       numeroCuadro: moto?.numeroCuadro ?? "",
       imagen: moto?.imagen ?? "",
-      estado: (moto?.estado as MotoInput["estado"]) ?? "disponible",
+      estado: (moto?.estado as MotoInput["estado"]) ?? "DISPONIBLE",
 
       // Patentamiento
       estadoPatentamiento: (moto?.estadoPatentamiento as MotoInput["estadoPatentamiento"]) ?? undefined,
@@ -283,7 +283,7 @@ export function MotoForm({ moto, onSubmit, isLoading }: Props) {
                     <SelectContent>
                       {motoEstados.map((e) => (
                         <SelectItem key={e} value={e}>
-                          {e.charAt(0).toUpperCase() + e.slice(1)}
+                          {e.charAt(0) + e.slice(1).toLowerCase()}
                         </SelectItem>
                       ))}
                     </SelectContent>

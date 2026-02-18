@@ -328,10 +328,10 @@ export default function MotosPage() {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const disponibles = data.filter((m) => m.estado === "disponible").length;
-    const alquiladas = data.filter((m) => m.estado === "alquilada").length;
-    const mantenimiento = data.filter((m) => m.estado === "mantenimiento").length;
-    const baja = data.filter((m) => m.estado === "baja").length;
+    const disponibles = data.filter((m) => m.estado === "DISPONIBLE").length;
+    const alquiladas = data.filter((m) => m.estado === "ALQUILADA").length;
+    const mantenimiento = data.filter((m) => m.estado === "MANTENIMIENTO").length;
+    const baja = data.filter((m) => m.estado === "BAJA").length;
 
     return { disponibles, alquiladas, mantenimiento, baja };
   }, [data]);

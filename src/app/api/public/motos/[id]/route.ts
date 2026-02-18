@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     }
 
     // Only return if moto is available
-    if (moto.estado !== "disponible") {
+    if (moto.estado !== "DISPONIBLE") {
       return NextResponse.json(
         { error: "Moto no disponible" },
         { status: 404 }

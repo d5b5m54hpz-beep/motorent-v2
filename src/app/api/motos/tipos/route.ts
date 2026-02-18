@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/require-permission';
 import { OPERATIONS } from '@/lib/events';
+import { TipoMoto } from '@prisma/client';
 
 // GET /api/motos/tipos — return unique tipos from database
 export async function GET() {
@@ -20,7 +21,7 @@ export async function GET() {
       orderBy: { tipo: 'asc' },
     });
 
-    const tipos = motos.map((m) => m.tipo).filter((t): t is string => t !== null);
+    const tipos = motos.map((m) => m.tipo).filter((t): t is TipoMoto => t !== null);
 
     return NextResponse.json({ tipos });
   } catch (error: unknown) {

@@ -47,10 +47,10 @@ const PAGE_SIZE = 15;
 
 const ESTADO_TABS = [
   { label: "Todos", value: "" },
-  { label: "Pendiente", value: "pendiente" },
-  { label: "Activo", value: "activo" },
-  { label: "Finalizado", value: "finalizado" },
-  { label: "Cancelado", value: "cancelado" },
+  { label: "Pendiente", value: "PENDIENTE" },
+  { label: "Activo", value: "ACTIVO" },
+  { label: "Finalizado", value: "FINALIZADO" },
+  { label: "Cancelado", value: "CANCELADO" },
 ];
 
 export default function ContratosPage() {

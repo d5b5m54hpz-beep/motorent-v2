@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     await prisma.moto.update({
       where: { id: cita.motoId },
       data: {
-        estado: 'mantenimiento',
+        estado: 'MANTENIMIENTO',
         kmActual,
       },
     });

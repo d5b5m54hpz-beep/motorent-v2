@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
     // 1. Get active motos with current km
     const motos = await prisma.moto.findMany({
-      where: { estado: { not: 'baja' } },
+      where: { estado: { not: 'BAJA' } },
       select: {
         id: true,
         patente: true,

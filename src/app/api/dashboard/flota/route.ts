@@ -14,12 +14,12 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
     });
 
-    const total = await prisma.moto.count({ where: { estado: { not: "baja" } } });
-    const alquiladas = await prisma.moto.count({ where: { estado: "alquilada" } });
+    const total = await prisma.moto.count({ where: { estado: { not: "BAJA" } } });
+    const alquiladas = await prisma.moto.count({ where: { estado: "ALQUILADA" } });
 
     // Valor de la flota
     const valorFlota = await prisma.moto.aggregate({
-      where: { estado: { not: "baja" }, valorCompra: { not: null } },
+      where: { estado: { not: "BAJA" }, valorCompra: { not: null } },
       _sum: { valorCompra: true, valorResidual: true },
     });
 
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     // Motos en patentamiento
     const motasPatentamiento = await prisma.moto.count({
-      where: { estadoPatentamiento: { not: "COMPLETADO" } },
+      where: { estadoPatentamiento: { not: "PATENTADA" } },
     });
 
     return NextResponse.json({

@@ -113,7 +113,7 @@ export async function GET() {
     // 3. Detectar motos que excedieron km sin service
     const motosActivas = await prisma.moto.findMany({
       where: {
-        estado: { in: ['disponible', 'alquilada'] },
+        estado: { in: ['DISPONIBLE', 'ALQUILADA'] },
       },
     });
 

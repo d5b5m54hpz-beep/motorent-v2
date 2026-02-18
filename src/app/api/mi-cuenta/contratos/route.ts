@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     ]);
     const contratos = data.map((contrato) => {
       const totalPagos = contrato.pagos.length;
-      const pagosPagados = contrato.pagos.filter((p) => p.estado === "aprobado").length;
+      const pagosPagados = contrato.pagos.filter((p) => p.estado === "APROBADO").length;
       return { ...contrato, _stats: { totalPagos, pagosPagados, progreso: totalPagos > 0 ? (pagosPagados / totalPagos) * 100 : 0 } };
     });
     return NextResponse.json({ data: contratos, total, page, limit, totalPages: Math.ceil(total / limit) });

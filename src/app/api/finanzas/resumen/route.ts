@@ -14,7 +14,7 @@ export async function GET() {
 
     // Current month income (approved payments)
     const ingresosMes = await prisma.pago.aggregate({
-      where: { estado: "aprobado", pagadoAt: { gte: inicioMes, lte: finMes } },
+      where: { estado: "APROBADO", pagadoAt: { gte: inicioMes, lte: finMes } },
       _sum: { monto: true },
     });
 
@@ -28,8 +28,8 @@ export async function GET() {
     const gastos = Number(gastosMes._sum.monto) || 0;
 
     // Fleet occupancy
-    const totalMotos = await prisma.moto.count({ where: { estado: { not: "baja" } } });
-    const motosAlquiladas = await prisma.moto.count({ where: { estado: "alquilada" } });
+    const totalMotos = await prisma.moto.count({ where: { estado: { not: "BAJA" } } });
+    const motosAlquiladas = await prisma.moto.count({ where: { estado: "ALQUILADA" } });
     const ocupacion = totalMotos > 0 ? (motosAlquiladas / totalMotos) * 100 : 0;
 
     // Last 12 months income vs expenses
@@ -40,7 +40,7 @@ export async function GET() {
 
       const [ing, gst] = await Promise.all([
         prisma.pago.aggregate({
-          where: { estado: "aprobado", pagadoAt: { gte: d, lte: fin } },
+          where: { estado: "APROBADO", pagadoAt: { gte: d, lte: fin } },
           _sum: { monto: true },
         }),
         prisma.gasto.aggregate({
@@ -92,7 +92,7 @@ export async function GET() {
     const hace30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const [pagos30, gastos30] = await Promise.all([
       prisma.pago.findMany({
-        where: { estado: "aprobado", pagadoAt: { gte: hace30 } },
+        where: { estado: "APROBADO", pagadoAt: { gte: hace30 } },
         select: { monto: true, pagadoAt: true },
         orderBy: { pagadoAt: "asc" },
       }),
@@ -156,8 +156,8 @@ export async function GET() {
         END as roi
       FROM "Moto" m
       LEFT JOIN "Contrato" c ON c."motoId" = m.id
-      LEFT JOIN "Pago" p ON p."contratoId" = c.id AND p.estado = 'aprobado'
-      WHERE m.estado != 'baja' AND m."valorCompra" > 0
+      LEFT JOIN "Pago" p ON p."contratoId" = c.id AND p.estado = 'APROBADO'
+      WHERE m.estado != 'BAJA' AND m."valorCompra" > 0
       GROUP BY m.id, m.modelo, m.marca, m.patente, m."valorCompra"
       ORDER BY roi DESC
       LIMIT 10

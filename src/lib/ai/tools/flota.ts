@@ -16,13 +16,13 @@ export const flotaTools: ToolMetadata[] = [
       });
       const total = motos.reduce((s, m) => s + m._count.id, 0);
       const byEstado = Object.fromEntries(motos.map((m) => [m.estado, m._count.id]));
-      const alquiladas = byEstado["alquilada"] ?? 0;
+      const alquiladas = byEstado["ALQUILADA"] ?? 0;
       return {
         total,
-        disponibles: byEstado["disponible"] ?? 0,
+        disponibles: byEstado["DISPONIBLE"] ?? 0,
         alquiladas,
-        enMantenimiento: byEstado["mantenimiento"] ?? 0,
-        deBaja: byEstado["baja"] ?? 0,
+        enMantenimiento: byEstado["MANTENIMIENTO"] ?? 0,
+        deBaja: byEstado["BAJA"] ?? 0,
         ocupacion: total > 0 ? Math.round((alquiladas / total) * 100) : 0,
       };
     },
@@ -46,7 +46,7 @@ export const flotaTools: ToolMetadata[] = [
         },
         include: {
           contratos: {
-            where: { estado: "activo" },
+            where: { estado: "ACTIVO" },
             include: { cliente: { select: { nombre: true, email: true } } },
             take: 3,
           },
@@ -160,7 +160,7 @@ export const flotaTools: ToolMetadata[] = [
 
       const total = motos.reduce((s, m) => s + m._count.id, 0);
       const byEstado = Object.fromEntries(motos.map((m) => [m.estado, m._count.id]));
-      const alquiladas = byEstado["alquilada"] ?? 0;
+      const alquiladas = byEstado["ALQUILADA"] ?? 0;
 
       // Calcular depreciación (simplified)
       const valorCompraTotal = Number(valorTotal._sum.valorCompra ?? 0);
@@ -168,10 +168,10 @@ export const flotaTools: ToolMetadata[] = [
 
       return {
         total,
-        disponibles: byEstado["disponible"] ?? 0,
+        disponibles: byEstado["DISPONIBLE"] ?? 0,
         alquiladas,
-        enMantenimiento: byEstado["mantenimiento"] ?? 0,
-        deBaja: byEstado["baja"] ?? 0,
+        enMantenimiento: byEstado["MANTENIMIENTO"] ?? 0,
+        deBaja: byEstado["BAJA"] ?? 0,
         ocupacion: total > 0 ? Math.round((alquiladas / total) * 100) : 0,
         valorCompraTotal,
         valorResidualTotal,
@@ -192,7 +192,7 @@ export const flotaTools: ToolMetadata[] = [
       const motosAltoKm = await prisma.moto.findMany({
         where: {
           kilometraje: { gte: 20000 },
-          estado: { in: ["disponible", "alquilada"] },
+          estado: { in: ["DISPONIBLE", "ALQUILADA"] },
         },
         orderBy: { kilometraje: "desc" },
         take: limit,
@@ -311,7 +311,7 @@ export const flotaTools: ToolMetadata[] = [
     }),
     execute: async ({ soloImportadas }) => {
       const where: any = {
-        estadoPatentamiento: { not: "COMPLETADO" },
+        estadoPatentamiento: { not: "PATENTADA" },
       };
 
       if (soloImportadas) {
@@ -341,11 +341,8 @@ export const flotaTools: ToolMetadata[] = [
       });
 
       const porEstado = {
-        NO_INICIADO: motos.filter((m) => m.estadoPatentamiento === "NO_INICIADO"),
-        IMPORTADA: motos.filter((m) => m.estadoPatentamiento === "IMPORTADA"),
-        EN_VERIFICACION: motos.filter((m) => m.estadoPatentamiento === "EN_VERIFICACION"),
-        DOCUMENTACION_LISTA: motos.filter((m) => m.estadoPatentamiento === "DOCUMENTACION_LISTA"),
-        EN_RUNA: motos.filter((m) => m.estadoPatentamiento === "EN_RUNA"),
+        SIN_PATENTAR: motos.filter((m) => m.estadoPatentamiento === "SIN_PATENTAR"),
+        EN_TRAMITE: motos.filter((m) => m.estadoPatentamiento === "EN_TRAMITE"),
         PATENTADA: motos.filter((m) => m.estadoPatentamiento === "PATENTADA"),
       };
 

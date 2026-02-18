@@ -30,26 +30,26 @@ export async function GET(req: NextRequest) {
       alertasSinLeer,
     ] = await Promise.all([
       prisma.moto.count(),
-      prisma.moto.count({ where: { estado: "disponible" } }),
-      prisma.moto.count({ where: { estado: "alquilada" } }),
-      prisma.moto.count({ where: { estado: "mantenimiento" } }),
+      prisma.moto.count({ where: { estado: "DISPONIBLE" } }),
+      prisma.moto.count({ where: { estado: "ALQUILADA" } }),
+      prisma.moto.count({ where: { estado: "MANTENIMIENTO" } }),
       prisma.cliente.count(),
-      prisma.contrato.count({ where: { estado: "activo" } }),
-      prisma.contrato.count({ where: { estado: "pendiente" } }),
-      prisma.pago.count({ where: { estado: "pendiente" } }),
+      prisma.contrato.count({ where: { estado: "ACTIVO" } }),
+      prisma.contrato.count({ where: { estado: "PENDIENTE" } }),
+      prisma.pago.count({ where: { estado: "PENDIENTE" } }),
       prisma.pago.count({
         where: {
-          estado: "pendiente",
+          estado: "PENDIENTE",
           vencimientoAt: { lt: hoy },
         },
       }),
       prisma.pago.aggregate({
-        where: { estado: "aprobado" },
+        where: { estado: "APROBADO" },
         _sum: { monto: true },
       }),
       prisma.pago.aggregate({
         where: {
-          estado: "aprobado",
+          estado: "APROBADO",
           pagadoAt: { gte: inicioMes },
         },
         _sum: { monto: true },
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     // Ingresos por mes (últimos 6 meses)
     const pagosPorMes = await prisma.pago.findMany({
       where: {
-        estado: "aprobado",
+        estado: "APROBADO",
         pagadoAt: { gte: hace6Meses },
       },
       select: {
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
 
     // Últimas actividades (últimos 10 pagos aprobados)
     const ultimosCobrosBd = await prisma.pago.findMany({
-      where: { estado: "aprobado" },
+      where: { estado: "APROBADO" },
       orderBy: { pagadoAt: "desc" },
       take: 10,
       include: {
@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
 
     // Próximos vencimientos (un pago por contrato, solo el más próximo)
     const todosPagosPendientes = await prisma.pago.findMany({
-      where: { estado: "pendiente" },
+      where: { estado: "PENDIENTE" },
       orderBy: { vencimientoAt: "asc" },
       include: {
         contrato: {

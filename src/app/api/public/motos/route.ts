@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     // Build where clause
     const where: Record<string, unknown> = {
-      estado: "disponible", // Only show available bikes
+      estado: "DISPONIBLE", // Only show available bikes
     };
 
     // Filter by tipo if provided

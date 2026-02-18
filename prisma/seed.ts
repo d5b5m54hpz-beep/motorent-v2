@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, TipoMoto, EstadoMoto, EstadoCliente } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { seedPermissions } from './seed-permissions';
 
@@ -38,18 +38,18 @@ async function main() {
   // 3. Crear motos de ejemplo (flota real - 11 motos)
   const motos = [
     // Flota CB125F (7 unidades)
-    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA125BB', estado: 'disponible', kilometraje: 0, precioMensual: 180000, tipo: 'naked' },
-    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA126BB', estado: 'disponible', kilometraje: 0, precioMensual: 180000, tipo: 'naked' },
-    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA128BB', estado: 'disponible', kilometraje: 0, precioMensual: 180000, tipo: 'naked' },
-    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA129BB', estado: 'disponible', kilometraje: 0, precioMensual: 180000, tipo: 'naked' },
-    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA130BB', estado: 'disponible', kilometraje: 0, precioMensual: 180000, tipo: 'naked' },
-    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA131BB', estado: 'disponible', kilometraje: 0, precioMensual: 180000, tipo: 'naked' },
-    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA132BB', estado: 'disponible', kilometraje: 0, precioMensual: 180000, tipo: 'naked' },
+    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA125BB', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 0, precioMensual: 180000, tipo: 'NAKED' as TipoMoto },
+    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA126BB', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 0, precioMensual: 180000, tipo: 'NAKED' as TipoMoto },
+    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA128BB', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 0, precioMensual: 180000, tipo: 'NAKED' as TipoMoto },
+    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA129BB', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 0, precioMensual: 180000, tipo: 'NAKED' as TipoMoto },
+    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA130BB', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 0, precioMensual: 180000, tipo: 'NAKED' as TipoMoto },
+    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA131BB', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 0, precioMensual: 180000, tipo: 'NAKED' as TipoMoto },
+    { marca: 'Honda', modelo: 'CB125F', anio: 2026, cilindrada: 125, color: 'Negro', patente: 'AA132BB', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 0, precioMensual: 180000, tipo: 'NAKED' as TipoMoto },
     // Otras motos
-    { marca: 'Yamaha', modelo: 'MT-03', anio: 2024, cilindrada: 321, color: 'Negro', patente: 'AI345JJ', estado: 'disponible', kilometraje: 3000, precioMensual: 280000, tipo: 'naked' },
-    { marca: 'Yamaha', modelo: 'FZ25', anio: 2024, cilindrada: 249, color: 'Azul', patente: 'AC456DD', estado: 'disponible', kilometraje: 5000, precioMensual: 220000, tipo: 'naked' },
-    { marca: 'Honda', modelo: 'XR150', anio: 2022, cilindrada: 149, color: 'Blanco', patente: 'AG012HH', estado: 'disponible', kilometraje: 25000, precioMensual: 160000, tipo: 'sport' },
-    { marca: 'Honda', modelo: 'CB125F', anio: 2023, cilindrada: 125, color: 'Negro', patente: 'AA123BB', estado: 'disponible', kilometraje: 12000, precioMensual: 180000, tipo: 'naked' },
+    { marca: 'Yamaha', modelo: 'MT-03', anio: 2024, cilindrada: 321, color: 'Negro', patente: 'AI345JJ', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 3000, precioMensual: 280000, tipo: 'NAKED' as TipoMoto },
+    { marca: 'Yamaha', modelo: 'FZ25', anio: 2024, cilindrada: 249, color: 'Azul', patente: 'AC456DD', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 5000, precioMensual: 220000, tipo: 'NAKED' as TipoMoto },
+    { marca: 'Honda', modelo: 'XR150', anio: 2022, cilindrada: 149, color: 'Blanco', patente: 'AG012HH', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 25000, precioMensual: 160000, tipo: 'SPORT' as TipoMoto },
+    { marca: 'Honda', modelo: 'CB125F', anio: 2023, cilindrada: 125, color: 'Negro', patente: 'AA123BB', estado: 'DISPONIBLE' as EstadoMoto, kilometraje: 12000, precioMensual: 180000, tipo: 'NAKED' as TipoMoto },
   ];
 
   for (const moto of motos) {
@@ -90,7 +90,7 @@ async function main() {
       provincia: 'CABA',
       codigoPostal: 'C1043',
       fechaNacimiento: new Date('1990-05-15'),
-      estado: 'aprobado',
+      estado: 'APROBADO' as EstadoCliente,
     },
   });
   console.log('✅ Cliente de ejemplo creado');

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     // 1. Pagos vencidos
     const pagosVencidos = await prisma.pago.findMany({
       where: {
-        estado: "pendiente",
+        estado: "PENDIENTE",
         vencimientoAt: { lt: now },
       },
       include: {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     // 2. Contratos proximos a vencer (7 dias)
     const contratosPorVencer = await prisma.contrato.findMany({
       where: {
-        estado: "activo",
+        estado: "ACTIVO",
         fechaFin: {
           gte: now,
           lte: sevenDaysFromNow,
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     const licenciasVencidas = await prisma.cliente.findMany({
       where: {
         licenciaVencimiento: { lt: now },
-        estado: "aprobado", // Solo clientes aprobados
+        estado: "APROBADO", // Solo clientes aprobados
       },
       include: {
         user: { select: { name: true } },

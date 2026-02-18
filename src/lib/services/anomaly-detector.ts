@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, TipoAnomalia, SeveridadAnomalia, EstadoMoto, EstadoPago } from "@prisma/client";
 
 // ─── Helper: idempotency check ──────────────────────────────────────────────
 
 async function anomaliaExiste(
-  tipo: string,
+  tipo: TipoAnomalia,
   entidadId: string
 ): Promise<boolean> {
   const existing = await prisma.anomalia.findFirst({
@@ -54,21 +54,21 @@ export async function detectarGastosInusuales(): Promise<number> {
       if (!avg || avg === 0) continue;
 
       const ratio = Number(gasto.monto) / avg;
-      let severidad: string | null = null;
+      let severidad: SeveridadAnomalia | null = null;
 
       if (ratio >= 3) {
-        severidad = "ALTA";
+        severidad = "ALTA" as SeveridadAnomalia;
       } else if (ratio >= 2) {
-        severidad = "MEDIA";
+        severidad = "MEDIA" as SeveridadAnomalia;
       }
 
       if (!severidad) continue;
 
-      if (await anomaliaExiste("GASTO_INUSUAL", gasto.id)) continue;
+      if (await anomaliaExiste("GASTO_INUSUAL" as TipoAnomalia, gasto.id)) continue;
 
       await prisma.anomalia.create({
         data: {
-          tipo: "GASTO_INUSUAL",
+          tipo: "GASTO_INUSUAL" as TipoAnomalia,
           severidad,
           titulo: `Gasto inusual en ${gasto.categoria}`,
           descripcion: `El gasto "${gasto.concepto}" por $${Number(gasto.monto).toLocaleString("es-AR")} es ${ratio.toFixed(1)}x el promedio de la categoría ($${avg.toLocaleString("es-AR")}).`,
@@ -136,12 +136,12 @@ export async function detectarPagosDuplicados(
       if (duplicates.length === 0) continue;
 
       // Create anomaly for this pago (not for each duplicate — the pair is noted in datosAnalisis)
-      if (await anomaliaExiste("PAGO_DUPLICADO", pago.id)) continue;
+      if (await anomaliaExiste("PAGO_DUPLICADO" as TipoAnomalia, pago.id)) continue;
 
       await prisma.anomalia.create({
         data: {
-          tipo: "PAGO_DUPLICADO",
-          severidad: "ALTA",
+          tipo: "PAGO_DUPLICADO" as TipoAnomalia,
+          severidad: "ALTA" as SeveridadAnomalia,
           titulo: `Posible pago duplicado por $${Number(pago.monto).toLocaleString("es-AR")}`,
           descripcion: `El pago ${pago.id} tiene ${duplicates.length} pago(s) con el mismo monto ($${Number(pago.monto).toLocaleString("es-AR")}) para el mismo contrato dentro de 48 horas.`,
           entidadTipo: "Pago",
@@ -186,30 +186,30 @@ export async function detectarFacturasSinPago(): Promise<number> {
         emitida: true,
         createdAt: { lt: thirtyDaysAgo },
         pago: {
-          estado: { not: "aprobado" },
+          estado: { not: "APROBADO" },
         },
       },
       include: { pago: true },
     });
 
     for (const factura of facturasSinCobro) {
-      let severidad: string;
+      let severidad: SeveridadAnomalia;
       const ageMs = now.getTime() - factura.createdAt.getTime();
       const ageDays = ageMs / (24 * 60 * 60 * 1000);
 
       if (ageDays > 90) {
-        severidad = "CRITICA";
+        severidad = "CRITICA" as SeveridadAnomalia;
       } else if (ageDays > 60) {
-        severidad = "ALTA";
+        severidad = "ALTA" as SeveridadAnomalia;
       } else {
-        severidad = "MEDIA";
+        severidad = "MEDIA" as SeveridadAnomalia;
       }
 
-      if (await anomaliaExiste("FACTURA_SIN_PAGO", factura.id)) continue;
+      if (await anomaliaExiste("FACTURA_SIN_PAGO" as TipoAnomalia, factura.id)) continue;
 
       await prisma.anomalia.create({
         data: {
-          tipo: "FACTURA_SIN_PAGO",
+          tipo: "FACTURA_SIN_PAGO" as TipoAnomalia,
           severidad,
           titulo: `Factura ${factura.numero} sin cobro hace ${Math.floor(ageDays)} días`,
           descripcion: `La factura ${factura.numero} (tipo ${factura.tipo}) por $${Number(factura.montoTotal).toLocaleString("es-AR")} fue emitida hace ${Math.floor(ageDays)} días y el pago vinculado tiene estado "${factura.pago?.estado ?? "desconocido"}".`,
@@ -251,14 +251,14 @@ export async function detectarMargenBajo(): Promise<number> {
 
     // Get motos currently rented
     const motosAlquiladas = await prisma.moto.findMany({
-      where: { estado: "alquilada" },
+      where: { estado: "ALQUILADA" },
       include: {
         contratos: {
-          where: { estado: "activo" },
+          where: { estado: "ACTIVO" },
           include: {
             pagos: {
               where: {
-                estado: "aprobado",
+                estado: "APROBADO",
                 createdAt: { gte: threeMonthsAgo },
               },
             },
@@ -280,21 +280,21 @@ export async function detectarMargenBajo(): Promise<number> {
       if (ingresos === 0) continue; // No income data yet — skip
 
       const margen = ((ingresos - gastos) / ingresos) * 100;
-      let severidad: string | null = null;
+      let severidad: SeveridadAnomalia | null = null;
 
       if (margen < 0) {
-        severidad = "CRITICA";
+        severidad = "CRITICA" as SeveridadAnomalia;
       } else if (margen < 10) {
-        severidad = "MEDIA";
+        severidad = "MEDIA" as SeveridadAnomalia;
       }
 
       if (!severidad) continue;
 
-      if (await anomaliaExiste("MARGEN_BAJO", moto.id)) continue;
+      if (await anomaliaExiste("MARGEN_BAJO" as TipoAnomalia, moto.id)) continue;
 
       await prisma.anomalia.create({
         data: {
-          tipo: "MARGEN_BAJO",
+          tipo: "MARGEN_BAJO" as TipoAnomalia,
           severidad,
           titulo: `Margen bajo en ${moto.marca} ${moto.modelo} (${moto.patente})`,
           descripcion: `La moto ${moto.patente} tiene un margen del ${margen.toFixed(1)}% en los últimos 3 meses. Ingresos: $${ingresos.toLocaleString("es-AR")}, Gastos: $${gastos.toLocaleString("es-AR")}.`,
@@ -365,18 +365,18 @@ export async function detectarStockCritico(
             ? 999
             : 0;
 
-      let severidad: string;
+      let severidad: SeveridadAnomalia;
       if (repuesto.stock === 0) {
-        severidad = "CRITICA";
+        severidad = "CRITICA" as SeveridadAnomalia;
       } else {
-        severidad = "ALTA";
+        severidad = "ALTA" as SeveridadAnomalia;
       }
 
-      if (await anomaliaExiste("STOCK_CRITICO", repuesto.id)) continue;
+      if (await anomaliaExiste("STOCK_CRITICO" as TipoAnomalia, repuesto.id)) continue;
 
       await prisma.anomalia.create({
         data: {
-          tipo: "STOCK_CRITICO",
+          tipo: "STOCK_CRITICO" as TipoAnomalia,
           severidad,
           titulo: `Stock crítico: ${repuesto.nombre}`,
           descripcion: `El repuesto "${repuesto.nombre}" (${repuesto.codigo ?? "sin código"}) tiene ${repuesto.stock} unidades (mínimo: ${repuesto.stockMinimo}). ${diasHastaAgotamiento < 999 ? `Estimación: ${diasHastaAgotamiento} días hasta agotamiento.` : ""}`,
@@ -454,21 +454,21 @@ export async function detectarDesviacionPresupuesto(): Promise<number> {
           montoPresupuestadoNum) *
         100;
 
-      let severidad: string | null = null;
+      let severidad: SeveridadAnomalia | null = null;
       if (desvio > 50) {
-        severidad = "ALTA";
+        severidad = "ALTA" as SeveridadAnomalia;
       } else if (desvio > 20) {
-        severidad = "MEDIA";
+        severidad = "MEDIA" as SeveridadAnomalia;
       }
 
       if (!severidad) continue;
 
       const entidadId = `${periodoId}-${presupuesto.categoria}`;
-      if (await anomaliaExiste("DESVIO_PRESUPUESTO", entidadId)) continue;
+      if (await anomaliaExiste("DESVIO_PRESUPUESTO" as TipoAnomalia, entidadId)) continue;
 
       await prisma.anomalia.create({
         data: {
-          tipo: "DESVIO_PRESUPUESTO",
+          tipo: "DESVIO_PRESUPUESTO" as TipoAnomalia,
           severidad,
           titulo: `Desvío presupuestario en ${presupuesto.categoria} (+${desvio.toFixed(0)}%)`,
           descripcion: `La categoría ${presupuesto.categoria} lleva $${real.toLocaleString("es-AR")} gastados vs $${montoPresupuestadoNum.toLocaleString("es-AR")} presupuestados (${periodoId}). Desvío del ${desvio.toFixed(1)}%.`,
@@ -513,7 +513,7 @@ export async function detectarFlujoCajaNegativo(): Promise<number> {
     // Cobros esperados: pagos pendientes with vencimiento in next 30 days
     const cobrosEsperados = await prisma.pago.aggregate({
       where: {
-        estado: "pendiente",
+        estado: "PENDIENTE",
         vencimientoAt: { lte: thirtyDaysFromNow, gte: now },
       },
       _sum: { monto: true },
@@ -522,7 +522,7 @@ export async function detectarFlujoCajaNegativo(): Promise<number> {
     // Saldo actual approximation: approved payments last 30 days minus expenses last 30 days
     const ingresosRecientes = await prisma.pago.aggregate({
       where: {
-        estado: "aprobado",
+        estado: "APROBADO",
         pagadoAt: { gte: thirtyDaysAgo },
       },
       _sum: { monto: true },
@@ -552,12 +552,12 @@ export async function detectarFlujoCajaNegativo(): Promise<number> {
     const anioActual = now.getFullYear();
     const periodoId = `${anioActual}-${String(mesActual).padStart(2, "0")}`;
 
-    if (await anomaliaExiste("FLUJO_CAJA_NEGATIVO", periodoId)) return 0;
+    if (await anomaliaExiste("FLUJO_CAJA_NEGATIVO" as TipoAnomalia, periodoId)) return 0;
 
     await prisma.anomalia.create({
       data: {
-        tipo: "FLUJO_CAJA_NEGATIVO",
-        severidad: "CRITICA",
+        tipo: "FLUJO_CAJA_NEGATIVO" as TipoAnomalia,
+        severidad: "CRITICA" as SeveridadAnomalia,
         titulo: `Flujo de caja negativo proyectado: -$${Math.abs(proyeccion).toLocaleString("es-AR")}`,
         descripcion: `Proyección de flujo de caja a 30 días: saldo actual $${saldoActual.toLocaleString("es-AR")} + cobros esperados $${Number(cobrosEsperados._sum.monto ?? 0).toLocaleString("es-AR")} - gastos proyectados $${pagosComprometidos.toLocaleString("es-AR")} = -$${Math.abs(proyeccion).toLocaleString("es-AR")}.`,
         entidadTipo: "FlujoCaja",
@@ -599,7 +599,7 @@ export async function detectarVencimientosProximos(): Promise<number> {
     // A) Check Moto.fechaVencimientoSeguro
     const motosConSeguroProximo = await prisma.moto.findMany({
       where: {
-        estado: { not: "baja" },
+        estado: { not: "BAJA" as EstadoMoto },
         fechaVencimientoSeguro: {
           lte: fifteenDaysFromNow,
         },
@@ -614,17 +614,17 @@ export async function detectarVencimientosProximos(): Promise<number> {
           (24 * 60 * 60 * 1000)
       );
 
-      let severidad: string;
+      let severidad: SeveridadAnomalia;
       if (diasRestantes < 0) {
-        severidad = "CRITICA";
+        severidad = "CRITICA" as SeveridadAnomalia;
       } else if (diasRestantes < 7) {
-        severidad = "ALTA";
+        severidad = "ALTA" as SeveridadAnomalia;
       } else {
-        severidad = "MEDIA";
+        severidad = "MEDIA" as SeveridadAnomalia;
       }
 
       const entidadId = `seguro-${moto.id}`;
-      if (await anomaliaExiste("VENCIMIENTO_PROXIMO", entidadId)) continue;
+      if (await anomaliaExiste("VENCIMIENTO_PROXIMO" as TipoAnomalia, entidadId)) continue;
 
       const vencimientoLabel =
         diasRestantes < 0
@@ -633,7 +633,7 @@ export async function detectarVencimientosProximos(): Promise<number> {
 
       await prisma.anomalia.create({
         data: {
-          tipo: "VENCIMIENTO_PROXIMO",
+          tipo: "VENCIMIENTO_PROXIMO" as TipoAnomalia,
           severidad,
           titulo: `Seguro ${vencimientoLabel}: ${moto.marca} ${moto.modelo} (${moto.patente})`,
           descripcion: `El seguro de la moto ${moto.patente} ${vencimientoLabel} (${moto.fechaVencimientoSeguro.toLocaleDateString("es-AR")}).`,
@@ -668,24 +668,24 @@ export async function detectarVencimientosProximos(): Promise<number> {
 
     for (const doc of documentosProximos) {
       if (!doc.fechaVencimiento) continue;
-      if (doc.moto.estado === "baja") continue;
+      if (doc.moto.estado === "BAJA") continue;
 
       const diasRestantes = Math.floor(
         (doc.fechaVencimiento.getTime() - now.getTime()) /
           (24 * 60 * 60 * 1000)
       );
 
-      let severidad: string;
+      let severidad: SeveridadAnomalia;
       if (diasRestantes < 0) {
-        severidad = "CRITICA";
+        severidad = "CRITICA" as SeveridadAnomalia;
       } else if (diasRestantes < 7) {
-        severidad = "ALTA";
+        severidad = "ALTA" as SeveridadAnomalia;
       } else {
-        severidad = "MEDIA";
+        severidad = "MEDIA" as SeveridadAnomalia;
       }
 
       const entidadId = `doc-${doc.id}`;
-      if (await anomaliaExiste("VENCIMIENTO_PROXIMO", entidadId)) continue;
+      if (await anomaliaExiste("VENCIMIENTO_PROXIMO" as TipoAnomalia, entidadId)) continue;
 
       const vencimientoLabel =
         diasRestantes < 0
@@ -694,7 +694,7 @@ export async function detectarVencimientosProximos(): Promise<number> {
 
       await prisma.anomalia.create({
         data: {
-          tipo: "VENCIMIENTO_PROXIMO",
+          tipo: "VENCIMIENTO_PROXIMO" as TipoAnomalia,
           severidad,
           titulo: `${doc.tipo} ${vencimientoLabel}: ${doc.moto.marca} ${doc.moto.modelo} (${doc.moto.patente})`,
           descripcion: `El documento ${doc.tipo} "${doc.nombre}" de la moto ${doc.moto.patente} ${vencimientoLabel} (${doc.fechaVencimiento.toLocaleDateString("es-AR")}).`,
@@ -738,7 +738,7 @@ export async function detectarPatronesSospechosos(): Promise<number> {
     // A) Pagos aprobados at unusual hours (22:00 - 06:00) in last 7 days
     const pagosRecientes = await prisma.pago.findMany({
       where: {
-        estado: "aprobado",
+        estado: "APROBADO",
         pagadoAt: { gte: sevenDaysAgo },
       },
       include: {
@@ -752,13 +752,13 @@ export async function detectarPatronesSospechosos(): Promise<number> {
       const hora = pago.pagadoAt.getHours();
       if (hora >= 6 && hora < 22) continue; // Normal hours — skip
 
-      if (await anomaliaExiste("PATRON_SOSPECHOSO", `hora-${pago.id}`))
+      if (await anomaliaExiste("PATRON_SOSPECHOSO" as TipoAnomalia, `hora-${pago.id}`))
         continue;
 
       await prisma.anomalia.create({
         data: {
-          tipo: "PATRON_SOSPECHOSO",
-          severidad: "MEDIA",
+          tipo: "PATRON_SOSPECHOSO" as TipoAnomalia,
+          severidad: "MEDIA" as SeveridadAnomalia,
           titulo: `Pago en horario inusual (${hora}:00hs)`,
           descripcion: `El pago ${pago.id} por $${Number(pago.monto).toLocaleString("es-AR")} fue aprobado a las ${hora}:${String(pago.pagadoAt.getMinutes()).padStart(2, "0")}hs, fuera del horario habitual (06:00-22:00).`,
           entidadTipo: "Pago",
@@ -780,7 +780,7 @@ export async function detectarPatronesSospechosos(): Promise<number> {
     // B) Multiple refunds: pagos reembolsados grouped by clienteId, >2 in 30 days
     const pagosReembolsados = await prisma.pago.findMany({
       where: {
-        estado: "reembolsado",
+        estado: "REEMBOLSADO",
         createdAt: { gte: thirtyDaysAgo },
       },
       include: {
@@ -808,14 +808,14 @@ export async function detectarPatronesSospechosos(): Promise<number> {
       if (reembolsos.length <= 2) continue;
 
       const entidadId = `reembolsos-${clienteId}`;
-      if (await anomaliaExiste("PATRON_SOSPECHOSO", entidadId)) continue;
+      if (await anomaliaExiste("PATRON_SOSPECHOSO" as TipoAnomalia, entidadId)) continue;
 
       const totalReembolsado = reembolsos.reduce((s: number, r) => s + r.monto, 0);
 
       await prisma.anomalia.create({
         data: {
-          tipo: "PATRON_SOSPECHOSO",
-          severidad: "ALTA",
+          tipo: "PATRON_SOSPECHOSO" as TipoAnomalia,
+          severidad: "ALTA" as SeveridadAnomalia,
           titulo: `Cliente con ${reembolsos.length} reembolsos en 30 días`,
           descripcion: `El cliente ${clienteId} tiene ${reembolsos.length} pagos reembolsados en los últimos 30 días por un total de $${totalReembolsado.toLocaleString("es-AR")}.`,
           entidadTipo: "Cliente",

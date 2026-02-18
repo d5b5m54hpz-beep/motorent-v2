@@ -107,7 +107,7 @@ export async function handleMotoDecommissioned(ctx: EventContext): Promise<void>
     const activeContracts = await prisma.contrato.count({
       where: {
         motoId: ctx.entityId,
-        estado: { in: ["activo", "pendiente"] },
+        estado: { in: ["ACTIVO", "PENDIENTE"] },
       },
     });
 

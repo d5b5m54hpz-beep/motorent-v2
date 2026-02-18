@@ -36,7 +36,7 @@ export default function MantenimientosPage() {
         const ordenesData = await ordenesRes.json();
 
         // Fetch motos en mantenimiento
-        const motosRes = await fetch("/api/motos?estado=mantenimiento&limit=1");
+        const motosRes = await fetch("/api/motos?estado=MANTENIMIENTO&limit=1");
         const motosData = await motosRes.json();
 
         // Calculate average cost from recent completed OTs

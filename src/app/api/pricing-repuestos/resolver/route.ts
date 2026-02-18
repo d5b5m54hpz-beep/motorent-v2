@@ -150,7 +150,7 @@ async function evaluarDescuentos(
           const contratoActivo = await prisma.contrato.findFirst({
             where: {
               clienteId,
-              estado: "activo",
+              estado: "ACTIVO",
             },
             orderBy: { fechaInicio: "desc" },
           });

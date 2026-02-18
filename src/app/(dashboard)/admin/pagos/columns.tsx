@@ -14,33 +14,33 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Pago } from "./types";
 
 const estadoBadgeMap: Record<string, { label: string; className: string }> = {
-  pendiente: {
+  PENDIENTE: {
     label: "Pendiente",
     className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   },
-  aprobado: {
+  APROBADO: {
     label: "Aprobado",
     className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
-  rechazado: {
+  RECHAZADO: {
     label: "Rechazado",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   },
-  reembolsado: {
+  REEMBOLSADO: {
     label: "Reembolsado",
     className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   },
-  cancelado: {
+  CANCELADO: {
     label: "Cancelado",
     className: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
   },
 };
 
 const metodoBadgeMap: Record<string, string> = {
-  efectivo: "Efectivo",
-  transferencia: "Transferencia",
-  mercadopago: "MercadoPago",
-  pendiente: "—",
+  EFECTIVO: "Efectivo",
+  TRANSFERENCIA: "Transferencia",
+  MERCADOPAGO: "MercadoPago",
+  PENDIENTE: "—",
 };
 
 type ColumnActions = {
@@ -132,7 +132,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Pago>[] {
         const fechaVencimiento = new Date(vencimiento);
         const hoy = new Date();
         const estado = row.original.estado;
-        const estaVencido = estado === "pendiente" && fechaVencimiento < hoy;
+        const estaVencido = estado === "PENDIENTE" && fechaVencimiento < hoy;
 
         return (
           <span className={estaVencido ? "text-red-600 font-medium" : "text-sm"}>
@@ -183,7 +183,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Pago>[] {
       header: "",
       cell: ({ row }) => {
         const pago = row.original;
-        const puedeRegistrar = pago.estado === "pendiente";
+        const puedeRegistrar = pago.estado === "PENDIENTE";
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

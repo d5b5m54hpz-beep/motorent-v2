@@ -9,7 +9,7 @@ export async function GET() {
 
   try {
     const motos = await prisma.moto.findMany({
-      where: { estado: { not: "baja" } },
+      where: { estado: { not: "BAJA" } },
       select: {
         id: true,
         marca: true,
@@ -27,7 +27,7 @@ export async function GET() {
         // Total income from contracts
         const pagosAprobados = await prisma.pago.aggregate({
           where: {
-            estado: "aprobado",
+            estado: "APROBADO",
             contrato: { motoId: moto.id },
           },
           _sum: { monto: true },
@@ -43,7 +43,7 @@ export async function GET() {
 
         // Days rented
         const contratos = await prisma.contrato.findMany({
-          where: { motoId: moto.id, estado: { in: ["activo", "finalizado"] } },
+          where: { motoId: moto.id, estado: { in: ["ACTIVO", "FINALIZADO"] } },
           select: { fechaInicio: true, fechaFin: true },
         });
 

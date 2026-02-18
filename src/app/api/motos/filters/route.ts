@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/require-permission';
 import { OPERATIONS } from '@/lib/events';
+import { TipoMoto } from '@prisma/client';
 
 export async function GET() {
   const { error } = await requirePermission(
@@ -45,7 +46,7 @@ export async function GET() {
       marcas: marcas.map(m => m.marca),
       modelos: modelos.map(m => ({ modelo: m.modelo, marca: m.marca })),
       colores: colores.map(c => c.color).filter((c): c is string => c !== null),
-      tipos: tipos.map(t => t.tipo).filter((t): t is string => t !== null),
+      tipos: tipos.map(t => t.tipo).filter((t): t is TipoMoto => t !== null),
       anoMin: anos._min.anio || 2020,
       anoMax: anos._max.anio || new Date().getFullYear(),
     });

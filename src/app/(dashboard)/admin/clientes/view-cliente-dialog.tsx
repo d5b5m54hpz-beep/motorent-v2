@@ -12,15 +12,15 @@ import { formatDate } from "@/lib/utils";
 import type { Cliente } from "./types";
 
 const estadoBadgeMap: Record<string, { label: string; className: string }> = {
-  pendiente: {
+  PENDIENTE: {
     label: "Pendiente",
     className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   },
-  aprobado: {
+  APROBADO: {
     label: "Aprobado",
     className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
-  rechazado: {
+  RECHAZADO: {
     label: "Rechazado",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   },

@@ -17,7 +17,7 @@ import { prisma } from "@/lib/prisma";
 async function getFeaturedMotos() {
   try {
     const motos = await prisma.moto.findMany({
-      where: { estado: "disponible" },
+      where: { estado: "DISPONIBLE" },
       orderBy: { createdAt: "desc" },
       take: 8,
       select: {

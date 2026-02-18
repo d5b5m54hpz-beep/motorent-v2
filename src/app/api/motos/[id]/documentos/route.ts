@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { withEvent, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
+import { TipoDocumentoMoto } from "@prisma/client";
 
 const documentoSchema = z.object({
   tipo: z.string().min(1),
@@ -76,7 +77,7 @@ export async function POST(
         prisma.documentoMoto.create({
           data: {
             motoId: id,
-            tipo: data.tipo,
+            tipo: data.tipo as TipoDocumentoMoto,
             nombre: data.nombre,
             url: data.url,
             fechaEmision: data.fechaEmision ? new Date(data.fechaEmision) : null,

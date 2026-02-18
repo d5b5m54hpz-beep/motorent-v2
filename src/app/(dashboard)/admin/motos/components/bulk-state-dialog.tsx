@@ -24,25 +24,25 @@ type BulkStateDialogProps = {
 
 const estados = [
   {
-    value: "disponible",
+    value: "DISPONIBLE",
     label: "Disponible",
     icon: CheckCircle2,
     color: "text-green-600",
   },
   {
-    value: "alquilada",
+    value: "ALQUILADA",
     label: "Alquilada",
     icon: Clock,
     color: "text-blue-600",
   },
   {
-    value: "mantenimiento",
+    value: "MANTENIMIENTO",
     label: "Mantenimiento",
     icon: Wrench,
     color: "text-yellow-600",
   },
   {
-    value: "baja",
+    value: "BAJA",
     label: "Baja",
     icon: XCircle,
     color: "text-red-600",
@@ -56,7 +56,7 @@ export function BulkStateDialog({
   onConfirm,
   isLoading,
 }: BulkStateDialogProps) {
-  const [selectedState, setSelectedState] = useState<string>("disponible");
+  const [selectedState, setSelectedState] = useState<string>("DISPONIBLE");
 
   const handleConfirm = () => {
     onConfirm(selectedState);

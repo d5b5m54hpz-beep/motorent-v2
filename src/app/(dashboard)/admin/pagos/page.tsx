@@ -30,9 +30,9 @@ const PAGE_SIZE = 15;
 
 const ESTADO_TABS = [
   { label: "Todos", value: "" },
-  { label: "Pendiente", value: "pendiente" },
-  { label: "Aprobado", value: "aprobado" },
-  { label: "Rechazado", value: "rechazado" },
+  { label: "Pendiente", value: "PENDIENTE" },
+  { label: "Aprobado", value: "APROBADO" },
+  { label: "Rechazado", value: "RECHAZADO" },
   { label: "Vencido", value: "vencido" },
 ];
 
@@ -92,7 +92,7 @@ export default function PagosPage() {
 
         // Filtro especial para vencidos
         if (estadoFilter === "vencido") {
-          params.append("estado", "pendiente");
+          params.append("estado", "PENDIENTE");
         } else if (estadoFilter) {
           params.append("estado", estadoFilter);
         }
@@ -144,7 +144,7 @@ export default function PagosPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          estado: "aprobado",
+          estado: "APROBADO",
           ...formData,
         }),
       });

@@ -176,12 +176,12 @@ function MiCuentaContent() {
   }
 
   const estadoBadgeColors: Record<string, string> = {
-    pendiente: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-    activo: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
-    finalizado: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-    cancelado: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-    aprobado: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
-    rechazado: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+    PENDIENTE: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+    ACTIVO: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
+    FINALIZADO: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+    CANCELADO: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+    APROBADO: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
+    RECHAZADO: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   };
 
   return (
@@ -310,7 +310,7 @@ function MiCuentaContent() {
               <div className="space-y-3">
                 {pagos.map((pago) => {
                   const isOverdue =
-                    pago.estado === "pendiente" &&
+                    pago.estado === "PENDIENTE" &&
                     pago.vencimientoAt &&
                     new Date(pago.vencimientoAt) < new Date();
 
@@ -323,7 +323,7 @@ function MiCuentaContent() {
                               <h4 className="font-medium">
                                 {pago.contrato.moto.marca} {pago.contrato.moto.modelo}
                               </h4>
-                              {pago.estado === "aprobado" && (
+                              {pago.estado === "APROBADO" && (
                                 <Badge
                                   variant="outline"
                                   className="bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300"
@@ -332,7 +332,7 @@ function MiCuentaContent() {
                                   Aprobado
                                 </Badge>
                               )}
-                              {pago.estado === "rechazado" && (
+                              {pago.estado === "RECHAZADO" && (
                                 <Badge
                                   variant="outline"
                                   className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
@@ -341,7 +341,7 @@ function MiCuentaContent() {
                                   Rechazado
                                 </Badge>
                               )}
-                              {pago.estado === "pendiente" && !isOverdue && (
+                              {pago.estado === "PENDIENTE" && !isOverdue && (
                                 <Badge
                                   variant="outline"
                                   className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
@@ -391,7 +391,7 @@ function MiCuentaContent() {
 
                           <div className="text-right">
                             <p className="text-xl font-bold">{formatCurrency(pago.monto)}</p>
-                            {pago.estado === "pendiente" && (
+                            {pago.estado === "PENDIENTE" && (
                               <Button
                                 size="sm"
                                 className="mt-2 bg-[#009ee3] hover:bg-[#0084c4] text-white"

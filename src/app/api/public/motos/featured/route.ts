@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     // Get 4 most recent available motos for landing page
     const featured = await prisma.moto.findMany({
       where: {
-        estado: "disponible",
+        estado: "DISPONIBLE",
       },
       take: 4,
       orderBy: { createdAt: "desc" },

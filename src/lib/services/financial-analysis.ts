@@ -30,15 +30,15 @@ export async function runDailyAnalysis(): Promise<AnalysisResult> {
   // Calculate daily metrics
   const [pagosAprobados, gastosTotal, facturasEmitidas, contratosActivos, morosidad] = await Promise.all([
     // Total approved payments today
-    prisma.pago.aggregate({ where: { estado: "aprobado", pagadoAt: { gte: startOfDay, lt: endOfDay } }, _sum: { monto: true }, _count: true }),
+    prisma.pago.aggregate({ where: { estado: "APROBADO", pagadoAt: { gte: startOfDay, lt: endOfDay } }, _sum: { monto: true }, _count: true }),
     // Total expenses today
     prisma.gasto.aggregate({ where: { fecha: { gte: startOfDay, lt: endOfDay } }, _sum: { monto: true }, _count: true }),
     // Invoices issued today
     prisma.factura.count({ where: { emitida: true, createdAt: { gte: startOfDay, lt: endOfDay } } }),
     // Active contracts
-    prisma.contrato.count({ where: { estado: "activo" } }),
+    prisma.contrato.count({ where: { estado: "ACTIVO" } }),
     // Overdue payments (pending past vencimientoAt)
-    prisma.pago.count({ where: { estado: "pendiente", vencimientoAt: { lt: today } } }),
+    prisma.pago.count({ where: { estado: "PENDIENTE", vencimientoAt: { lt: today } } }),
   ]);
 
   const ingresos = Number(pagosAprobados._sum.monto ?? 0);
@@ -89,9 +89,9 @@ export async function runWeeklyAnalysis(): Promise<AnalysisResult> {
 
   // Calculate metrics for this week and previous
   const [thisWeekPagos, thisWeekGastos, prevWeekPagos, prevWeekGastos] = await Promise.all([
-    prisma.pago.aggregate({ where: { estado: "aprobado", pagadoAt: { gte: startOfWeek, lt: endOfWeek } }, _sum: { monto: true } }),
+    prisma.pago.aggregate({ where: { estado: "APROBADO", pagadoAt: { gte: startOfWeek, lt: endOfWeek } }, _sum: { monto: true } }),
     prisma.gasto.aggregate({ where: { fecha: { gte: startOfWeek, lt: endOfWeek } }, _sum: { monto: true } }),
-    prisma.pago.aggregate({ where: { estado: "aprobado", pagadoAt: { gte: startOfPrevWeek, lt: startOfWeek } }, _sum: { monto: true } }),
+    prisma.pago.aggregate({ where: { estado: "APROBADO", pagadoAt: { gte: startOfPrevWeek, lt: startOfWeek } }, _sum: { monto: true } }),
     prisma.gasto.aggregate({ where: { fecha: { gte: startOfPrevWeek, lt: startOfWeek } }, _sum: { monto: true } }),
   ]);
 
@@ -130,11 +130,11 @@ export async function runMonthlyAnalysis(): Promise<AnalysisResult> {
   const detections = await ejecutarTodasLasDetecciones();
 
   const [thisMonthPagos, thisMonthGastos, prevYearPagos, prevYearGastos, contratosActivos] = await Promise.all([
-    prisma.pago.aggregate({ where: { estado: "aprobado", pagadoAt: { gte: startOfMonth, lt: endOfMonth } }, _sum: { monto: true }, _count: true }),
+    prisma.pago.aggregate({ where: { estado: "APROBADO", pagadoAt: { gte: startOfMonth, lt: endOfMonth } }, _sum: { monto: true }, _count: true }),
     prisma.gasto.aggregate({ where: { fecha: { gte: startOfMonth, lt: endOfMonth } }, _sum: { monto: true }, _count: true }),
-    prisma.pago.aggregate({ where: { estado: "aprobado", pagadoAt: { gte: startOfPrevYear, lt: endOfPrevYear } }, _sum: { monto: true } }),
+    prisma.pago.aggregate({ where: { estado: "APROBADO", pagadoAt: { gte: startOfPrevYear, lt: endOfPrevYear } }, _sum: { monto: true } }),
     prisma.gasto.aggregate({ where: { fecha: { gte: startOfPrevYear, lt: endOfPrevYear } }, _sum: { monto: true } }),
-    prisma.contrato.count({ where: { estado: "activo" } }),
+    prisma.contrato.count({ where: { estado: "ACTIVO" } }),
   ]);
 
   const ingresos = Number(thisMonthPagos._sum.monto ?? 0);

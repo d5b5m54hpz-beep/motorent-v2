@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/require-permission';
 import { OPERATIONS } from '@/lib/events';
 import { prisma } from '@/lib/prisma';
+import { EstadoMoto } from '@prisma/client';
 
 // GET /api/mantenimientos/costo-por-moto — Cost per motorcycle analysis
 export async function GET(req: NextRequest) {
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const motoId = searchParams.get('motoId');
 
-    const whereClause = motoId ? { id: motoId } : { estado: { not: 'baja' } };
+    const whereClause = motoId ? { id: motoId } : { estado: { not: 'BAJA' as EstadoMoto } };
 
     const motos = await prisma.moto.findMany({
       where: whereClause,
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
           },
         },
         contratos: {
-          where: { estado: { in: ['activo', 'completado'] } },
+          where: { estado: { in: ['ACTIVO', 'FINALIZADO'] } },
           select: {
             montoPeriodo: true,
             fechaInicio: true,

@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
       });
 
       const montoCobrado = pagos
-        .filter((p) => p.estado === "pagado")
+        .filter((p) => p.estado === "APROBADO")
         .reduce((sum, p) => sum + Number(p.monto), 0);
 
       return {
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Moto no encontrada" }, { status: 404 });
     }
 
-    if (moto.estado !== "disponible") {
+    if (moto.estado !== "DISPONIBLE") {
       return NextResponse.json(
         { error: "La moto no esta disponible para alquiler" },
         { status: 409 }
@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
           descuentoAplicado: calculo.descuentoTotal,
           notas,
           renovacionAuto,
-          estado: "pendiente",
+          estado: "PENDIENTE",
         },
         include: {
           cliente: { select: { nombre: true, email: true, dni: true } },
@@ -258,8 +258,8 @@ export async function POST(req: NextRequest) {
         data: fechasVencimiento.map((fechaVencimiento) => ({
           contratoId: nuevoContrato.id,
           monto: calculo.montoPeriodo,
-          metodo: "pendiente",
-          estado: "pendiente",
+          metodo: "PENDIENTE",
+          estado: "PENDIENTE",
           vencimientoAt: fechaVencimiento,
         })),
       });
@@ -267,7 +267,7 @@ export async function POST(req: NextRequest) {
       // Actualizar estado de moto a alquilada
       await tx.moto.update({
         where: { id: motoId },
-        data: { estado: "alquilada" },
+        data: { estado: "ALQUILADA" },
       });
 
       return nuevoContrato;
@@ -280,7 +280,7 @@ export async function POST(req: NextRequest) {
       OPERATIONS.rental.contract.create,
       "Contrato",
       contrato.id,
-      { clienteId, motoId, estado: "pendiente", montoTotal: calculo.montoTotal },
+      { clienteId, motoId, estado: "PENDIENTE", montoTotal: calculo.montoTotal },
       userId
     ).catch((err) => {
       console.error("Error emitting rental.contract.create event:", err);

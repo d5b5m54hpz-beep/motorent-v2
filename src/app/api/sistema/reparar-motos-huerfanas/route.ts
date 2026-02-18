@@ -15,10 +15,10 @@ export async function POST(req: NextRequest) {
     // Buscar motos ALQUILADA sin contrato activo
     const motosHuerfanas = await prisma.moto.findMany({
       where: {
-        estado: "alquilada",
+        estado: "ALQUILADA",
         contratos: {
           none: {
-            estado: "activo",
+            estado: "ACTIVO",
           },
         },
       },
@@ -45,15 +45,15 @@ export async function POST(req: NextRequest) {
 
       await prisma.moto.update({
         where: { id: moto.id },
-        data: { estado: "disponible" },
+        data: { estado: "DISPONIBLE" },
       });
 
       // Registrar en historial
       await prisma.historialEstadoMoto.create({
         data: {
           motoId: moto.id,
-          estadoAnterior: "alquilada",
-          estadoNuevo: "disponible",
+          estadoAnterior: "ALQUILADA",
+          estadoNuevo: "DISPONIBLE",
           motivo: `REPARACION_AUTOMATICA - Moto huérfana detectada. Último contrato: ${
             ultimoContrato?.id || "N/A"
           } (estado: ${ultimoContrato?.estado || "N/A"})`,

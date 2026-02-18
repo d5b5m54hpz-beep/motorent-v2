@@ -235,7 +235,7 @@ export async function verificarIntegridad(
   // 1. Contratos activos (todos tienen moto obligatoria)
   onProgress?.(1, "Verificando contratos activos...");
   const contratosActivos = await prisma.contrato.count({
-    where: { estado: { in: ["activo", "vencido"] } },
+    where: { estado: { in: ["ACTIVO", "VENCIDO"] } },
   });
 
   checks.push({
@@ -249,8 +249,8 @@ export async function verificarIntegridad(
   onProgress?.(2, "Verificando inconsistencia moto-contrato...");
   const contratosInconsistentes = await prisma.contrato.findMany({
     where: {
-      estado: "activo",
-      moto: { estado: "disponible" },
+      estado: "ACTIVO",
+      moto: { estado: "DISPONIBLE" },
     },
     select: { id: true, motoId: true },
   });
@@ -276,9 +276,9 @@ export async function verificarIntegridad(
   onProgress?.(3, "Verificando motos alquiladas...");
   const motosHuerfanas = await prisma.moto.findMany({
     where: {
-      estado: "alquilada",
+      estado: "ALQUILADA",
       contratos: {
-        none: { estado: "activo" },
+        none: { estado: "ACTIVO" },
       },
     },
     select: { id: true, patente: true },

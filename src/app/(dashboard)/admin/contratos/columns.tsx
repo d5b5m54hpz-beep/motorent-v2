@@ -14,19 +14,19 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Contrato } from "./types";
 
 const estadoBadgeMap: Record<string, { label: string; className: string }> = {
-  pendiente: {
+  PENDIENTE: {
     label: "Pendiente",
     className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   },
-  activo: {
+  ACTIVO: {
     label: "Activo",
     className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
-  finalizado: {
+  FINALIZADO: {
     label: "Finalizado",
     className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   },
-  cancelado: {
+  CANCELADO: {
     label: "Cancelado",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   },
@@ -170,7 +170,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Contrato>[] {
       header: "",
       cell: ({ row }) => {
         const contrato = row.original;
-        const puedeCancel = contrato.estado !== "cancelado" && contrato.estado !== "finalizado";
+        const puedeCancel = contrato.estado !== "CANCELADO" && contrato.estado !== "FINALIZADO";
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

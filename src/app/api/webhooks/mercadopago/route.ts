@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
         await tx.pago.update({
           where: { id: pagoId },
           data: {
-            estado: "aprobado",
-            metodo: "mercadopago",
+            estado: "APROBADO",
+            metodo: "MERCADOPAGO",
             mpPaymentId: String(mpPayment.id),
             pagadoAt: new Date(),
             referencia: mpPayment.id ? String(mpPayment.id) : undefined,
@@ -104,19 +104,19 @@ export async function POST(req: NextRequest) {
 
         // Verificar si es el último pago del contrato
         const allPagos = pago.contrato.pagos;
-        const pagosAprobados = allPagos.filter((p) => p.estado === "aprobado" || p.id === pagoId);
+        const pagosAprobados = allPagos.filter((p) => p.estado === "APROBADO" || p.id === pagoId);
 
         if (pagosAprobados.length === allPagos.length) {
           // Todos los pagos están aprobados, finalizar contrato
           await tx.contrato.update({
             where: { id: pago.contratoId },
-            data: { estado: "finalizado" },
+            data: { estado: "FINALIZADO" },
           });
 
           // Liberar la moto
           await tx.moto.update({
             where: { id: pago.contrato.motoId },
-            data: { estado: "disponible" },
+            data: { estado: "DISPONIBLE" },
           });
         }
       });
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       await prisma.pago.update({
         where: { id: pagoId },
         data: {
-          estado: "rechazado",
+          estado: "RECHAZADO",
           mpPaymentId: String(mpPayment.id),
           notas: `Pago rechazado por MercadoPago. Motivo: ${mpPayment.status_detail}`,
         },

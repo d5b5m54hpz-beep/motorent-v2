@@ -88,11 +88,11 @@ export function MotoDetailSheet({
 
   // Estado badges
   const estadoBadge = {
-    disponible: { label: "Disponible", className: "bg-green-100 text-green-700 border-green-300" },
-    alquilada: { label: "Alquilada", className: "bg-cyan-100 text-cyan-700 border-cyan-300" },
-    mantenimiento: { label: "Mantenimiento", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-    baja: { label: "Baja", className: "bg-gray-100 text-gray-700 border-gray-300" },
-  }[moto?.estado ?? "disponible"] ?? { label: "Desconocido", className: "" };
+    DISPONIBLE: { label: "Disponible", className: "bg-green-100 text-green-700 border-green-300" },
+    ALQUILADA: { label: "Alquilada", className: "bg-cyan-100 text-cyan-700 border-cyan-300" },
+    MANTENIMIENTO: { label: "Mantenimiento", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+    BAJA: { label: "Baja", className: "bg-gray-100 text-gray-700 border-gray-300" },
+  }[moto?.estado ?? "DISPONIBLE"] ?? { label: "Desconocido", className: "" };
 
   // Patentamiento badge
   const patentamientoBadge = {

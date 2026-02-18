@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { withEvent, OPERATIONS } from "@/lib/events";
 import { motoSchema } from "@/lib/validations";
+import { TipoMoto, EstadoMoto } from "@prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -81,7 +82,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         }),
         userId,
       },
-      () => prisma.moto.update({ where: { id }, data: parsed.data })
+      () => prisma.moto.update({ where: { id }, data: { ...parsed.data, tipo: parsed.data.tipo as TipoMoto, estado: parsed.data.estado as EstadoMoto } })
     );
 
     return NextResponse.json(moto);

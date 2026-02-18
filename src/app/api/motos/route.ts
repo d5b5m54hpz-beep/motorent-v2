@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { withEvent, OPERATIONS } from "@/lib/events";
 import { motoSchema } from "@/lib/validations";
+import { TipoMoto, EstadoMoto } from "@prisma/client";
 
 const ALLOWED_SORT_COLUMNS = [
   "marca", "modelo", "anio", "patente", "cilindrada",
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
         }),
         userId,
       },
-      () => prisma.moto.create({ data: parsed.data })
+      () => prisma.moto.create({ data: { ...parsed.data, tipo: parsed.data.tipo as TipoMoto, estado: parsed.data.estado as EstadoMoto } })
     );
 
     return NextResponse.json(moto, { status: 201 });

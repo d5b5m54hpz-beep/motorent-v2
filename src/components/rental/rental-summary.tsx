@@ -18,7 +18,7 @@ type Moto = {
 type Plan = {
   fechaInicio: Date;
   duracion: number; // months
-  frecuencia: "semanal" | "quincenal" | "mensual";
+  frecuencia: "SEMANAL" | "QUINCENAL" | "MENSUAL";
 };
 
 type Props = {

@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     // Ticket promedio
     const ticketPromedio = await prisma.contrato.aggregate({
-      where: { estado: "activo" },
+      where: { estado: "ACTIVO" },
       _avg: { montoPeriodo: true },
     });
 
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
     const [pagosVencidos, pagosTotales] = await Promise.all([
       prisma.pago.count({
         where: {
-          estado: "pendiente",
+          estado: "PENDIENTE",
           vencimientoAt: { lt: new Date() },
         },
       }),

@@ -20,14 +20,14 @@ export async function GET(req: NextRequest) {
     // Activo Corriente: Caja + Cuentas por Cobrar
     const cajaYBancos = 0; // TODO: implementar cuando haya modelo Cuenta/Caja
     const cuentasPorCobrar = await prisma.pago.aggregate({
-      where: { estado: "pendiente" },
+      where: { estado: "PENDIENTE" },
       _sum: { monto: true },
     });
     const activoCorriente = cajaYBancos + (Number(cuentasPorCobrar._sum.monto) || 0);
 
     // Activo No Corriente: Valor de la flota (motos activas)
     const flota = await prisma.moto.aggregate({
-      where: { estado: { not: "baja" } },
+      where: { estado: { not: "BAJA" } },
       _sum: { valorCompra: true },
     });
     const activoNoCorriente = Number(flota._sum.valorCompra || 0);
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     // ═══════════════════════════════════════════════════════════════════════════
 
     const ingresos = await prisma.pago.aggregate({
-      where: { estado: "aprobado", pagadoAt: { gte: inicioMes, lte: finMes } },
+      where: { estado: "APROBADO", pagadoAt: { gte: inicioMes, lte: finMes } },
       _sum: { monto: true },
     });
     const totalIngresos = Number(ingresos._sum.monto) || 0;
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
 
       const [ing, gst, gstOp] = await Promise.all([
         prisma.pago.aggregate({
-          where: { estado: "aprobado", pagadoAt: { gte: d, lte: fin } },
+          where: { estado: "APROBADO", pagadoAt: { gte: d, lte: fin } },
           _sum: { monto: true },
         }),
         prisma.gasto.aggregate({

@@ -55,7 +55,7 @@ export function ClienteForm({ cliente, onSubmit, isLoading }: Props) {
       codigoPostal: cliente?.codigoPostal ?? "",
       fechaNacimiento: formatDateForInput(cliente?.fechaNacimiento ?? null),
       notas: cliente?.notas ?? "",
-      estado: (cliente?.estado as ClienteInput["estado"]) ?? "pendiente",
+      estado: (cliente?.estado as ClienteInput["estado"]) ?? "PENDIENTE",
     },
   });
 
@@ -326,7 +326,7 @@ export function ClienteForm({ cliente, onSubmit, isLoading }: Props) {
                   <SelectContent>
                     {clienteEstados.map((e) => (
                       <SelectItem key={e} value={e}>
-                        {e.charAt(0).toUpperCase() + e.slice(1)}
+                        {e.charAt(0) + e.slice(1).toLowerCase()}
                       </SelectItem>
                     ))}
                   </SelectContent>

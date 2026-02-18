@@ -30,14 +30,14 @@ type Props = {
   pricingConfig: PricingConfig;
   onPlanChange?: (plan: {
     duracion: number;
-    frecuencia: "semanal" | "quincenal" | "mensual";
+    frecuencia: "SEMANAL" | "QUINCENAL" | "MENSUAL";
     pricing: ReturnType<typeof calcularPreciosContrato>;
   }) => void;
 };
 
 export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Props) {
   const [duracion, setDuracion] = useState(1);
-  const [frecuencia, setFrecuencia] = useState<"semanal" | "quincenal" | "mensual">("mensual");
+  const [frecuencia, setFrecuencia] = useState<"SEMANAL" | "QUINCENAL" | "MENSUAL">("MENSUAL");
   const [pricing, setPricing] = useState<ReturnType<typeof calcularPreciosContrato> | null>(null);
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="semanal">
+              <SelectItem value="SEMANAL">
                 Semanal
                 {pricingConfig.descuentoSemanal > 0 && (
                   <Badge variant="secondary" className="ml-2 text-xs">
@@ -87,7 +87,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
                   </Badge>
                 )}
               </SelectItem>
-              <SelectItem value="quincenal">
+              <SelectItem value="QUINCENAL">
                 Quincenal
                 {pricingConfig.descuentoSemanal > 0 && (
                   <Badge variant="secondary" className="ml-2 text-xs">
@@ -95,7 +95,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
                   </Badge>
                 )}
               </SelectItem>
-              <SelectItem value="mensual">Mensual</SelectItem>
+              <SelectItem value="MENSUAL">Mensual</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -184,7 +184,7 @@ export function PriceCalculator({ basePrice, pricingConfig, onPlanChange }: Prop
               {/* Precio por Período */}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Pago por {frecuencia === "semanal" ? "semana" : frecuencia === "quincenal" ? "quincena" : "mes"}:
+                  Pago por {frecuencia === "SEMANAL" ? "semana" : frecuencia === "QUINCENAL" ? "quincena" : "mes"}:
                 </span>
                 <span className="font-semibold">{formatCurrency(pricing.montoPeriodo)}</span>
               </div>

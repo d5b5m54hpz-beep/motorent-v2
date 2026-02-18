@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const motos = await prisma.moto.findMany({
       where: {
         valorCompra: { not: null, gt: 0 },
-        ...(soloActivas ? { estado: { not: "baja" } } : {}),
+        ...(soloActivas ? { estado: { not: "BAJA" } } : {}),
       },
       select: {
         id: true,

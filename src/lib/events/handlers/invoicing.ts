@@ -105,7 +105,7 @@ export async function handleContractActivatedInvoicing(ctx: EventContext): Promi
         cliente: { select: { nombre: true, dni: true } },
         moto: { select: { marca: true, modelo: true, patente: true } },
         pagos: {
-          where: { estado: "aprobado" },
+          where: { estado: "APROBADO" },
           orderBy: { pagadoAt: "asc" },
           take: 1,
         },

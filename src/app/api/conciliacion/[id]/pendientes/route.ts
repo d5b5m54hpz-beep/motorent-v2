@@ -52,7 +52,7 @@ export async function GET(
             where: {
               monto: { gte: montoLow, lte: montoHigh },
               pagadoAt: { gte: fechaMin, lte: fechaMax },
-              estado: "aprobado",
+              estado: "APROBADO",
             },
             orderBy: { pagadoAt: "desc" },
             take: 10,

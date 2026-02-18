@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { bajaMotoSchema } from "@/lib/validations";
+import { EstadoLegalMoto, EstadoMoto } from "@prisma/client";
 
 export async function POST(
   req: NextRequest,
@@ -99,14 +100,14 @@ export async function POST(
     });
 
     // Actualizar estado de la moto
-    let estadoLegal = "BAJA_DEFINITIVA";
-    if (data.tipoBaja === "ROBO") estadoLegal = "DENUNCIA_ROBO";
-    if (data.tipoBaja === "SINIESTRO") estadoLegal = "SINIESTRO_TOTAL";
+    let estadoLegal: EstadoLegalMoto = "BAJA_DEFINITIVA" as EstadoLegalMoto;
+    if (data.tipoBaja === "ROBO") estadoLegal = "DENUNCIA_ROBO" as EstadoLegalMoto;
+    if (data.tipoBaja === "SINIESTRO") estadoLegal = "SINIESTRO_TOTAL" as EstadoLegalMoto;
 
     await prisma.moto.update({
       where: { id },
       data: {
-        estado: "baja",
+        estado: "BAJA" as EstadoMoto,
         estadoLegal,
       },
     });
@@ -116,7 +117,7 @@ export async function POST(
       data: {
         motoId: id,
         estadoAnterior: moto.estado,
-        estadoNuevo: "baja",
+        estadoNuevo: "BAJA" as EstadoMoto,
         motivo: `BAJA ${data.tipoBaja} - ${data.motivo || ""}`,
         usuarioId: userId || undefined,
       },

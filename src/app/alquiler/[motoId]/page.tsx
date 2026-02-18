@@ -38,7 +38,7 @@ export default function AlquilerPage({ params }: { params: Promise<{ motoId: str
   // Form data
   const [fechaInicio, setFechaInicio] = useState<Date>();
   const [duracion, setDuracion] = useState(1);
-  const [frecuencia, setFrecuencia] = useState<"semanal" | "quincenal" | "mensual">("mensual");
+  const [frecuencia, setFrecuencia] = useState<"SEMANAL" | "QUINCENAL" | "MENSUAL">("MENSUAL");
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Cliente data (if incomplete)
@@ -319,9 +319,9 @@ export default function AlquilerPage({ params }: { params: Promise<{ motoId: str
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="semanal">Semanal</SelectItem>
-                      <SelectItem value="quincenal">Quincenal</SelectItem>
-                      <SelectItem value="mensual">Mensual</SelectItem>
+                      <SelectItem value="SEMANAL">Semanal</SelectItem>
+                      <SelectItem value="QUINCENAL">Quincenal</SelectItem>
+                      <SelectItem value="MENSUAL">Mensual</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

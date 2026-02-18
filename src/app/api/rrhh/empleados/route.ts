@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { empleadoSchema } from "@/lib/validations";
+import { SexoEmpleado, EstadoCivil, Departamento, JornadaLaboral, EstadoEmpleado } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   const { error } = await requirePermission(OPERATIONS.hr.employee.view, "view", ["OPERADOR"]);
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
           { cargo: { contains: search, mode: "insensitive" as const } },
         ],
       }),
-      ...(estado && { estado: estado as "ACTIVO" | "LICENCIA" | "SUSPENDIDO" | "BAJA" }),
+      ...(estado && { estado: estado as EstadoEmpleado }),
     };
 
     const [data, total] = await Promise.all([
@@ -65,6 +66,10 @@ export async function POST(req: NextRequest) {
     const empleado = await prisma.empleado.create({
       data: {
         ...rest,
+        sexo: rest.sexo as SexoEmpleado,
+        estadoCivil: rest.estadoCivil as EstadoCivil,
+        departamento: rest.departamento as Departamento,
+        jornadaLaboral: rest.jornadaLaboral as JornadaLaboral,
         fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,
         fechaIngreso: new Date(fechaIngreso),
         fechaEgreso: fechaEgreso ? new Date(fechaEgreso) : null,

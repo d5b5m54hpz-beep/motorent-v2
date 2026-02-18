@@ -12,19 +12,19 @@ import { formatCurrency } from "@/lib/utils";
 import type { Moto } from "./types";
 
 const estadoBadgeMap: Record<string, { label: string; className: string }> = {
-  disponible: {
+  DISPONIBLE: {
     label: "Disponible",
     className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
-  alquilada: {
+  ALQUILADA: {
     label: "Alquilada",
     className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   },
-  mantenimiento: {
+  MANTENIMIENTO: {
     label: "Mantenimiento",
     className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   },
-  baja: {
+  BAJA: {
     label: "Baja",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   },

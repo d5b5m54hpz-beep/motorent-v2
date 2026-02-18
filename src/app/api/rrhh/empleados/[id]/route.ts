@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { empleadoSchema } from "@/lib/validations";
+import { SexoEmpleado, EstadoCivil, Departamento, JornadaLaboral, EstadoEmpleado } from "@prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -54,6 +55,10 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       where: { id },
       data: {
         ...rest,
+        sexo: rest.sexo as SexoEmpleado,
+        estadoCivil: rest.estadoCivil as EstadoCivil,
+        departamento: rest.departamento as Departamento,
+        jornadaLaboral: rest.jornadaLaboral as JornadaLaboral,
         fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,
         fechaIngreso: new Date(fechaIngreso),
         fechaEgreso: fechaEgreso ? new Date(fechaEgreso) : null,
@@ -80,7 +85,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     // Soft delete - cambiar estado a BAJA
     await prisma.empleado.update({
       where: { id },
-      data: { estado: "BAJA", fechaEgreso: new Date() },
+      data: { estado: "BAJA" as EstadoEmpleado, fechaEgreso: new Date() },
     });
 
     eventBus.emit(OPERATIONS.hr.employee.terminate, "Empleado", id, { action: "baja" }, userId).catch(err => console.error("[Events] hr.employee.terminate error:", err));

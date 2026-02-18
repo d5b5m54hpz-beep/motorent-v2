@@ -1,6 +1,6 @@
 import { addDays, addMonths, differenceInDays, differenceInMonths } from "date-fns";
 
-type FrecuenciaPago = "semanal" | "quincenal" | "mensual";
+type FrecuenciaPago = "SEMANAL" | "QUINCENAL" | "MENSUAL";
 
 type PricingConfig = {
   precioBaseMensual: number;
@@ -22,11 +22,11 @@ export function calcularPeriodos(
   const dias = differenceInDays(fechaFin, fechaInicio);
 
   switch (frecuencia) {
-    case "semanal":
+    case "SEMANAL":
       return Math.ceil(dias / 7);
-    case "quincenal":
+    case "QUINCENAL":
       return Math.ceil(dias / 15);
-    case "mensual":
+    case "MENSUAL":
       return differenceInMonths(fechaFin, fechaInicio) || 1;
     default:
       return 1;
@@ -46,13 +46,13 @@ export function generarFechasVencimiento(
   for (let i = 0; i < periodos; i++) {
     let fecha: Date;
     switch (frecuencia) {
-      case "semanal":
+      case "SEMANAL":
         fecha = addDays(fechaInicio, (i + 1) * 7);
         break;
-      case "quincenal":
+      case "QUINCENAL":
         fecha = addDays(fechaInicio, (i + 1) * 15);
         break;
-      case "mensual":
+      case "MENSUAL":
         fecha = addMonths(fechaInicio, i + 1);
         break;
       default:
@@ -104,7 +104,7 @@ export function calcularPreciosContrato(
   const descuentoDuracion = calcularDescuentoDuracion(meses, pricingConfig);
 
   // Descuento por frecuencia (solo semanal/quincenal)
-  const descuentoFrecuencia = frecuencia === "semanal" || frecuencia === "quincenal"
+  const descuentoFrecuencia = frecuencia === "SEMANAL" || frecuencia === "QUINCENAL"
     ? pricingConfig.descuentoSemanal
     : 0;
 
@@ -117,13 +117,13 @@ export function calcularPreciosContrato(
   // Monto por período según frecuencia
   let montoPeriodo: number;
   switch (frecuencia) {
-    case "semanal":
+    case "SEMANAL":
       montoPeriodo = precioMensualConDescuento / 4; // ~4 semanas por mes
       break;
-    case "quincenal":
+    case "QUINCENAL":
       montoPeriodo = precioMensualConDescuento / 2;
       break;
-    case "mensual":
+    case "MENSUAL":
       montoPeriodo = precioMensualConDescuento;
       break;
     default:

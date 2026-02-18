@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     // Ingresos por alquileres (pagos aprobados de contratos)
     const ingresosAlquileres = await prisma.pago.aggregate({
       where: {
-        estado: "aprobado",
+        estado: "APROBADO",
         pagadoAt: {
           gte: fechaDesde,
           lte: fechaHasta,
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
     if (comparar) {
       const ingresosAnterior = await prisma.pago.aggregate({
         where: {
-          estado: "aprobado",
+          estado: "APROBADO",
           pagadoAt: {
             gte: fechaDesdeAnterior,
             lte: fechaHastaAnterior,

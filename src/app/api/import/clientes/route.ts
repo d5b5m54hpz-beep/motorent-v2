@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
           codigoPostal: row["Código Postal"] || row["Codigo Postal"] || row.codigoPostal || "",
           fechaNacimiento: row["Fecha Nacimiento"] || row.fechaNacimiento || undefined,
           notas: row.Notas || row.notas || "",
-          estado: "pendiente" as const,
+          estado: "PENDIENTE" as const,
         };
 
         const validated = clienteSchema.parse(mapped);

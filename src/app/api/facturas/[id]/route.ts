@@ -90,7 +90,9 @@ export async function PUT(
       tipo: validated.tipo,
       puntoVenta: validated.puntoVenta,
       cae: validated.cae,
-      caeVencimiento: validated.caeVencimiento,
+      caeVencimiento: validated.caeVencimiento
+        ? new Date(validated.caeVencimiento)
+        : undefined,
       razonSocial: validated.razonSocial,
       cuit: validated.cuit,
     };

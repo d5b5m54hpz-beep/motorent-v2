@@ -33,38 +33,38 @@ type ContratoDetalle = Contrato & {
 };
 
 const estadoBadgeMap: Record<string, { label: string; className: string }> = {
-  pendiente: {
+  PENDIENTE: {
     label: "Pendiente",
     className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   },
-  activo: {
+  ACTIVO: {
     label: "Activo",
     className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
-  finalizado: {
+  FINALIZADO: {
     label: "Finalizado",
     className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   },
-  cancelado: {
+  CANCELADO: {
     label: "Cancelado",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   },
 };
 
 const pagoBadgeMap: Record<string, { label: string; className: string }> = {
-  pendiente: {
+  PENDIENTE: {
     label: "Pendiente",
     className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   },
-  pagado: {
+  PAGADO: {
     label: "Pagado",
     className: "bg-teal-50 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
-  vencido: {
+  VENCIDO: {
     label: "Vencido",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   },
-  cancelado: {
+  CANCELADO: {
     label: "Cancelado",
     className: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   },

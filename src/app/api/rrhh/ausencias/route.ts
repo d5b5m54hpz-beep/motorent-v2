@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { z } from "zod";
+import { EstadoAusencia } from "@prisma/client";
 
 const ausenciaSchema = z.object({
   empleadoId: z.string().min(1, "Empleado requerido"),
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
       }),
       ...(empleadoId && { empleadoId }),
       ...(tipo && { tipo: tipo as any }),
-      ...(estado && { estado }),
+      ...(estado && { estado: estado as EstadoAusencia }),
     };
 
     const [data, total] = await Promise.all([

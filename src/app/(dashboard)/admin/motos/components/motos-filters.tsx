@@ -52,10 +52,10 @@ type MotosFiltersProps = {
 };
 
 const estados = [
-  { value: "disponible", label: "Disponible" },
-  { value: "alquilada", label: "Alquilada" },
-  { value: "mantenimiento", label: "Mantenimiento" },
-  { value: "baja", label: "Baja" },
+  { value: "DISPONIBLE", label: "Disponible" },
+  { value: "ALQUILADA", label: "Alquilada" },
+  { value: "MANTENIMIENTO", label: "Mantenimiento" },
+  { value: "BAJA", label: "Baja" },
 ];
 
 export function MotosFiltersComponent({

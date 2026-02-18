@@ -20,7 +20,7 @@ export async function GET() {
         "Precio Mensual": 180000,
         Cilindrada: 125,
         Tipo: "naked",
-        Estado: "disponible",
+        Estado: "DISPONIBLE",
         Descripción: "Moto de ejemplo - eliminar esta fila antes de importar",
       },
     ];

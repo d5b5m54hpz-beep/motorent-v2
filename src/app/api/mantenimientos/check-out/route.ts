@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     await prisma.moto.update({
       where: { id: orden.motoId },
       data: {
-        estado: 'disponible',
+        estado: 'DISPONIBLE',
         kmUltimoService: kmAlEgreso,
         fechaUltimoService: new Date(),
       },

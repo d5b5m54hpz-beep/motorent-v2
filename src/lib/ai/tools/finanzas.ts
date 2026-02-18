@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { EstadoMoto } from "@prisma/client";
 import type { ToolMetadata } from "../tool-registry";
 
 export const finanzasTools: ToolMetadata[] = [
@@ -24,7 +25,7 @@ export const finanzasTools: ToolMetadata[] = [
 
       const [ingresos, gastos, topCategorias] = await Promise.all([
         prisma.pago.aggregate({
-          where: { estado: "aprobado", pagadoAt: { gte: desde } },
+          where: { estado: "APROBADO", pagadoAt: { gte: desde } },
           _sum: { monto: true },
           _count: { id: true },
         }),
@@ -67,7 +68,7 @@ export const finanzasTools: ToolMetadata[] = [
       motoId: z.string().optional().describe("ID de moto específica, o vacío para todas"),
     }),
     execute: async ({ motoId }) => {
-      const where = motoId ? { id: motoId } : { estado: { not: "baja" } };
+      const where = motoId ? { id: motoId } : { estado: { not: "BAJA" as EstadoMoto } };
       const motos = await prisma.moto.findMany({
         where,
         select: { id: true, marca: true, modelo: true, patente: true, kilometraje: true, precioMensual: true },
@@ -77,7 +78,7 @@ export const finanzasTools: ToolMetadata[] = [
       const result = await Promise.all(
         motos.map(async (moto) => {
           const ingresos = await prisma.pago.aggregate({
-            where: { estado: "aprobado", contrato: { motoId: moto.id } },
+            where: { estado: "APROBADO", contrato: { motoId: moto.id } },
             _sum: { monto: true },
           });
           const gastos = await prisma.gasto.aggregate({
@@ -109,7 +110,7 @@ export const finanzasTools: ToolMetadata[] = [
     }),
     execute: async ({ margen }) => {
       const motos = await prisma.moto.findMany({
-        where: { estado: { not: "baja" } },
+        where: { estado: { not: "BAJA" as EstadoMoto } },
         select: { id: true, marca: true, modelo: true, patente: true, precioMensual: true, createdAt: true },
       });
 
@@ -170,7 +171,7 @@ export const finanzasTools: ToolMetadata[] = [
       }
 
       const pagos = await prisma.pago.findMany({
-        where: { estado: "aprobado", pagadoAt: { gte: desde } },
+        where: { estado: "APROBADO", pagadoAt: { gte: desde } },
         select: { monto: true, pagadoAt: true },
         orderBy: { pagadoAt: "asc" },
       });

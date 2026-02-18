@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     // Filtro solo pendientes (no completado)
     if (soloPendientes) {
-      where.estadoPatentamiento = { not: "COMPLETADO" };
+      where.estadoPatentamiento = { not: "PATENTADA" };
     }
 
     // Obtener motos con documentos
@@ -63,10 +63,9 @@ export async function GET(req: NextRequest) {
 
     // Agrupar por estado de patentamiento
     const kanban = {
-      NO_INICIADO: motos.filter((m) => m.estadoPatentamiento === "NO_INICIADO"),
-      EN_PROCESO: motos.filter((m) => m.estadoPatentamiento === "EN_PROCESO"),
-      OBSERVADO: motos.filter((m) => m.estadoPatentamiento === "OBSERVADO"),
-      COMPLETADO: motos.filter((m) => m.estadoPatentamiento === "COMPLETADO"),
+      SIN_PATENTAR: motos.filter((m) => m.estadoPatentamiento === "SIN_PATENTAR"),
+      EN_TRAMITE: motos.filter((m) => m.estadoPatentamiento === "EN_TRAMITE"),
+      PATENTADA: motos.filter((m) => m.estadoPatentamiento === "PATENTADA"),
     };
 
     // Calcular progress para cada moto

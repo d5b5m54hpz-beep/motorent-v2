@@ -11,12 +11,12 @@ export const comercialTools: ToolMetadata[] = [
     inputSchema: z.object({}),
     execute: async () => {
       const [total, conContrato, conPagosPendientes] = await Promise.all([
-        prisma.cliente.count({ where: { estado: "aprobado" } }),
+        prisma.cliente.count({ where: { estado: "APROBADO" } }),
         prisma.cliente.count({
-          where: { estado: "aprobado", contratos: { some: { estado: "activo" } } },
+          where: { estado: "APROBADO", contratos: { some: { estado: "ACTIVO" } } },
         }),
         prisma.pago.findMany({
-          where: { estado: "pendiente" },
+          where: { estado: "PENDIENTE" },
           select: {
             monto: true,
             vencimientoAt: true,
@@ -51,15 +51,15 @@ export const comercialTools: ToolMetadata[] = [
       const en7dias = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       const [activos, porVencer, vencidos, montoTotal] = await Promise.all([
-        prisma.contrato.count({ where: { estado: "activo" } }),
+        prisma.contrato.count({ where: { estado: "ACTIVO" } }),
         prisma.contrato.count({
-          where: { estado: "activo", fechaFin: { gte: now, lte: en7dias } },
+          where: { estado: "ACTIVO", fechaFin: { gte: now, lte: en7dias } },
         }),
         prisma.contrato.count({
-          where: { estado: "activo", fechaFin: { lt: now } },
+          where: { estado: "ACTIVO", fechaFin: { lt: now } },
         }),
         prisma.contrato.aggregate({
-          where: { estado: "activo" },
+          where: { estado: "ACTIVO" },
           _sum: { montoTotal: true },
         }),
       ]);

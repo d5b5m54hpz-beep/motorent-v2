@@ -20,16 +20,16 @@ export async function GET(req: NextRequest) {
 
   const updated = await prisma.pago.updateMany({
     where: {
-      estado: "pendiente",
+      estado: "PENDIENTE",
       vencimientoAt: { lt: now },
     },
-    data: { estado: "vencido" },
+    data: { estado: "VENCIDO" },
   });
 
   // Create alerts for overdue payments
   if (updated.count > 0) {
     const overdue = await prisma.pago.findMany({
-      where: { estado: "vencido" },
+      where: { estado: "VENCIDO" },
       include: { contrato: true },
     });
 

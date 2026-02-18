@@ -86,21 +86,21 @@ export async function GET(req: NextRequest) {
 
     // Motos y ocupación
     const [totalMotos, motosAlquiladas] = await Promise.all([
-      prisma.moto.count({ where: { estado: { not: "baja" } } }),
-      prisma.moto.count({ where: { estado: "alquilada" } }),
+      prisma.moto.count({ where: { estado: { not: "BAJA" } } }),
+      prisma.moto.count({ where: { estado: "ALQUILADA" } }),
     ]);
 
     const tasaOcupacion = totalMotos > 0 ? (motosAlquiladas / totalMotos) * 100 : 0;
 
     // Contratos activos
-    const contratosActivos = await prisma.contrato.count({ where: { estado: "activo" } });
+    const contratosActivos = await prisma.contrato.count({ where: { estado: "ACTIVO" } });
 
     // Clientes totales
     const clientes = await prisma.cliente.count();
 
     // Pagos pendientes
     const pagosPendientes = await prisma.pago.aggregate({
-      where: { estado: { in: ["pendiente"] } },
+      where: { estado: { in: ["PENDIENTE"] } },
       _count: { id: true },
       _sum: { monto: true },
     });

@@ -23,7 +23,7 @@ export async function GET() {
     // Buscar motos activas con fecha de inicio
     const motos = await prisma.moto.findMany({
       where: {
-        estado: { in: ['disponible', 'alquilada'] },
+        estado: { in: ['DISPONIBLE', 'ALQUILADA'] },
         fechaInicioOperaciones: { not: null },
       },
       include: {
@@ -32,7 +32,7 @@ export async function GET() {
           take: 1,
         },
         contratos: {
-          where: { estado: { in: ['ACTIVO', 'EN_PROCESO'] } },
+          where: { estado: { in: ['ACTIVO', 'PENDIENTE'] } },
           take: 1,
           select: {
             clienteId: true,

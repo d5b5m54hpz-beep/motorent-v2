@@ -6,7 +6,7 @@ export const CUIT_REGEX = /^\d{2}-\d{8}-\d$/;
 
 // ─── Motos ───────────────────────────────────────────────────────────────────
 
-export const motoEstados = ["disponible", "alquilada", "mantenimiento", "baja"] as const;
+export const motoEstados = ["DISPONIBLE", "ALQUILADA", "MANTENIMIENTO", "BAJA"] as const;
 export const estadosPatentamiento = ["SIN_PATENTAR", "EN_TRAMITE", "PATENTADA"] as const;
 export const estadosSeguro = ["SIN_SEGURO", "EN_TRAMITE", "ASEGURADA"] as const;
 
@@ -27,7 +27,7 @@ export const motoSchema = z.object({
   numeroMotor: z.string().max(50).optional(),
   numeroCuadro: z.string().max(50).optional(),
   imagen: z.string().url("URL de imagen invalida").optional().or(z.literal("")),
-  estado: z.enum(motoEstados).default("disponible"),
+  estado: z.enum(motoEstados).default("DISPONIBLE"),
 
   // Patentamiento
   estadoPatentamiento: z.enum(estadosPatentamiento).optional(),
@@ -48,7 +48,7 @@ export type MotoInput = z.infer<typeof motoSchema>;
 
 // ─── Clientes ───────────────────────────────────────────────────────────────
 
-export const clienteEstados = ["pendiente", "aprobado", "rechazado"] as const;
+export const clienteEstados = ["PENDIENTE", "APROBADO", "RECHAZADO"] as const;
 
 export const clienteSchema = z.object({
   nombre: z.string().min(1, "Nombre es requerido"),
@@ -65,22 +65,22 @@ export const clienteSchema = z.object({
   codigoPostal: z.string().optional(),
   fechaNacimiento: z.string().optional(),
   notas: z.string().max(1000, "Notas muy largas").optional(),
-  estado: z.enum(clienteEstados).default("pendiente"),
+  estado: z.enum(clienteEstados).default("PENDIENTE"),
 });
 
 export type ClienteInput = z.infer<typeof clienteSchema>;
 
 // ─── Contratos ───────────────────────────────────────────────────────────────
 
-export const contratoEstados = ["pendiente", "activo", "finalizado", "cancelado"] as const;
-export const frecuenciasPago = ["semanal", "quincenal", "mensual"] as const;
+export const contratoEstados = ["PENDIENTE", "ACTIVO", "FINALIZADO", "CANCELADO", "VENCIDO", "FINALIZADO_COMPRA"] as const;
+export const frecuenciasPago = ["SEMANAL", "QUINCENAL", "MENSUAL"] as const;
 
 export const contratoSchema = z.object({
   clienteId: z.string().min(1, "Cliente es requerido"),
   motoId: z.string().min(1, "Moto es requerida"),
   fechaInicio: z.string().min(1, "Fecha inicio es requerida"),
   fechaFin: z.string().min(1, "Fecha fin es requerida"),
-  frecuenciaPago: z.enum(frecuenciasPago).default("mensual"),
+  frecuenciaPago: z.enum(frecuenciasPago).default("MENSUAL"),
   deposito: z.coerce.number().min(0, "Deposito no puede ser negativo").default(0),
   notas: z.string().max(1000, "Notas muy largas").optional(),
   renovacionAuto: z.boolean().default(false),
@@ -101,39 +101,41 @@ export type ContratoInput = z.infer<typeof contratoSchema>;
 // ─── Pagos ───────────────────────────────────────────────────────────────────
 
 export const pagoEstados = [
-  "pendiente",
-  "aprobado",
-  "rechazado",
-  "reembolsado",
-  "cancelado",
+  "PENDIENTE",
+  "APROBADO",
+  "RECHAZADO",
+  "REEMBOLSADO",
+  "CANCELADO",
+  "VENCIDO",
 ] as const;
 
 export const pagoMetodos = [
-  "efectivo",
-  "transferencia",
-  "mercadopago",
-  "pendiente",
+  "EFECTIVO",
+  "TRANSFERENCIA",
+  "MERCADOPAGO",
+  "TARJETA",
+  "PENDIENTE",
 ] as const;
 
 export const pagoSchema = z.object({
   contratoId: z.string().min(1, "Contrato es requerido"),
   monto: z.coerce.number().positive("Monto debe ser positivo"),
-  metodo: z.enum(["transferencia", "tarjeta", "mercadopago", "efectivo"]),
+  metodo: z.enum(["TRANSFERENCIA", "TARJETA", "MERCADOPAGO", "EFECTIVO"]),
   referencia: z.string().optional(),
 });
 
 export type PagoInput = z.infer<typeof pagoSchema>;
 
 export const registrarPagoSchema = z.object({
-  estado: z.enum(["pendiente", "aprobado", "rechazado", "reembolsado", "cancelado"]),
-  metodo: z.enum(["efectivo", "transferencia", "mercadopago"]).optional(),
+  estado: z.enum(["PENDIENTE", "APROBADO", "RECHAZADO", "REEMBOLSADO", "CANCELADO", "VENCIDO"]),
+  metodo: z.enum(["EFECTIVO", "TRANSFERENCIA", "MERCADOPAGO", "TARJETA"]).optional(),
   mpPaymentId: z.string().optional(),
   comprobante: z.string().optional(),
   notas: z.string().optional(),
 }).refine(
   (data) => {
     // Si se aprueba, metodo es requerido
-    if (data.estado === "aprobado" && !data.metodo) {
+    if (data.estado === "APROBADO" && !data.metodo) {
       return false;
     }
     return true;
