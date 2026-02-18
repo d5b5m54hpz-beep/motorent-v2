@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { OPERATIONS } from "@/lib/events";
-import { hasPermission, getUserPermissions, type PermissionType } from "@/lib/auth/permissions";
+import { hasPermission, getUserPermissions, getUserPermissionsWithSource, type PermissionType } from "@/lib/auth/permissions";
 
 // GET: Check if a user has a specific permission, or list all user permissions
 export async function GET(req: NextRequest) {
@@ -24,9 +24,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ userId, operation, type: permType, allowed });
     }
 
-    // Otherwise return all permissions for the user
-    const permissions = await getUserPermissions(userId);
-    const result: Record<string, { canView: boolean; canCreate: boolean; canExecute: boolean; canApprove: boolean }> = {};
+    // Otherwise return all permissions for the user (with source profile names)
+    const permissions = await getUserPermissionsWithSource(userId);
+    const result: Record<string, { canView: boolean; canCreate: boolean; canExecute: boolean; canApprove: boolean; grantedBy: string[] }> = {};
     for (const [code, perm] of permissions) {
       result[code] = perm;
     }

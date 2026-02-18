@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 
 export type PermissionType = "view" | "create" | "execute" | "approve";
 
-type PermissionCheck = {
+export type PermissionCheck = {
   canView: boolean;
   canCreate: boolean;
   canExecute: boolean;
@@ -104,6 +104,57 @@ export async function getUserPermissions(
         canExecute: existing.canExecute || grant.canExecute,
         canApprove: existing.canApprove || grant.canApprove,
       });
+    }
+  }
+
+  return permissions;
+}
+
+/**
+ * Get all permissions for a user with source profile names.
+ */
+export async function getUserPermissionsWithSource(
+  userId: string
+): Promise<Map<string, PermissionCheck & { grantedBy: string[] }>> {
+  const userProfiles = await prisma.userProfile.findMany({
+    where: { userId },
+    include: {
+      profile: {
+        include: {
+          grants: {
+            include: { operation: true },
+          },
+        },
+      },
+    },
+  });
+
+  const permissions = new Map<string, PermissionCheck & { grantedBy: string[] }>();
+
+  for (const up of userProfiles) {
+    for (const grant of up.profile.grants) {
+      const code = grant.operation.code;
+      const existing = permissions.get(code) ?? {
+        canView: false,
+        canCreate: false,
+        canExecute: false,
+        canApprove: false,
+        grantedBy: [],
+      };
+
+      const merged = {
+        canView: existing.canView || grant.canView,
+        canCreate: existing.canCreate || grant.canCreate,
+        canExecute: existing.canExecute || grant.canExecute,
+        canApprove: existing.canApprove || grant.canApprove,
+        grantedBy: [...existing.grantedBy],
+      };
+
+      if (!merged.grantedBy.includes(up.profile.name)) {
+        merged.grantedBy.push(up.profile.name);
+      }
+
+      permissions.set(code, merged);
     }
   }
 

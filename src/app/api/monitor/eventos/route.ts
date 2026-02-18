@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
 
     if (operationId) where.operationId = operationId;
     if (status) where.status = status;
+    const userId = url.searchParams.get("userId");
+    if (userId) where.userId = userId;
     if (desde) {
       where.createdAt = { gte: new Date(desde) };
     }

@@ -203,6 +203,7 @@ export function AppSidebar({ user }: Props) {
 
   const sistema: NavItem[] = [
     { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
+    { title: "Permisos", href: "/admin/permisos", icon: Shield },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
     { title: "Configuración Empresa", href: "/admin/configuracion/empresa", icon: Building2 },
     { title: "Diagnóstico", href: "/admin/sistema/diagnostico", icon: Activity },

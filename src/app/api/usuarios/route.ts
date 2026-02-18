@@ -25,11 +25,11 @@ export async function GET(req: NextRequest) {
 
     // Construir where clause
     const where: any = {
-      role: { in: ["ADMIN", "OPERADOR"] },
+      role: { in: ["ADMIN", "OPERADOR", "CONTADOR", "RRHH_MANAGER", "COMERCIAL", "VIEWER"] },
     };
 
     // Filtro por rol especifico
-    if (role && (role === "ADMIN" || role === "OPERADOR")) {
+    if (role) {
       where.role = role;
     }
 
@@ -52,6 +52,14 @@ export async function GET(req: NextRequest) {
           image: true,
           createdAt: true,
           updatedAt: true,
+          profiles: {
+            select: {
+              profileId: true,
+              profile: {
+                select: { id: true, name: true },
+              },
+            },
+          },
         },
         skip,
         take: limit,
