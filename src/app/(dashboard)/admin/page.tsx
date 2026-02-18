@@ -11,11 +11,14 @@ import {
   DollarSign,
   Clock,
 } from "lucide-react";
+import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { IngresosChart } from "./components/ingresos-chart";
 import { ContratosChart } from "./components/contratos-chart";
+import { ResumenAnomalias } from "@/components/anomalias/ResumenAnomalias";
 
 type DashboardData = {
   kpis: {
@@ -63,6 +66,8 @@ type DashboardData = {
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [anomaliasResumen, setAnomaliasResumen] = useState<any>(null);
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -70,6 +75,11 @@ export default function AdminDashboardPage() {
       .then((json) => setData(json))
       .catch((err) => console.error("Error loading dashboard:", err))
       .finally(() => setIsLoading(false));
+
+    fetch("/api/anomalias/resumen")
+      .then((res) => res.json())
+      .then((json) => setAnomaliasResumen(json))
+      .catch((err) => console.error("Error loading anomalias resumen:", err));
   }, []);
 
   if (isLoading) {
@@ -283,6 +293,22 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Anomalias Widget */}
+      {anomaliasResumen && (anomaliasResumen.totalPorEstado?.some((e: {estado: string; total: number}) => (e.estado === "NUEVA" || e.estado === "EN_REVISION") && e.total > 0)) && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Anomalias Activas
+            </h3>
+            <Link href="/anomalias">
+              <Button variant="ghost" size="sm">Ver todas</Button>
+            </Link>
+          </div>
+          <ResumenAnomalias data={anomaliasResumen} />
+        </div>
+      )}
     </div>
   );
 }

@@ -48,6 +48,7 @@ import {
   Phone,
   Mail,
   Shield,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -114,6 +115,7 @@ export function AppSidebar({ user }: Props) {
   const { isCollapsed, isMobileOpen, toggleCollapse, closeMobile } = useSidebar();
   const { update: updateSession } = useSession();
   const [alertasCount, setAlertasCount] = useState(0);
+  const [anomaliasCount, setAnomaliasCount] = useState(0);
 
   // Profile Sheet state
   const [profileOpen, setProfileOpen] = useState(false);
@@ -205,6 +207,7 @@ export function AppSidebar({ user }: Props) {
     { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
     { title: "Permisos", href: "/admin/permisos", icon: Shield },
     { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
+    { title: "Anomalias", href: "/anomalias", icon: AlertTriangle, badge: anomaliasCount },
     { title: "Configuración Empresa", href: "/admin/configuracion/empresa", icon: Building2 },
     { title: "Diagnóstico", href: "/admin/sistema/diagnostico", icon: Activity },
     { title: "Asistente IA", href: "/admin/asistente", icon: Sparkles, badgeText: "IA" },
@@ -396,6 +399,30 @@ export function AppSidebar({ user }: Props) {
 
     // Refresh every 60 seconds
     const interval = setInterval(fetchAlertasCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch anomalias CRITICA count
+  useEffect(() => {
+    const fetchAnomaliasCount = async () => {
+      try {
+        const res = await fetch("/api/anomalias/resumen");
+        if (res.ok) {
+          const data = await res.json();
+          const critica = data.totalPorSeveridad?.find(
+            (s: { severidad: string; total: number }) => s.severidad === "CRITICA"
+          );
+          setAnomaliasCount(critica?.total || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching anomalias count:", error);
+      }
+    };
+
+    fetchAnomaliasCount();
+
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchAnomaliasCount, 60000);
     return () => clearInterval(interval);
   }, []);
 
