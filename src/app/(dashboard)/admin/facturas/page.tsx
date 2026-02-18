@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +11,7 @@ import { ViewFacturaDialog } from "./view-factura-dialog";
 import { ExportButton } from "@/components/import-export/export-button";
 import type { Factura } from "./types";
 
-export default function FacturasPage() {
+function FacturasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -192,5 +193,13 @@ export default function FacturasPage() {
         onSendEmail={handleSendEmail}
       />
     </div>
+  );
+}
+
+export default function FacturasPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <FacturasContent />
+    </Suspense>
   );
 }

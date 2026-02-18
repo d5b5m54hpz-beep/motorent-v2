@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { getColumns } from "./columns";
 import { UsuarioForm } from "./usuario-form";
 import { DeleteUsuarioDialog } from "./delete-usuario-dialog";
@@ -39,7 +39,7 @@ type PermissionProfile = {
   description: string | null;
 };
 
-export default function UsuariosPage() {
+function UsuariosContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -349,5 +349,13 @@ export default function UsuariosPage() {
         isSubmitting={isResettingPassword}
       />
     </div>
+  );
+}
+
+export default function UsuariosPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <UsuariosContent />
+    </Suspense>
   );
 }
