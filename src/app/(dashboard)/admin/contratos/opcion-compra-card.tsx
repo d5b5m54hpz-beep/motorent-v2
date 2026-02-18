@@ -139,15 +139,17 @@ export function OpcionCompraCard({
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>¿Ejercer opción de compra?</AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-2">
-                    <p>
-                      Esta acción es irreversible. Se realizarán las siguientes operaciones:
-                    </p>
-                    <ul className="list-inside list-disc space-y-1 text-sm">
-                      <li>El contrato se marcará como "Finalizado por compra"</li>
-                      <li>La moto se dará de baja del inventario</li>
-                      <li>Se registrará la venta por {formatCurrency(valorCompraFinal)}</li>
-                    </ul>
+                  <AlertDialogDescription asChild>
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p>
+                        Esta acción es irreversible. Se realizarán las siguientes operaciones:
+                      </p>
+                      <ul className="list-inside list-disc space-y-1 text-sm">
+                        <li>El contrato se marcará como &quot;Finalizado por compra&quot;</li>
+                        <li>La moto se dará de baja del inventario</li>
+                        <li>Se registrará la venta por {formatCurrency(valorCompraFinal)}</li>
+                      </ul>
+                    </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

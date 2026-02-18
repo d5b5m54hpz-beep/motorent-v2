@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Sparkles, Send, RotateCcw, Loader2, Bike, DollarSign, Wrench, TrendingUp } from "lucide-react";
@@ -29,8 +29,13 @@ export function ChatAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  const transport = useMemo(
+    () => new DefaultChatTransport({ api: "/api/ai/chat" }),
+    []
+  );
+
   const { messages, sendMessage, status, setMessages, error } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/ai/chat" }),
+    transport,
   });
 
   const isLoading = status === "streaming" || status === "submitted";

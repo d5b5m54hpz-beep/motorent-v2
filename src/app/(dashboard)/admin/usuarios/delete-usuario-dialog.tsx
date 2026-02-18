@@ -28,13 +28,15 @@ export function DeleteUsuarioDialog({ usuario, open, onOpenChange, onConfirm, is
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>
-              Estás a punto de eliminar al usuario <strong>{usuario.name}</strong> ({usuario.email}).
-            </p>
-            <p className="text-red-600 dark:text-red-400 font-medium">
-              Esta acción no se puede deshacer.
-            </p>
+          <AlertDialogDescription asChild>
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>
+                Estás a punto de eliminar al usuario <strong>{usuario.name}</strong> ({usuario.email}).
+              </p>
+              <p className="text-red-600 dark:text-red-400 font-medium">
+                Esta acción no se puede deshacer.
+              </p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

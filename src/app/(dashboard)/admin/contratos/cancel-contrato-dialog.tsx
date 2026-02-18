@@ -32,23 +32,25 @@ export function CancelContratoDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Cancelar contrato</AlertDialogTitle>
-          <AlertDialogDescription>
-            ¿Estas seguro de cancelar el contrato con{" "}
-            <span className="font-semibold">
-              {contrato?.cliente.nombre || contrato?.cliente.email}
-            </span>
-            ?
-            <br />
-            <br />
-            Esta accion:
-            <ul className="ml-4 mt-2 list-disc space-y-1">
-              <li>Cambiara el estado del contrato a CANCELADO</li>
-              <li>
-                Devolvera la moto {contrato?.moto.marca} {contrato?.moto.modelo}{" "}
-                a estado DISPONIBLE
-              </li>
-              <li>Cancelara todos los pagos pendientes</li>
-            </ul>
+          <AlertDialogDescription asChild>
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>
+                ¿Estas seguro de cancelar el contrato con{" "}
+                <span className="font-semibold">
+                  {contrato?.cliente.nombre || contrato?.cliente.email}
+                </span>
+                ?
+              </p>
+              <p>Esta accion:</p>
+              <ul className="ml-4 list-disc space-y-1">
+                <li>Cambiara el estado del contrato a CANCELADO</li>
+                <li>
+                  Devolvera la moto {contrato?.moto.marca} {contrato?.moto.modelo}{" "}
+                  a estado DISPONIBLE
+                </li>
+                <li>Cancelara todos los pagos pendientes</li>
+              </ul>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
