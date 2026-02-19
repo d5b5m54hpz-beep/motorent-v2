@@ -89,14 +89,10 @@ export function verifyWebhookSignature(
 ): boolean {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
 
-  // In production, HMAC verification is mandatory
+  // FAIL CLOSED: sin secret siempre rechazar (configurar MERCADOPAGO_WEBHOOK_SECRET en el entorno)
   if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      console.error("[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured in production — rejecting");
-      return false;
-    }
-    console.warn("[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured (dev mode) — skipping verification");
-    return true;
+    console.error("[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET no configurado — rechazando");
+    return false;
   }
 
   if (!xSignature || !xRequestId) {

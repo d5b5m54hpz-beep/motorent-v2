@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/require-permission";
-import { eventBus, OPERATIONS } from "@/lib/events";
+import { OPERATIONS } from "@/lib/events";
 import { registrarPagoSchema } from "@/lib/validations";
-
+import { PaymentService } from "@/lib/services/payment-service";
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-// State machine: valid transitions for EstadoPago
-const VALID_TRANSITIONS: Record<string, string[]> = {
-  PENDIENTE: ["APROBADO", "RECHAZADO", "CANCELADO", "VENCIDO"],
-  APROBADO: ["REEMBOLSADO"],
-  RECHAZADO: ["PENDIENTE", "CANCELADO"],
-  VENCIDO: ["PENDIENTE", "CANCELADO"],
-  REEMBOLSADO: [], // terminal
-  CANCELADO: [],   // terminal
-};
 
 // GET /api/pagos/[id] — get single pago with full details
 export async function GET(req: NextRequest, context: RouteContext) {
@@ -45,10 +35,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
   });
 
   if (!pago) {
-    return NextResponse.json(
-      { error: "Pago no encontrado" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Pago no encontrado" }, { status: 404 });
   }
 
   return NextResponse.json(pago);
@@ -59,7 +46,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   const { error, userId } = await requirePermission(
     OPERATIONS.payment.update,
     "execute",
-    ["OPERADOR"] // fallback: OPERADOR keeps working during migration
+    ["OPERADOR"]
   );
   if (error) return error;
 
@@ -71,40 +58,24 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        {
-          error: "Datos invalidos",
-          details: parsed.error.flatten().fieldErrors,
-        },
+        { error: "Datos inválidos", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
     const { estado, metodo, mpPaymentId, comprobante, notas } = parsed.data;
 
-    const existing = await prisma.pago.findUnique({
-      where: { id },
-      include: {
-        contrato: {
-          include: {
-            pagos: true,
-          },
-        },
-      },
-    });
+    const existing = await prisma.pago.findUnique({ where: { id } });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Pago no encontrado" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Pago no encontrado" }, { status: 404 });
     }
 
-    // Verificar permisos: solo ADMIN puede modificar pagos aprobados
+    // Solo ADMIN puede modificar pagos ya aprobados o reembolsados
     if (existing.estado === "APROBADO" || existing.estado === "REEMBOLSADO") {
       const { error: adminError } = await requirePermission(
         OPERATIONS.payment.approve,
         "execute"
-        // No fallback roles: only ADMIN (implicit) can modify approved/refunded payments
       );
       if (adminError) {
         return NextResponse.json(
@@ -114,94 +85,56 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       }
     }
 
-    // Validate state transition
-    const allowed = VALID_TRANSITIONS[existing.estado] || [];
-    if (!allowed.includes(estado)) {
-      return NextResponse.json(
-        { error: `Transición inválida: ${existing.estado} → ${estado}` },
-        { status: 400 }
-      );
+    try {
+      switch (estado) {
+        case "APROBADO":
+          await PaymentService.approve(id, {
+            metodo: metodo!,
+            mpPaymentId: mpPaymentId ?? undefined,
+            comprobante: comprobante ?? undefined,
+            notas: notas ?? undefined,
+            userId,
+          });
+          break;
+        case "RECHAZADO":
+          await PaymentService.reject(id, { notas: notas ?? undefined, userId });
+          break;
+        case "CANCELADO":
+          await PaymentService.cancel(id, { notas: notas ?? undefined, userId });
+          break;
+        case "REEMBOLSADO":
+          await PaymentService.refund(id, { notas: notas ?? undefined, userId });
+          break;
+        default:
+          // Transiciones no manejadas por el service (ej: VENCIDO → PENDIENTE)
+          PaymentService.validateTransition(existing.estado, estado);
+          await prisma.pago.update({
+            where: { id },
+            data: { estado, notas: notas ?? existing.notas },
+          });
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.startsWith("Transición de pago inválida")) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      throw err;
     }
 
-    // Track whether this is a state transition (for event emission)
-    const previousEstado = existing.estado;
-
-    // Actualizar pago en transacción
-    const resultado = await prisma.$transaction(async (tx) => {
-      const pagoActualizado = await tx.pago.update({
-        where: { id },
-        data: {
-          estado,
-          metodo: metodo || existing.metodo,
-          mpPaymentId: mpPaymentId || existing.mpPaymentId,
-          comprobante: comprobante || existing.comprobante,
-          notas: notas || existing.notas,
-          pagadoAt: estado === "APROBADO" ? new Date() : existing.pagadoAt,
-        },
-        include: {
-          contrato: {
-            include: {
-              cliente: { select: { nombre: true, email: true, dni: true } },
-              moto: { select: { marca: true, modelo: true, patente: true } },
-            },
+    const pagoFull = await prisma.pago.findUnique({
+      where: { id },
+      include: {
+        contrato: {
+          include: {
+            cliente: { select: { nombre: true, email: true, dni: true } },
+            moto: { select: { marca: true, modelo: true, patente: true } },
           },
         },
-      });
-
-      return pagoActualizado;
+      },
     });
 
-    // Emit events for state transitions
-    if (estado !== previousEstado) {
-      if (estado === "APROBADO") {
-        await eventBus.emit(
-          OPERATIONS.payment.approve,
-          "Pago",
-          id,
-          {
-            previousEstado,
-            newEstado: estado,
-            monto: resultado.monto,
-            metodo: resultado.metodo,
-            contratoId: resultado.contratoId,
-          },
-          userId
-        );
-      } else if (estado === "RECHAZADO") {
-        await eventBus.emit(
-          OPERATIONS.payment.reject,
-          "Pago",
-          id,
-          {
-            previousEstado,
-            newEstado: estado,
-            monto: resultado.monto,
-            contratoId: resultado.contratoId,
-          },
-          userId
-        );
-      } else if (estado === "REEMBOLSADO") {
-        await eventBus.emit(
-          OPERATIONS.payment.refund,
-          "Pago",
-          id,
-          {
-            previousEstado,
-            newEstado: estado,
-            monto: resultado.monto,
-            contratoId: resultado.contratoId,
-          },
-          userId
-        );
-      }
-    }
-
-    return NextResponse.json(resultado);
+    return NextResponse.json(pagoFull);
   } catch (error: unknown) {
     console.error("Error updating pago:", error);
-    return NextResponse.json(
-      { error: "Error interno del servidor" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
