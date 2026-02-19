@@ -575,9 +575,9 @@ async function testFlujoFinanzas() {
   console.log("  [OK] GET /api/dashboard/finanzas:", dashboard.status);
 
   // Cuentas contables
-  const cuentas = await api("GET", "/api/contabilidad/cuentas");
-  if (cuentas.status !== 200) throw new Error(`GET /api/contabilidad/cuentas retornó ${cuentas.status}`);
-  console.log("  [OK] GET /api/contabilidad/cuentas:", cuentas.status);
+  const cuentas = await api("GET", "/api/cuentas-contables");
+  if (cuentas.status !== 200) throw new Error(`GET /api/cuentas-contables retornó ${cuentas.status}`);
+  console.log("  [OK] GET /api/cuentas-contables:", cuentas.status);
 
   console.log("\n  FLUJO 6 COMPLETADO\n");
 }
