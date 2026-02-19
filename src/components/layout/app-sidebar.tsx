@@ -161,9 +161,7 @@ export function AppSidebar({ user }: Props) {
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
     { title: "Patentamiento", href: "/admin/motos/patentamiento", icon: FileCheck },
-    { title: "Precios por Moto", href: "/admin/precios", icon: Tag },
-    { title: "Config de Precios", href: "/admin/pricing", icon: Settings },
-    { title: "Pricing Inteligente", href: "/admin/finanzas/pricing", icon: TrendingUp },
+    { title: "Tarifas de Alquiler", href: "/admin/tarifas-alquiler", icon: Tag },
     { title: "Amortización", href: "/admin/flota/amortizacion", icon: BarChart3 },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
     { title: "Talleres", href: "/admin/talleres", icon: Factory },

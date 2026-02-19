@@ -187,6 +187,7 @@ enum EstadoMoto {
   ALQUILADA
   MANTENIMIENTO
   BAJA
+  TRANSFERIDA
 }
 
 enum TipoMoto {
@@ -249,6 +250,12 @@ model Contrato {
   valorCompraFinal  Decimal? @db.Decimal(12,2) // Precio al ejercer opción
   opcionEjercida    Boolean  @default(false)
   fechaEjercicio    DateTime?
+
+  // === Pricing Engine V2 ===
+  planAlquilerId    String?
+  planAlquiler      PlanAlquiler? @relation(fields: [planAlquilerId], references: [id])
+  cuotasPagadas     Int           @default(0)
+  progresoOwnership Decimal       @default(0) @db.Decimal(5,2)
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -2714,4 +2721,129 @@ enum TipoAnalisisFinanciero {
   DIARIO
   SEMANAL
   MENSUAL
+}
+
+// ==========================================
+// PRICING ENGINE V2 — RENT-TO-OWN
+// ==========================================
+
+model CostoOperativoConfig {
+  id                         String    @id @unique @default("default")
+  seguroRC                   Decimal   @default(0) @db.Decimal(12,2)
+  seguroRoboIncendio         Decimal   @default(0) @db.Decimal(12,2)
+  seguroTotal                Decimal   @default(0) @db.Decimal(12,2)
+  patenteAnual               Decimal   @default(0) @db.Decimal(12,2)
+  vtvAnual                   Decimal   @default(0) @db.Decimal(12,2)
+  otrosImpuestosAnuales      Decimal   @default(0) @db.Decimal(12,2)
+  costoIoTMensual            Decimal   @default(0) @db.Decimal(12,2)
+  mantenimientoManoObra      Decimal   @default(0) @db.Decimal(12,2)
+  mantenimientoRepuestos     Decimal   @default(0) @db.Decimal(12,2)
+  mantenimientoTotal         Decimal   @default(0) @db.Decimal(12,2)
+  reservaContingenciaPct     Decimal   @default(5) @db.Decimal(5,2)
+  costoMotoParadaDiario      Decimal   @default(0) @db.Decimal(12,2)
+  diasParadaEstimadoMes      Decimal   @default(2) @db.Decimal(5,2)
+  comisionCobranzaPct        Decimal   @default(4) @db.Decimal(5,2)
+  costoAdminPorMoto          Decimal   @default(0) @db.Decimal(12,2)
+  morosidadEstimadaPct       Decimal   @default(3) @db.Decimal(5,2)
+  costoAlmacenamientoPorMoto Decimal   @default(0) @db.Decimal(12,2)
+  tasaInflacionMensualEst    Decimal   @default(3) @db.Decimal(5,2)
+  costoCapitalAnualPct       Decimal   @default(0) @db.Decimal(5,2)
+  tipoCambioUSD              Decimal   @default(0) @db.Decimal(12,2)
+  tipoCambioFuente           String    @default("MANUAL")
+  tipoCambioUpdatedAt        DateTime?
+  notas                      String?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+}
+
+model PlanAlquiler {
+  id                    String                 @id @default(cuid())
+  nombre                String
+  codigo                String                 @unique
+  descripcion           String?
+  duracionMeses         Int
+  esRentToOwn           Boolean                @default(false)
+  descuentoPct          Decimal                @default(0) @db.Decimal(5,2)
+  depositoMeses         Decimal                @default(1) @db.Decimal(5,2)
+  depositoConDescuento  Boolean                @default(false)
+  permiteSemanal        Boolean                @default(true)
+  permiteQuincenal      Boolean                @default(true)
+  permiteMensual        Boolean                @default(true)
+  recargoSemanalPct     Decimal                @default(10) @db.Decimal(5,2)
+  recargoQuincenalPct   Decimal                @default(5) @db.Decimal(5,2)
+  recargoEfectivoPct    Decimal                @default(5) @db.Decimal(5,2)
+  recargoMercadoPagoPct Decimal                @default(0) @db.Decimal(5,2)
+  activo                Boolean                @default(true)
+  orden                 Int                    @default(0)
+  destacado             Boolean                @default(false)
+  contratos             Contrato[]
+  preciosPorModelo      PrecioModeloAlquiler[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+}
+
+model PrecioModeloAlquiler {
+  id                    String       @id @default(cuid())
+  modeloMoto            String
+  marcaMoto             String?
+  planId                String
+  plan                  PlanAlquiler @relation(fields: [planId], references: [id], onDelete: Cascade)
+  costoLandedUSD        Decimal      @default(0) @db.Decimal(12,2)
+  costoLandedARS        Decimal      @default(0) @db.Decimal(12,2)
+  amortizacionMensual   Decimal      @default(0) @db.Decimal(12,2)
+  costoOperativoMensual Decimal      @default(0) @db.Decimal(12,2)
+  costoTotalMensual     Decimal      @default(0) @db.Decimal(12,2)
+  precioBaseMensual     Decimal      @default(0) @db.Decimal(12,2)
+  precioConDescuento    Decimal      @default(0) @db.Decimal(12,2)
+  margenMensual         Decimal      @default(0) @db.Decimal(12,2)
+  margenPct             Decimal      @default(0) @db.Decimal(5,2)
+  margenObjetivoPct     Decimal      @default(25) @db.Decimal(5,2)
+  precioManual          Decimal?     @db.Decimal(12,2)
+  motivoOverride        String?
+  activo                Boolean      @default(true)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@unique([modeloMoto, planId])
+  @@index([planId])
+  @@index([modeloMoto])
+}
+
+model HistorialPrecioAlquiler {
+  id             String   @id @default(cuid())
+  precioModeloId String?
+  modeloMoto     String
+  planCodigo     String
+  precioAnterior Decimal  @db.Decimal(12,2)
+  precioNuevo    Decimal  @db.Decimal(12,2)
+  costoLandedARS Decimal  @db.Decimal(12,2)
+  tipoCambio     Decimal  @db.Decimal(12,2)
+  margenPct      Decimal  @db.Decimal(5,2)
+  motivo         String?
+  creadoPor      String?
+  createdAt      DateTime @default(now())
+
+  @@index([modeloMoto, createdAt])
+  @@index([planCodigo])
+}
+
+model SimulacionAlquiler {
+  id                 String   @id @default(cuid())
+  modeloMoto         String
+  planCodigo         String
+  frecuenciaPago     String
+  formaPago          String
+  precioBaseMensual  Decimal  @db.Decimal(12,2)
+  descuentoPlan      Decimal  @db.Decimal(12,2)
+  recargoFrecuencia  Decimal  @db.Decimal(12,2)
+  recargoFormaPago   Decimal  @db.Decimal(12,2)
+  precioFinalMensual Decimal  @db.Decimal(12,2)
+  precioFinalSemanal Decimal? @db.Decimal(12,2)
+  deposito           Decimal  @db.Decimal(12,2)
+  costoTotal24Meses  Decimal? @db.Decimal(12,2)
+  desgloseCostos     Json?
+  creadoPor          String?
+  createdAt          DateTime @default(now())
+
+  @@index([createdAt])
 }
