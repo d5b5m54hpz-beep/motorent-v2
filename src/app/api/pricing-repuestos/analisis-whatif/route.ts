@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         : 0;
 
       const config = configMap.get(r.categoria || "");
-      const margenMinimo = config?.margenMinimo || 0.25;
+      const margenMinimo = Number(config?.margenMinimo ?? 0.25);
 
       let estado = "OK";
       if (margenSimulado < 0.10) estado = "CRITICO";
@@ -136,13 +136,13 @@ export async function GET(req: NextRequest) {
 
     const productosBajoMinimoActual = detalle.filter((d) => {
       const config = configMap.get(d.categoria || "");
-      const margenMinimo = config?.margenMinimo || 0.25;
+      const margenMinimo = Number(config?.margenMinimo ?? 0.25);
       return d.margenActual < margenMinimo;
     }).length;
 
     const productosBajoMinimo = detalle.filter((d) => {
       const config = configMap.get(d.categoria || "");
-      const margenMinimo = config?.margenMinimo || 0.25;
+      const margenMinimo = Number(config?.margenMinimo ?? 0.25);
       return d.margenSimulado < margenMinimo;
     }).length;
 

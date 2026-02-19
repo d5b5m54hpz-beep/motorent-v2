@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     for (const pago of overdue) {
       await prisma.alerta.create({
         data: {
-          tipo: "pago_vencido",
+          tipo: "PAGO_VENCIDO",
           mensaje: `Pago de $${pago.monto} vencido (Contrato ${pago.contrato.id})`,
           contratoId: pago.contratoId,
           pagoId: pago.id,

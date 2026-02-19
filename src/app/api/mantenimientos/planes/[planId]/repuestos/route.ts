@@ -76,8 +76,8 @@ export async function GET(
             costoUnitario: Number(rtp.repuesto.precioCompra),
             costoObligatorio: 0,
             costoCondicional: 0,
-            stockActual: rtp.repuesto.stock,
-            stockMinimo: rtp.repuesto.stockMinimo,
+            stockActual: Number(rtp.repuesto.stock),
+            stockMinimo: Number(rtp.repuesto.stockMinimo),
             tareas: [],
           };
         }
@@ -85,15 +85,15 @@ export async function GET(
         // Use tipoConsumo to determine if it's obligatorio (PLANIFICADO vs EMERGENCIA)
         const esObligatorio = rtp.tipoConsumo === 'PLANIFICADO';
         if (esObligatorio) {
-          consolidado[key].cantidadObligatoria += rtp.cantidad;
+          consolidado[key].cantidadObligatoria += Number(rtp.cantidad);
         } else {
-          consolidado[key].cantidadCondicional += rtp.cantidad;
+          consolidado[key].cantidadCondicional += Number(rtp.cantidad);
         }
-        consolidado[key].cantidadTotal += rtp.cantidad;
+        consolidado[key].cantidadTotal += Number(rtp.cantidad);
 
         consolidado[key].tareas.push({
           nombre: tarea.nombre,
-          cantidad: rtp.cantidad,
+          cantidad: Number(rtp.cantidad),
           obligatorio: esObligatorio,
           observaciones: null, // Not available in RepuestoTareaPlan model
         });

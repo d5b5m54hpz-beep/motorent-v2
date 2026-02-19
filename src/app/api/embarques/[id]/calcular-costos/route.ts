@@ -48,8 +48,8 @@ export async function POST(
     const cifUsd = Number(embarque.totalFobUsd) + Number(embarque.fleteUsd) + seguroUsd;
 
     // 2. Calculate totals for allocation
-    const totalPesoEmbarque = embarque.items.reduce((sum, i) => sum + (i.pesoTotalKg || 0), 0);
-    const totalVolumenEmbarque = embarque.items.reduce((sum, i) => sum + (i.volumenTotalCbm || 0), 0);
+    const totalPesoEmbarque = embarque.items.reduce((sum, i) => sum + Number(i.pesoTotalKg || 0), 0);
+    const totalVolumenEmbarque = embarque.items.reduce((sum, i) => sum + Number(i.volumenTotalCbm || 0), 0);
 
     const logisticaTotal = despachanteFee + gastosPuerto + transporteInterno + otrosGastos;
 
@@ -69,10 +69,10 @@ export async function POST(
             factorAsignacion = itemSubtotalFob / embarqueTotalFob;
             break;
           case "POR_PESO":
-            factorAsignacion = (item.pesoTotalKg || 0) / (totalPesoEmbarque || 1);
+            factorAsignacion = Number(item.pesoTotalKg || 0) / (totalPesoEmbarque || 1);
             break;
           case "POR_VOLUMEN":
-            factorAsignacion = (item.volumenTotalCbm || 0) / (totalVolumenEmbarque || 1);
+            factorAsignacion = Number(item.volumenTotalCbm || 0) / (totalVolumenEmbarque || 1);
             break;
           case "HIBRIDO":
             // Flete por volumen, resto por valor
@@ -91,7 +91,7 @@ export async function POST(
 
         // 6. Arancel específico del item
         const categoriaConfig = item.repuesto?.categoria ? categoriasMap.get(item.repuesto.categoria) : null;
-        const arancelPct = item.arancelPorcentaje ?? categoriaConfig?.arancelImpo ?? 0.16;
+        const arancelPct = Number(item.arancelPorcentaje ?? categoriaConfig?.arancelImpo ?? 0.16);
         const derechosItem = cifItem * arancelPct;
 
         // 7. Tasa de estadística
@@ -131,8 +131,8 @@ export async function POST(
         const margenMinimo = categoriaConfig?.margenMinimo ?? 0.25;
 
         let alertaMargen = "VERDE";
-        if (margenActual < margenMinimo) alertaMargen = "ROJO";
-        else if (margenActual < margenObjetivo) alertaMargen = "AMARILLO";
+        if (margenActual < Number(margenMinimo)) alertaMargen = "ROJO";
+        else if (margenActual < Number(margenObjetivo)) alertaMargen = "AMARILLO";
 
         return {
           repuestoId: item.repuestoId,

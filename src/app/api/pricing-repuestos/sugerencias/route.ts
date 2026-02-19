@@ -58,8 +58,8 @@ export async function POST() {
 
       // Configuración de la categoría
       const config = configMap.get(r.categoria || "");
-      const margenObjetivo = config?.margenObjetivo || 0.45; // default 45%
-      const margenMinimo = config?.margenMinimo || 0.25; // default 25%
+      const margenObjetivo = Number(config?.margenObjetivo ?? 0.45); // default 45%
+      const margenMinimo = Number(config?.margenMinimo ?? 0.25); // default 25%
 
       // ─── CASO 1: Repuesto sin precio definido ─────────────────────
       if (precio === 0 && costo > 0) {

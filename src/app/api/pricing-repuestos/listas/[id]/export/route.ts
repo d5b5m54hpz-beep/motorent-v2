@@ -69,7 +69,7 @@ export async function GET(
 
       if (lista.autoCalcular && lista.formulaMarkup) {
         // Auto-cálculo (GAP 3)
-        precio = Number(rep.costoPromedioArs) * lista.formulaMarkup;
+        precio = Number(rep.costoPromedioArs) * Number(lista.formulaMarkup);
         metodo = `Auto (× ${lista.formulaMarkup})`;
       } else {
         // Buscar en itemListaPrecio o calcular con motor
@@ -96,7 +96,7 @@ export async function GET(
             where: { categoria: rep.categoria || '' },
           });
 
-          const multiplicador = categoriaConfig?.markupDefault ?? 2.0;
+          const multiplicador = Number(categoriaConfig?.markupDefault ?? 2.0);
           precio = Number(rep.costoPromedioArs) * multiplicador;
           metodo = `Markup ${multiplicador}x`;
         }

@@ -267,8 +267,8 @@ export async function GET(req: NextRequest) {
               costoUnitario: Number(rtp.repuesto.precioCompra),
               costoTotal: 0,
               costoFaltante: 0,
-              stockActual: rtp.repuesto.stock,
-              stockMinimo: rtp.repuesto.stockMinimo,
+              stockActual: Number(rtp.repuesto.stock),
+              stockMinimo: Number(rtp.repuesto.stockMinimo),
               faltante: 0,
               puntoReorden: 0,
               alertaReorden: false,
@@ -286,7 +286,7 @@ export async function GET(req: NextRequest) {
           }
 
           // Determine quantity - simplified since vidaUtilKm and tasaUsoReal are not in RepuestoTareaPlan model
-          let cantidad = rtp.cantidad;
+          let cantidad = Number(rtp.cantidad);
           let fuenteCalculo: 'DATOS_REALES' | 'VIDA_UTIL_KM' | 'PLAN_FALLBACK' = 'PLAN_FALLBACK';
 
           // Use tipoConsumo to determine if it's obligatorio
@@ -296,7 +296,7 @@ export async function GET(req: NextRequest) {
             repuestosMap[key].cantidadObligatoria += cantidad;
           } else {
             // Conditional/emergency parts - use default rate
-            const cantidadCondicional = rtp.cantidad * DEFAULT_TASA_CONDICIONAL;
+            const cantidadCondicional = Number(rtp.cantidad) * DEFAULT_TASA_CONDICIONAL;
             repuestosMap[key].cantidadCondicional += cantidadCondicional;
             cantidad = cantidadCondicional;
           }

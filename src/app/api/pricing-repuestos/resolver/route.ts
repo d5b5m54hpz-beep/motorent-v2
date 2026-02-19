@@ -74,7 +74,7 @@ async function calcularPrecioConMarkup(
   const reglaAplicable = reglas[0];
 
   if (reglaAplicable) {
-    const precioCalculado = costo * reglaAplicable.multiplicador;
+    const precioCalculado = costo * Number(reglaAplicable.multiplicador);
     const precioRedondeado = redondearPrecio(precioCalculado, reglaAplicable.redondeo);
     return {
       precio: precioRedondeado,
@@ -87,7 +87,7 @@ async function calcularPrecioConMarkup(
     where: { categoria: repuesto.categoria || "" },
   });
 
-  const multiplicador = categoriaConfig?.markupDefault ?? 2.0;
+  const multiplicador = Number(categoriaConfig?.markupDefault ?? 2.0);
   return {
     precio: costo * multiplicador,
     reglaAplicada: `Markup categoría (${multiplicador}x)`,
@@ -285,7 +285,7 @@ export async function POST(req: NextRequest) {
     // ⭐ GAP 3: Auto-cálculo para listas con autoCalcular=true (ej: Uso Interno)
     if (listaPrecio.autoCalcular && listaPrecio.formulaMarkup) {
       const costo = Number(repuesto.costoPromedioArs) || Number(repuesto.precioCompra) || 0;
-      precioBase = costo * listaPrecio.formulaMarkup;
+      precioBase = costo * Number(listaPrecio.formulaMarkup);
       metodoCalculo = `Auto-calculado (costo × ${listaPrecio.formulaMarkup})`;
     } else {
       // Buscar precio manual en itemLista o calcular con markup
@@ -398,9 +398,9 @@ export async function POST(req: NextRequest) {
     });
 
     const margenMinimo =
-      repuesto.margenMinimo ?? categoriaConfig?.margenMinimo ?? 0.15;
+      Number(repuesto.margenMinimo ?? categoriaConfig?.margenMinimo ?? 0.15);
     const margenObjetivo =
-      repuesto.margenObjetivo ?? categoriaConfig?.margenObjetivo ?? 0.35;
+      Number(repuesto.margenObjetivo ?? categoriaConfig?.margenObjetivo ?? 0.35);
 
     let margenResultante = costo > 0 ? (precioFinal - costo) / precioFinal : 1;
     let alertaMargen: "OK" | "BAJO" | "CRITICO" = "OK";

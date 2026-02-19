@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       margenPromedioNuevo += margenNuevo;
 
       const config = configMap.get(r.categoria || "");
-      const margenObjetivo = config?.margenObjetivo || 0.45;
+      const margenObjetivo = Number(config?.margenObjetivo ?? 0.45);
 
       if (margenNuevo > 0.60 || margenNuevo > margenObjetivo * 1.5) {
         itemsSobrePrecio++;

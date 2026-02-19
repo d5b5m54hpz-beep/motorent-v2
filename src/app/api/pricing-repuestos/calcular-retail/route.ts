@@ -115,14 +115,14 @@ export async function POST(req: NextRequest) {
       let redondeo: string | null = null;
 
       if (reglaAplicable) {
-        multiplicador = reglaAplicable.multiplicador;
+        multiplicador = Number(reglaAplicable.multiplicador);
         reglaAplicada = reglaAplicable.nombre;
         redondeo = reglaAplicable.redondeo;
       } else {
         // Usar config de categoría
         const config = configMap.get(repuesto.categoria || "");
         if (config) {
-          multiplicador = config.markupDefault;
+          multiplicador = Number(config.markupDefault);
           reglaAplicada = `Markup ${repuesto.categoria} (${multiplicador}x)`;
         }
       }

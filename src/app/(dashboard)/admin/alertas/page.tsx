@@ -27,7 +27,7 @@ import { formatDate } from "@/lib/utils";
 
 type Alerta = {
   id: string;
-  tipo: "pago_vencido" | "contrato_por_vencer" | "licencia_vencida" | "general";
+  tipo: string;
   mensaje: string;
   metadata: Record<string, any>;
   leida: boolean;
@@ -44,24 +44,24 @@ type PricingAlerta = {
 };
 
 const iconosAlerta: Record<string, React.ElementType> = {
-  pago_vencido: CreditCard,
-  contrato_por_vencer: Clock,
-  licencia_vencida: FileText,
-  general: AlertTriangle,
+  PAGO_VENCIDO: CreditCard,
+  CONTRATO_POR_VENCER: Clock,
+  LICENCIA_VENCIDA: FileText,
+  GENERAL: AlertTriangle,
 };
 
 const coloresAlerta: Record<string, string> = {
-  pago_vencido: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-red-200",
-  contrato_por_vencer: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200",
-  licencia_vencida: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 border-orange-200",
-  general: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-blue-200",
+  PAGO_VENCIDO: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-red-200",
+  CONTRATO_POR_VENCER: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200",
+  LICENCIA_VENCIDA: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 border-orange-200",
+  GENERAL: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-blue-200",
 };
 
 const nombresAlerta: Record<string, string> = {
-  pago_vencido: "Pago Vencido",
-  contrato_por_vencer: "Contrato por Vencer",
-  licencia_vencida: "Licencia Vencida",
-  general: "General",
+  PAGO_VENCIDO: "Pago Vencido",
+  CONTRATO_POR_VENCER: "Contrato por Vencer",
+  LICENCIA_VENCIDA: "Licencia Vencida",
+  GENERAL: "General",
 };
 
 const iconosPricing: Record<string, React.ElementType> = {
@@ -315,10 +315,10 @@ function AlertasContent() {
         <Tabs value={tipoActivo} onValueChange={handleTipoChange}>
           <TabsList>
             <TabsTrigger value="todos">Todos</TabsTrigger>
-            <TabsTrigger value="pago_vencido">Pagos Vencidos</TabsTrigger>
-            <TabsTrigger value="contrato_por_vencer">Contratos por Vencer</TabsTrigger>
-            <TabsTrigger value="licencia_vencida">Licencias Vencidas</TabsTrigger>
-            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="PAGO_VENCIDO">Pagos Vencidos</TabsTrigger>
+            <TabsTrigger value="CONTRATO_POR_VENCER">Contratos por Vencer</TabsTrigger>
+            <TabsTrigger value="LICENCIA_VENCIDA">Licencias Vencidas</TabsTrigger>
+            <TabsTrigger value="GENERAL">General</TabsTrigger>
             <TabsTrigger value="margenes" className="gap-1.5">
               <DollarSign className="h-3.5 w-3.5" />
               Márgenes
@@ -417,8 +417,8 @@ function AlertasContent() {
             </Card>
           ) : (
             alertas.map((alerta) => {
-              const Icono = iconosAlerta[alerta.tipo];
-              const colorClasses = coloresAlerta[alerta.tipo];
+              const Icono = iconosAlerta[alerta.tipo] || AlertTriangle;
+              const colorClasses = coloresAlerta[alerta.tipo] || coloresAlerta.GENERAL;
               const isNoLeida = !alerta.leida;
 
               return (
@@ -435,7 +435,7 @@ function AlertasContent() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className={colorClasses}>
-                              {nombresAlerta[alerta.tipo]}
+                              {nombresAlerta[alerta.tipo] || alerta.tipo.replace(/_/g, " ")}
                             </Badge>
                             {isNoLeida && (
                               <Badge variant="destructive" className="text-xs">

@@ -73,7 +73,7 @@ model Cliente {
   aprobadoAt          DateTime?
 
   // ─── Puntaje de rider (nuevo módulo mantenimientos) ──────────────────────
-  puntajePromedio        Float     @default(100) // Promedio histórico
+  puntajePromedio        Decimal   @default(100) @db.Decimal(5,2) // Promedio histórico
   totalServices          Int       @default(0)
   servicesAsistidos      Int       @default(0)
   servicesNoAsistidos    Int       @default(0)
@@ -288,7 +288,7 @@ model Pago {
 model Factura {
   id             String    @id @default(cuid())
   numero         String    @unique // Autoincremental 00000001, 00000002, etc.
-  tipo           String // A, B, C
+  tipo           TipoFactura @default(B)
   puntoVenta     Int       @default(1)
   montoNeto      Decimal  @db.Decimal(12,2) // Subtotal sin IVA (si tipo A)
   montoIva       Decimal  @db.Decimal(12,2) // IVA 21% (si tipo A)
@@ -342,7 +342,7 @@ enum EstadoPago {
 
 model Alerta {
   id              String    @id @default(cuid())
-  tipo            String
+  tipo            TipoAlerta
   mensaje         String
   metadata        Json?
   contratoId      String?
@@ -404,20 +404,20 @@ model Repuesto {
   ubicacion        String?   // Ubicación en depósito: "E2-F3-P1" (Estante-Fila-Posición)
   codigoBarras     String?   // Código de barras del fabricante
   unidadCompra     String?   // "caja", "bolsa", "unidad"
-  factorConversion Float?    @default(1) // Cuántas unidades hay en 1 unidad de compra (ej: caja de 12 = 12)
-  peso             Float?    // Peso en gramos (para envíos/logística)
+  factorConversion Decimal?  @default(1) @db.Decimal(10,4) // Cuántas unidades hay en 1 unidad de compra (ej: caja de 12 = 12)
+  peso             Decimal?  @db.Decimal(10,2) // Peso en gramos (para envíos/logística)
   activo           Boolean   @default(true) // Para dar de baja sin eliminar
 
   // ─── Campos nuevos de costeo ──────────────────────────────────
   ncmCodigo          String?   // Nomenclatura Común del Mercosur (ej: "8714.10.00")
-  pesoUnitarioKg     Float?    // Peso por unidad en kg (para prorrateo de flete)
-  volumenUnitarioCbm Float?    // Volumen por unidad en CBM (para prorrateo)
+  pesoUnitarioKg     Decimal?  @db.Decimal(10,4) // Peso por unidad en kg (para prorrateo de flete)
+  volumenUnitarioCbm Decimal?  @db.Decimal(10,6) // Volumen por unidad en CBM (para prorrateo)
   esOEM              Boolean   @default(false) // Original vs genérico
   costoPromedioArs   Decimal   @default(0) @db.Decimal(12,2) // Costo promedio ponderado actual en ARS
   costoPromedioUsd   Decimal   @default(0) @db.Decimal(12,2) // Costo promedio ponderado actual en USD
   ultimoCostoUpdate  DateTime? // Última vez que se recalculó el costo promedio
-  margenObjetivo     Float?    // Margen objetivo para esta pieza (override de categoría)
-  margenMinimo       Float?    // Margen mínimo (override de categoría)
+  margenObjetivo     Decimal?  @db.Decimal(5,2) // Margen objetivo para esta pieza (override de categoría)
+  margenMinimo       Decimal?  @db.Decimal(5,2) // Margen mínimo (override de categoría)
 
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
@@ -452,10 +452,10 @@ model CategoriaRepuestoConfig {
   id             String   @id @default(cuid())
   categoria      String   @unique
   nombre         String
-  margenObjetivo Float
-  margenMinimo   Float
-  markupDefault  Float
-  arancelImpo    Float
+  margenObjetivo Decimal @db.Decimal(5,2)
+  margenMinimo   Decimal @db.Decimal(5,2)
+  markupDefault  Decimal @db.Decimal(5,2)
+  arancelImpo    Decimal @db.Decimal(5,2)
   ncmDefault     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -609,7 +609,7 @@ model FacturaCompra {
   archivoUrl    String?
   archivoNombre String?
   ocrRawData    Json?
-  ocrConfianza  Float?
+  ocrConfianza  Decimal? @db.Decimal(5,4)
   ocrRevisado   Boolean @default(false)
 
   // CAE (Código Autorización Electrónico)
@@ -1226,7 +1226,7 @@ model TareaPlan {
   // Repuesto sugerido para esta tarea
   repuestoSugeridoId String?
   repuestoSugerido   Repuesto? @relation(fields: [repuestoSugeridoId], references: [id])
-  cantidadRepuesto   Float?    // Cantidad del repuesto (ej: 0.8 litros de aceite)
+  cantidadRepuesto   Decimal?  @db.Decimal(10,4) // Cantidad del repuesto (ej: 0.8 litros de aceite)
 
   tareasOT           TareaOrdenTrabajo[]
   repuestosTareaPlan RepuestoTareaPlan[]
@@ -1343,7 +1343,7 @@ model OrdenTrabajo {
   fechaInicioTrabajo DateTime?
   fechaFinTrabajo DateTime?
   fechaEgreso     DateTime? // Check-out real
-  tiempoInactividadHoras Float? // Calculado: fechaEgreso - fechaIngreso
+  tiempoInactividadHoras Decimal? @db.Decimal(8,2) // Calculado: fechaEgreso - fechaIngreso
 
   // Descripción
   descripcion     String?  // Descripción del problema (para correctivos)
@@ -1364,7 +1364,7 @@ model OrdenTrabajo {
   ordenReparacionId   String? // Si genera una OT de reparación aparte
 
   // Puntaje del rider
-  puntajeEstadoMoto    Float?  // 0-100 basado en fotos de check-in
+  puntajeEstadoMoto    Decimal? @db.Decimal(5,2) // 0-100 basado en fotos de check-in
   detallesPuntaje      Json?   // Detalle del análisis de Claude Vision
 
   // Relaciones
@@ -1462,8 +1462,8 @@ model RepuestoOrdenTrabajo {
   repuestoId      String
   repuesto        Repuesto @relation(fields: [repuestoId], references: [id])
 
-  cantidadPlanificada Float  // Lo que se esperaba usar
-  cantidadUsada       Float  @default(0) // Lo que realmente se usó
+  cantidadPlanificada Decimal @db.Decimal(10,4) // Lo que se esperaba usar
+  cantidadUsada       Decimal @default(0) @db.Decimal(10,4) // Lo que realmente se usó
 
   // Costos (para la empresa)
   costoUnitario       Decimal @default(0) @db.Decimal(12,2)
@@ -1473,8 +1473,8 @@ model RepuestoOrdenTrabajo {
   precioUnitario      Decimal @default(0) @db.Decimal(12,2) // Resuelto por motor de pricing
   precioTotal         Decimal @default(0) @db.Decimal(12,2) // cantidadUsada * precioUnitario
   listaId             String? // Lista de precios usada (B2C, Rider, etc.)
-  descuentoAplicadoPct Float @default(0) // % de descuento aplicado
-  margenUnitario      Float  @default(0) // (precioUnitario - costoUnitario) / precioUnitario
+  descuentoAplicadoPct Decimal @default(0) @db.Decimal(5,2) // % de descuento aplicado
+  margenUnitario      Decimal @default(0) @db.Decimal(5,4) // (precioUnitario - costoUnitario) / precioUnitario
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1490,7 +1490,7 @@ model RepuestoTareaPlan {
   tareaPlan       TareaPlan @relation(fields: [tareaPlanId], references: [id], onDelete: Cascade)
   repuestoId      String
   repuesto        Repuesto @relation(fields: [repuestoId], references: [id])
-  cantidad        Float    @default(1) // Cantidad requerida del repuesto
+  cantidad        Decimal  @default(1) @db.Decimal(10,4) // Cantidad requerida del repuesto
   tipoConsumo     TipoConsumoRepuesto @default(PLANIFICADO)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1522,7 +1522,7 @@ model FotoInspeccion {
   analizado       Boolean  @default(false)
   analisisResultado Json?  // Resultado completo del análisis
   kmDetectado     Int?     // Km leído del tablero (solo para tipo TABLERO)
-  nivelDesgasteNeumatico Float? // 0-100% (solo para NEUMATICO_DEL y NEUMATICO_TRAS)
+  nivelDesgasteNeumatico Decimal? @db.Decimal(5,2) // 0-100% (solo para NEUMATICO_DEL y NEUMATICO_TRAS)
   danoDetectado   Boolean? // Si se detectó golpe/accidente
   descripcionDano String?  // Descripción del daño detectado
 
@@ -1620,13 +1620,13 @@ model PuntajeRider {
   ordenTrabajo    OrdenTrabajo @relation(fields: [ordenTrabajoId], references: [id])
 
   // Componentes del puntaje (0-100 cada uno)
-  puntajeEstadoGeneral   Float  // Basado en análisis de fotos (carrocería)
-  puntajeNeumaticos      Float  // Basado en análisis de desgaste
-  puntajeAsistencia      Float  // 100 si asistió a tiempo, 50 si reprogramó, 0 si no asistió
-  puntajeKmCoherente     Float  // Km del tablero vs km IoT (detecta manipulación)
-  puntajeSinAccidentes   Float  // 100 si no hay daños nuevos, menos según gravedad
+  puntajeEstadoGeneral   Decimal @db.Decimal(5,2) // Basado en análisis de fotos (carrocería)
+  puntajeNeumaticos      Decimal @db.Decimal(5,2) // Basado en análisis de desgaste
+  puntajeAsistencia      Decimal @db.Decimal(5,2) // 100 si asistió a tiempo, 50 si reprogramó, 0 si no asistió
+  puntajeKmCoherente     Decimal @db.Decimal(5,2) // Km del tablero vs km IoT (detecta manipulación)
+  puntajeSinAccidentes   Decimal @db.Decimal(5,2) // 100 si no hay daños nuevos, menos según gravedad
 
-  puntajeTotal           Float  // Promedio ponderado
+  puntajeTotal           Decimal @db.Decimal(5,2) // Promedio ponderado
 
   observaciones          String?
 
@@ -1911,10 +1911,10 @@ model ItemEmbarque {
   cantidad        Int                // Cantidad importada
   precioFobUnitarioUsd Decimal        @db.Decimal(12,2) // Precio FOB por unidad en USD
   subtotalFobUsd  Decimal            @db.Decimal(12,2) // cantidad × precioFobUnitario
-  pesoTotalKg     Float?             // Peso total de esta línea
-  volumenTotalCbm Float?             // Volumen total de esta línea
+  pesoTotalKg     Decimal?           @db.Decimal(10,4) // Peso total de esta línea
+  volumenTotalCbm Decimal?           @db.Decimal(10,6) // Volumen total de esta línea
   ncmCodigo       String?            // NCM específico (override del repuesto)
-  arancelPorcentaje Float?           // % arancel específico (override de categoría)
+  arancelPorcentaje Decimal?         @db.Decimal(5,2) // % arancel específico (override de categoría)
 
   // ─── Costos asignados (se calculan al finalizar) ──────────────
   costoAsignadoFlete    Decimal?     @db.Decimal(12,2) // Flete prorrateado a esta línea
@@ -2048,8 +2048,8 @@ model RecepcionItemEmbarque {
   motivoRechazo     String?   // Si hay cantidadRechazada > 0
 
   // Control de peso
-  pesoEsperadoKg    Float?    // Peso esperado del packing list
-  pesoRecibidoKg    Float?    // Peso real recibido
+  pesoEsperadoKg    Decimal?  @db.Decimal(10,4) // Peso esperado del packing list
+  pesoRecibidoKg    Decimal?  @db.Decimal(10,4) // Peso real recibido
   alertaPeso        Boolean   @default(false)  // True si difiere >10%
 
   // Ubicación en depósito
@@ -2161,11 +2161,11 @@ model ListaPrecio {
   descripcion     String?
 
   // Descuento global de la lista (% sobre precio retail)
-  descuentoGlobalPct Float?        // Ej: 0.15 = 15% off retail
+  descuentoGlobalPct Decimal?      @db.Decimal(5,4) // Ej: 0.15 = 15% off retail
 
   // Auto-cálculo basado en costo (GAP 3)
   autoCalcular    Boolean          @default(false) // Si true, calcula precio automáticamente
-  formulaMarkup   Float?           // Factor multiplicador sobre costo. Ej: 1.05 = costo + 5%
+  formulaMarkup   Decimal?         @db.Decimal(5,4) // Factor multiplicador sobre costo. Ej: 1.05 = costo + 5%
 
   // Vigencia opcional
   vigenciaDesde   DateTime?
@@ -2208,8 +2208,8 @@ model ItemListaPrecio {
 
   // Metadata de cálculo (para auditoría: cómo se llegó a este precio)
   costoBase       Decimal?     @db.Decimal(12,2) // Costo al momento de calcular
-  markupAplicado  Float?       // Multiplicador aplicado
-  descuentoAplicado Float?     // % de descuento aplicado
+  markupAplicado  Decimal?     @db.Decimal(5,4) // Multiplicador aplicado
+  descuentoAplicado Decimal?   @db.Decimal(5,4) // % de descuento aplicado
   metodoCalculo   String?      // "MARKUP_CATEGORIA", "MARKUP_BANDA", "MANUAL", "BULK_UPDATE"
 
   createdAt       DateTime     @default(now())
@@ -2232,7 +2232,7 @@ model ReglaMarkup {
   esOEM           Boolean? // null = ambos, true = solo OEM, false = solo genérico
 
   // Acción
-  multiplicador   Float    // Ej: 2.5 = precio = costo × 2.5
+  multiplicador   Decimal  @db.Decimal(5,4) // Ej: 2.5 = precio = costo × 2.5
   redondeo        String?  // "NEAREST_10", "NEAREST_50", "NEAREST_99", "NONE"
 
   prioridad       Int      @default(0) // Mayor = se evalúa primero
@@ -2272,7 +2272,7 @@ model ReglaDescuento {
   valorDescuento  Decimal      @db.Decimal(12,2) // Porcentaje (0.10 = 10%) o monto fijo en ARS
 
   // ─── Guardrails ───────────────────────────────────────────────
-  margenMinimo    Float?       // No aplicar si el margen cae por debajo de esto
+  margenMinimo    Decimal?     @db.Decimal(5,4) // No aplicar si el margen cae por debajo de esto
   acumulable      Boolean      @default(false) // ¿Se puede combinar con otros descuentos?
 
   prioridad       Int          @default(0)
@@ -2306,7 +2306,7 @@ model GrupoCliente {
   descripcion     String?
   listaPrecioId   String?      // Lista de precios asignada por defecto
   listaPrecio     ListaPrecio? @relation(fields: [listaPrecioId], references: [id])
-  descuentoExtra  Float?       // Descuento adicional sobre la lista
+  descuentoExtra  Decimal?     @db.Decimal(5,4) // Descuento adicional sobre la lista
   activo          Boolean      @default(true)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -2341,7 +2341,7 @@ model HistorialPrecioRepuesto {
 
   // Snapshot al momento del cambio
   costoAlMomento  Decimal? @db.Decimal(12,2)
-  margenAlMomento Float?   // (precio - costo) / precio
+  margenAlMomento Decimal? @db.Decimal(5,4) // (precio - costo) / precio
 
   usuario         String   // Email del usuario
   createdAt       DateTime @default(now())
@@ -2561,7 +2561,7 @@ model Anomalia {
 
 model AnalisisFinanciero {
   id               String   @id @default(cuid())
-  tipo             String   // DIARIO | SEMANAL | MENSUAL
+  tipo             TipoAnalisisFinanciero
   fechaAnalisis    DateTime
   periodo          String   // "2026-02" or "2026-W07" or "2026-02-18"
   metricas         Json
@@ -2679,4 +2679,39 @@ enum StatusEventBus {
   HEALTHY
   DEGRADED
   DOWN
+}
+
+enum TipoFactura {
+  A
+  B
+  C
+}
+
+enum TipoAlerta {
+  CONTRATO_CREADO
+  CONTRATO_ACTIVADO
+  CONTRATO_CANCELADO
+  CONTRATO_POR_VENCER
+  PAGO
+  PAGO_VENCIDO
+  URGENTE
+  BAJA_MOTO
+  MANTENIMIENTO
+  MANTENIMIENTO_PROXIMO
+  MANTENIMIENTO_NO_ASISTIO
+  MANTENIMIENTO_URGENTE
+  MANTENIMIENTO_PENDIENTE
+  IMPORTACION
+  CONCILIACION
+  STOCK_BAJO
+  MOROSIDAD
+  LICENCIA_VENCIDA
+  GENERAL
+  INFO
+}
+
+enum TipoAnalisisFinanciero {
+  DIARIO
+  SEMANAL
+  MENSUAL
 }

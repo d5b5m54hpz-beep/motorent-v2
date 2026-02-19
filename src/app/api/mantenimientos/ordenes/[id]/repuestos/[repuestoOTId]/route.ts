@@ -31,7 +31,7 @@ export async function PUT(
     }
 
     // 2. Calcular diferencia de stock
-    const diferenciaStock = cantidadUsada - repuestoOT.cantidadUsada;
+    const diferenciaStock = cantidadUsada - Number(repuestoOT.cantidadUsada);
 
     // 3. Verificar stock si la cantidad aumenta
     if (diferenciaStock > 0 && repuestoOT.repuesto.stock < diferenciaStock) {
@@ -118,7 +118,7 @@ export async function DELETE(
     // 2. Devolver stock
     await prisma.repuesto.update({
       where: { id: repuestoOT.repuestoId },
-      data: { stock: { increment: repuestoOT.cantidadUsada } },
+      data: { stock: { increment: Number(repuestoOT.cantidadUsada) } },
     });
 
     // 3. Registrar movimiento
@@ -126,11 +126,11 @@ export async function DELETE(
       data: {
         repuestoId: repuestoOT.repuestoId,
         tipo: 'ENTRADA_DEVOLUCION',
-        cantidad: repuestoOT.cantidadUsada,
+        cantidad: Number(repuestoOT.cantidadUsada),
         motivo: `Devolución por eliminación de OT ${repuestoOT.ordenTrabajo.numero}`,
         referencia: repuestoOT.ordenTrabajoId,
         stockAnterior: repuestoOT.repuesto.stock,
-        stockNuevo: repuestoOT.repuesto.stock + repuestoOT.cantidadUsada,
+        stockNuevo: repuestoOT.repuesto.stock + Number(repuestoOT.cantidadUsada),
       },
     });
 

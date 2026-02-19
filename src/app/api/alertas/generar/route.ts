@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       // Verificar si ya existe una alerta para este pago
       const alertaExistente = await prisma.alerta.findFirst({
         where: {
-          tipo: "pago_vencido",
+          tipo: "PAGO_VENCIDO",
           pagoId: pago.id,
         },
       });
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
         await prisma.alerta.create({
           data: {
-            tipo: "pago_vencido",
+            tipo: "PAGO_VENCIDO",
             mensaje: `Pago vencido hace ${diasVencido} dia${diasVencido !== 1 ? "s" : ""} - ${clienteNombre} - ${motoInfo} - Monto: $${pago.monto.toLocaleString()}`,
             pagoId: pago.id,
             contratoId: pago.contratoId,
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       // Verificar si ya existe una alerta para este contrato
       const alertaExistente = await prisma.alerta.findFirst({
         where: {
-          tipo: "contrato_por_vencer",
+          tipo: "CONTRATO_POR_VENCER",
           contratoId: contrato.id,
         },
       });
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
         await prisma.alerta.create({
           data: {
-            tipo: "contrato_por_vencer",
+            tipo: "CONTRATO_POR_VENCER",
             mensaje: `Contrato vence en ${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} - ${clienteNombre} - ${motoInfo}`,
             contratoId: contrato.id,
             metadata: {
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
 
       const alertaExistente = await prisma.alerta.findFirst({
         where: {
-          tipo: "licencia_vencida",
+          tipo: "LICENCIA_VENCIDA",
           mensaje: { contains: cliente.email }, // Buscar por email unico del cliente
           createdAt: { gte: treintaDiasAtras },
         },
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
 
         await prisma.alerta.create({
           data: {
-            tipo: "licencia_vencida",
+            tipo: "LICENCIA_VENCIDA",
             mensaje: `Licencia vencida hace ${diasVencido} dia${diasVencido !== 1 ? "s" : ""} - ${clienteNombre} (${cliente.email})`,
             metadata: {
               clienteId: cliente.id,

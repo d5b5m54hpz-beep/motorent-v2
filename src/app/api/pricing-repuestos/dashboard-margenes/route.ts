@@ -72,7 +72,11 @@ export async function GET(req: NextRequest) {
     });
 
     const configMap = new Map(
-      configCategorias.map((c) => [c.categoria, c])
+      configCategorias.map((c) => [c.categoria, {
+        categoria: c.categoria,
+        margenObjetivo: Number(c.margenObjetivo),
+        margenMinimo: Number(c.margenMinimo),
+      } as CategoriaConfig])
     );
 
     // ─── 3. KPIs PRINCIPALES ────────────────────────────────────────

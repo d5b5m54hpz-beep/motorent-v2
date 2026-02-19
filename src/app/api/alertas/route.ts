@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/require-permission";
 import { eventBus, OPERATIONS } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, TipoAlerta } from "@prisma/client";
 import { z } from "zod";
 
+const tipoAlertaValues = Object.values(TipoAlerta) as [TipoAlerta, ...TipoAlerta[]];
+
 const createAlertaSchema = z.object({
-  tipo: z.enum(["pago_vencido", "contrato_por_vencer", "licencia_vencida", "general"]),
+  tipo: z.enum(tipoAlertaValues),
   mensaje: z.string().min(1, "Mensaje es requerido"),
   metadata: z.record(z.unknown()).optional(),
 });
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
     const where: Prisma.AlertaWhereInput = {};
 
     if (tipo && tipo !== "todos") {
-      where.tipo = tipo;
+      where.tipo = tipo as TipoAlerta;
     }
 
     if (leida === "true") {
