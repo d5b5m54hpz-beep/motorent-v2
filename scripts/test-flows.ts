@@ -555,6 +555,33 @@ async function testFlujoMantenimiento() {
   console.log("\n  FLUJO 5 COMPLETADO\n");
 }
 
+// === FLUJO 6: Endpoints Financieros ===
+async function testFlujoFinanzas() {
+  console.log("\n  FLUJO 6: Endpoints Financieros\n");
+
+  // Facturas
+  const facturas = await api("GET", "/api/facturas");
+  if (facturas.status !== 200) throw new Error(`GET /api/facturas retornó ${facturas.status}`);
+  console.log("  [OK] GET /api/facturas:", facturas.status);
+
+  // Gastos
+  const gastos = await api("GET", "/api/gastos");
+  if (gastos.status !== 200) throw new Error(`GET /api/gastos retornó ${gastos.status}`);
+  console.log("  [OK] GET /api/gastos:", gastos.status);
+
+  // Dashboard financiero
+  const dashboard = await api("GET", "/api/dashboard/finanzas");
+  if (dashboard.status !== 200) throw new Error(`GET /api/dashboard/finanzas retornó ${dashboard.status}`);
+  console.log("  [OK] GET /api/dashboard/finanzas:", dashboard.status);
+
+  // Cuentas contables
+  const cuentas = await api("GET", "/api/contabilidad/cuentas");
+  if (cuentas.status !== 200) throw new Error(`GET /api/contabilidad/cuentas retornó ${cuentas.status}`);
+  console.log("  [OK] GET /api/contabilidad/cuentas:", cuentas.status);
+
+  console.log("\n  FLUJO 6 COMPLETADO\n");
+}
+
 // === RUNNER ===
 async function main() {
   console.log("\n  MotoRent v2 -- Test E2E de Flujos Backend");
@@ -580,6 +607,7 @@ async function main() {
     { nombre: "Jobs de Cron", fn: testFlujoJobs },
     { nombre: "Repuestos y Stock", fn: testFlujoRepuestos },
     { nombre: "Mantenimiento", fn: testFlujoMantenimiento },
+    { nombre: "Endpoints Financieros", fn: testFlujoFinanzas },
   ];
 
   for (const { nombre, fn } of flujos) {
