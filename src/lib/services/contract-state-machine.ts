@@ -52,8 +52,10 @@ export class ContractStateMachine {
     if (contrato.cliente.estado !== "APROBADO") {
       return { valid: false, reason: "El cliente no está aprobado" };
     }
-    if (contrato.moto.estado !== "DISPONIBLE") {
-      return { valid: false, reason: "La moto no está disponible" };
+    // La moto puede estar DISPONIBLE (contrato recién creado) o ALQUILADA
+    // (ya reservada por este mismo contrato). Solo BAJA y MANTENIMIENTO bloquean.
+    if (contrato.moto.estado === "BAJA" || contrato.moto.estado === "MANTENIMIENTO") {
+      return { valid: false, reason: `La moto no puede activarse en estado: ${contrato.moto.estado}` };
     }
 
     return { valid: true };

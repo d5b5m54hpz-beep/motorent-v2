@@ -228,8 +228,10 @@ export function UsuarioForm({ usuario, open, onOpenChange, onSubmit, isSubmittin
             />
 
             {/* Permission Profiles Multi-Select */}
-            <FormItem>
-              <FormLabel>Perfiles de Permisos</FormLabel>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Perfiles de Permisos
+              </label>
               {loadingProfiles ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -288,7 +290,7 @@ export function UsuarioForm({ usuario, open, onOpenChange, onSubmit, isSubmittin
                   )}
                 </div>
               )}
-            </FormItem>
+            </div>
 
             <FormField
               control={form.control}
