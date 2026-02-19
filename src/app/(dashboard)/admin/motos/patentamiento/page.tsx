@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
+import { Search, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,17 +44,15 @@ type MotoKanban = {
 };
 
 type KanbanData = {
-  NO_INICIADO: MotoKanban[];
-  EN_PROCESO: MotoKanban[];
-  OBSERVADO: MotoKanban[];
-  COMPLETADO: MotoKanban[];
+  SIN_PATENTAR: MotoKanban[];
+  EN_TRAMITE: MotoKanban[];
+  PATENTADA: MotoKanban[];
 };
 
 const COLUMNAS = [
-  { id: "NO_INICIADO", label: "No Iniciado", color: "bg-gray-500" },
-  { id: "EN_PROCESO", label: "En Proceso", color: "bg-blue-500" },
-  { id: "OBSERVADO", label: "Observado", color: "bg-yellow-500" },
-  { id: "COMPLETADO", label: "Completado", color: "bg-teal-500" },
+  { id: "SIN_PATENTAR", label: "Sin Patentar", color: "bg-gray-500" },
+  { id: "EN_TRAMITE", label: "En Trámite", color: "bg-blue-500" },
+  { id: "PATENTADA", label: "Patentada", color: "bg-teal-500" },
 ];
 
 // Documentos requeridos según DNRPA
@@ -214,8 +212,8 @@ export default function PatentamientoPage() {
   }
 
   const totalMotos = Object.values(data).flat().length;
-  const completadas = data.COMPLETADO.length;
-  const enProceso = data.EN_PROCESO.length + data.OBSERVADO.length;
+  const completadas = data.PATENTADA.length;
+  const enProceso = data.EN_TRAMITE.length;
 
   return (
     <div className="space-y-6">
