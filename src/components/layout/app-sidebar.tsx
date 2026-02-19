@@ -49,6 +49,10 @@ import {
   Mail,
   Shield,
   AlertTriangle,
+  ShoppingCart,
+  ClipboardList,
+  Clock,
+  BadgePercent,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -161,20 +165,22 @@ export function AppSidebar({ user }: Props) {
   const flota: NavItem[] = [
     { title: "Motos", href: "/admin/motos", icon: Bike },
     { title: "Patentamiento", href: "/admin/motos/patentamiento", icon: FileCheck },
-    { title: "Tarifas de Alquiler", href: "/admin/tarifas-alquiler", icon: Tag },
     { title: "Amortización", href: "/admin/flota/amortizacion", icon: BarChart3 },
     { title: "Mantenimientos", href: "/admin/mantenimientos", icon: Wrench },
     { title: "Talleres", href: "/admin/talleres", icon: Factory },
   ];
 
   const supplyChain: NavItem[] = [
-    { title: "Inventario", href: "/admin/repuestos", icon: Package },
+    { title: "Inventario Repuestos", href: "/admin/repuestos", icon: Package },
     { title: "Proveedores", href: "/admin/proveedores", icon: Truck },
+    { title: "Compra Local", href: "/admin/supply-chain/compra-local", icon: ShoppingCart },
     { title: "Importaciones", href: "/admin/importaciones", icon: Ship },
     { title: "Pricing Repuestos", href: "/admin/pricing-repuestos", icon: Calculator },
   ];
 
   const comercial: NavItem[] = [
+    { title: "Solicitudes", href: "/admin/solicitudes", icon: ClipboardList },
+    { title: "Lista de Espera", href: "/admin/solicitudes/lista-espera", icon: Clock },
     { title: "Clientes", href: "/admin/clientes", icon: Users },
     { title: "Contratos", href: "/admin/contratos", icon: FileText },
     { title: "Pagos", href: "/admin/pagos", icon: CreditCard },
@@ -182,12 +188,17 @@ export function AppSidebar({ user }: Props) {
     { title: "Notas de Crédito", href: "/admin/notas-credito", icon: FileCheck },
   ];
 
+  const tarifas: NavItem[] = [
+    { title: "Planes & Precios", href: "/admin/tarifas-alquiler", icon: BadgePercent },
+    { title: "Simulador", href: "/admin/tarifas-alquiler?tab=simulador", icon: Calculator },
+    { title: "Costos Operativos", href: "/admin/tarifas-alquiler?tab=costos", icon: Wallet },
+  ];
+
   const finanzas: NavItem[] = [
     { title: "Dashboard Financiero", href: "/admin/finanzas", icon: BarChart3 },
-    { title: "Indicadores", href: "/admin/finanzas/indicadores", icon: Activity },
     { title: "Flujo de Caja", href: "/admin/finanzas/flujo-caja", icon: Banknote },
-    { title: "Gastos", href: "/admin/gastos", icon: Wallet },
     { title: "Rentabilidad", href: "/admin/finanzas/rentabilidad", icon: TrendingUp },
+    { title: "Gastos", href: "/admin/gastos", icon: Wallet },
     { title: "Presupuestos", href: "/admin/presupuestos", icon: Calculator },
   ];
 
@@ -196,7 +207,6 @@ export function AppSidebar({ user }: Props) {
     { title: "Facturas Compra", href: "/admin/facturas-compra", icon: FileSpreadsheet },
     { title: "Plan de Cuentas", href: "/admin/cuentas-contables", icon: BookOpen },
     { title: "Asientos Contables", href: "/admin/asientos-contables", icon: Calculator },
-    { title: "Reportes", href: "/admin/contabilidad/reportes", icon: BarChart3 },
   ];
 
   const rrhh: NavItem[] = [
@@ -207,13 +217,12 @@ export function AppSidebar({ user }: Props) {
   ];
 
   const sistema: NavItem[] = [
-    { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
-    { title: "Permisos", href: "/admin/permisos", icon: Shield },
-    { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
-    { title: "Anomalias", href: "/anomalias", icon: AlertTriangle, badge: anomaliasCount },
-    { title: "Configuración Empresa", href: "/admin/configuracion/empresa", icon: Building2 },
-    { title: "Diagnóstico", href: "/admin/sistema/diagnostico", icon: Activity },
     { title: "Asistente IA", href: "/admin/asistente", icon: Sparkles, badgeText: "IA" },
+    { title: "Alertas", href: "/admin/alertas", icon: Bell, badge: alertasCount },
+    { title: "Usuarios", href: "/admin/usuarios", icon: UserCog },
+    { title: "Configuración Empresa", href: "/admin/configuracion/empresa", icon: Building2 },
+    { title: "Permisos", href: "/admin/permisos", icon: Shield },
+    { title: "Diagnóstico", href: "/admin/sistema/diagnostico", icon: Activity },
   ];
 
   // Fetch profile when sheet opens
@@ -538,7 +547,7 @@ export function AppSidebar({ user }: Props) {
           {/* Flota */}
           <CollapsibleNavSection
             title="Flota"
-            icon={Factory}
+            icon={Bike}
             items={flota}
             isCollapsed={isCollapsed}
             storageKey="sidebar-flota-open"
@@ -566,6 +575,18 @@ export function AppSidebar({ user }: Props) {
             items={comercial}
             isCollapsed={isCollapsed}
             storageKey="sidebar-comercial-open"
+          />
+
+          {/* Separator */}
+          <div className={cn("my-2 border-t border-sidebar-border", isCollapsed ? "mx-1" : "mx-2")} />
+
+          {/* Tarifas */}
+          <CollapsibleNavSection
+            title="Tarifas"
+            icon={BadgePercent}
+            items={tarifas}
+            isCollapsed={isCollapsed}
+            storageKey="sidebar-tarifas-open"
           />
 
           {/* Separator */}
