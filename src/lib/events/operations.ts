@@ -131,6 +131,12 @@ export const OPERATIONS = {
       complete: "maintenance.workorder.complete",
       assign: "maintenance.workorder.assign",
       view: "maintenance.workorder.view",
+      close: "maintenance.workorder.close",
+      item: {
+        create: "maintenance.workorder.item.create",
+        delete: "maintenance.workorder.item.delete",
+        view: "maintenance.workorder.item.view",
+      },
     },
     appointment: {
       create: "maintenance.appointment.create",

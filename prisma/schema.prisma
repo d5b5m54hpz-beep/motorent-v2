@@ -455,6 +455,7 @@ model Repuesto {
 
   // ─── Relaciones nuevas recepción mercadería ───────────────────
   recepcionesItems   RecepcionItemEmbarque[]
+  itemsOT            ItemOT[]
 
   @@index([proveedorId])
   @@index([categoria])
@@ -1385,6 +1386,7 @@ model OrdenTrabajo {
   cita            CitaMantenimiento?
   tareas          TareaOrdenTrabajo[]
   repuestosUsados RepuestoOrdenTrabajo[]
+  items           ItemOT[]
   fotosCheckIn    FotoInspeccion[]  @relation("FotosCheckIn")
   fotosCheckOut   FotoInspeccion[]  @relation("FotosCheckOut")
   historial       HistorialOT[]
@@ -1464,6 +1466,44 @@ enum ResultadoTarea {
   APROBADO
   REQUIERE_ATENCION
   REPROBADO
+}
+
+// ─── ÍTEMS DE COSTO DE UNA OT ────────────────────────────────────────
+
+enum TipoItemOT {
+  REPUESTO    // Repuesto del inventario (con FK a Repuesto)
+  MANO_OBRA   // Mano de obra (interna o tercerizada)
+  INSUMO      // Consumibles sin FK a inventario (aceite, trapos, etc.)
+}
+
+model ItemOT {
+  id              String       @id @default(cuid())
+  ordenTrabajoId  String
+  ordenTrabajo    OrdenTrabajo @relation(fields: [ordenTrabajoId], references: [id], onDelete: Cascade)
+
+  tipo            TipoItemOT
+
+  // Descripción libre (siempre requerida)
+  descripcion     String
+
+  // Para REPUESTO: FK al inventario (opcional)
+  repuestoId      String?
+  repuesto        Repuesto?    @relation(fields: [repuestoId], references: [id])
+
+  // Cantidad y precio
+  cantidad        Decimal      @db.Decimal(10,3)
+  precioUnitario  Decimal      @db.Decimal(12,2)
+  subtotal        Decimal      @db.Decimal(12,2)
+
+  // Solo para MANO_OBRA
+  horasMecanico   Decimal?     @db.Decimal(6,2)
+  tarifaHora      Decimal?     @db.Decimal(12,2)
+
+  creadoPor       String?
+  createdAt       DateTime     @default(now())
+
+  @@index([ordenTrabajoId])
+  @@index([repuestoId])
 }
 
 // ─── REPUESTOS USADOS EN UNA OT ──────────────────────────────────────
