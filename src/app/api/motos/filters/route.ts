@@ -44,11 +44,11 @@ export async function GET() {
 
     return NextResponse.json({
       marcas: marcas.map(m => m.marca),
-      modelos: modelos.map(m => ({ modelo: m.modelo, marca: m.marca })),
+      modelos: modelos.map(m => m.modelo), // Solo strings, no objetos
       colores: colores.map(c => c.color).filter((c): c is string => c !== null),
       tipos: tipos.map(t => t.tipo).filter((t): t is TipoMoto => t !== null),
-      anoMin: anos._min.anio || 2020,
-      anoMax: anos._max.anio || new Date().getFullYear(),
+      anioMin: anos._min.anio || 2020,
+      anioMax: anos._max.anio || new Date().getFullYear(),
     });
   } catch (error: unknown) {
     console.error('Error getting filters:', error);

@@ -479,7 +479,6 @@ export default function MotosPage() {
             }
             hasSelection={selectedIds.size > 0}
           />
-          <ImportDialog module="motos" onSuccess={fetchMotos} />
           <div className="flex items-center gap-2 rounded-lg border border-dashed border-muted-foreground/30 px-4 py-2 text-sm text-muted-foreground">
             <Info className="h-4 w-4 shrink-0" />
             <span>
@@ -546,9 +545,6 @@ export default function MotosPage() {
       {selectedIds.size > 0 && (
         <BulkActionsToolbar
           selectedCount={selectedIds.size}
-          onChangeState={() => setBulkStateDialogOpen(true)}
-          onChangeImage={() => setBulkImageDialogOpen(true)}
-          onDelete={() => setBulkDeleteDialogOpen(true)}
           onExport={handleExportSelected}
           onDeselect={() => setSelectedIds(new Set())}
         />
