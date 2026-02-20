@@ -7,11 +7,16 @@ import { useRouter } from "next/navigation";
 import {
   FileText,
   Wrench,
-  MessageSquare,
+  Car,
   MoreVertical,
   Edit,
   Trash2,
   AlertCircle,
+  User,
+  Calendar,
+  Clock,
+  DollarSign,
+  MapPin,
 } from "lucide-react";
 import {
   Sheet,
@@ -20,11 +25,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Moto } from "@/app/(dashboard)/admin/motos/types";
 
 type MotoDetailSheetProps = {
@@ -43,6 +49,28 @@ type MotoDetailSheetProps = {
   onOpenChange: (open: boolean) => void;
   motoId: string | null;
   onDelete?: () => void;
+};
+
+type ContratoActivo = {
+  id: string;
+  cliente: { nombre: string; email: string; dni: string };
+  fechaInicio: Date;
+  fechaFin: Date;
+  montoPeriodo: number;
+  frecuenciaPago: string;
+  estado: string;
+};
+
+type OrdenTrabajo = {
+  id: string;
+  numero: string;
+  tipoOT: string;
+  prioridad: string;
+  estado: string;
+  fechaIngreso: Date;
+  fechaFinalizacion: Date | null;
+  costoTotal: number;
+  descripcion: string;
 };
 
 export function MotoDetailSheet({
@@ -53,7 +81,11 @@ export function MotoDetailSheet({
 }: MotoDetailSheetProps) {
   const router = useRouter();
   const [moto, setMoto] = useState<Moto | null>(null);
+  const [contratoActivo, setContratoActivo] = useState<ContratoActivo | null>(null);
+  const [ordenesTrabajo, setOrdenesTrabajo] = useState<OrdenTrabajo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingContrato, setIsLoadingContrato] = useState(false);
+  const [isLoadingOTs, setIsLoadingOTs] = useState(false);
 
   useEffect(() => {
     if (open && motoId) {
@@ -62,6 +94,20 @@ export function MotoDetailSheet({
         .then((res) => res.json())
         .then((data) => {
           setMoto(data);
+
+          // Si está alquilada o reservada, fetch contrato activo
+          if (data.estado === "ALQUILADA" || data.estado === "RESERVADA") {
+            setIsLoadingContrato(true);
+            fetch(`/api/contratos?motoId=${motoId}&estado=ACTIVO,PENDIENTE&limit=1`)
+              .then((r) => r.json())
+              .then((d) => {
+                if (d.data && d.data.length > 0) {
+                  setContratoActivo(d.data[0]);
+                }
+              })
+              .catch((err) => console.error("Error loading contrato:", err))
+              .finally(() => setIsLoadingContrato(false));
+          }
         })
         .catch((error) => {
           console.error("Error loading moto details:", error);
@@ -71,6 +117,22 @@ export function MotoDetailSheet({
         });
     }
   }, [open, motoId]);
+
+  // Fetch órdenes de trabajo cuando se abre el tab de mantenimientos
+  const handleMantenimientosTabClick = () => {
+    if (motoId && ordenesTrabajo.length === 0 && !isLoadingOTs) {
+      setIsLoadingOTs(true);
+      fetch(`/api/mantenimientos/ordenes?motoId=${motoId}&limit=10`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.data) {
+            setOrdenesTrabajo(data.data);
+          }
+        })
+        .catch((err) => console.error("Error loading OTs:", err))
+        .finally(() => setIsLoadingOTs(false));
+    }
+  };
 
   const handleEdit = () => {
     if (moto) {
@@ -202,41 +264,64 @@ export function MotoDetailSheet({
 
             <Separator className="my-4" />
 
-            <Accordion type="multiple" defaultValue={["datos", "documentacion", "observaciones"]} className="w-full">
-              {/* Datos Generales */}
-              <AccordionItem value="datos">
-                <AccordionTrigger className="text-sm font-semibold">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Datos Generales
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <DataField label="Marca" value={moto.marca} />
-                    <DataField label="Modelo" value={moto.modelo} />
-                    <DataField label="Año" value={moto.anio} />
-                    <DataField label="Patente" value={moto.patente} />
-                    <DataField label="Cilindrada" value={moto.cilindrada ? `${moto.cilindrada} cc` : "-"} />
-                    <DataField label="Tipo" value={moto.tipo || "-"} />
-                    <DataField label="Color" value={moto.color || "-"} />
-                    <DataField label="Kilometraje" value={`${moto.kilometraje.toLocaleString("es-AR")} km`} />
-                    {moto.numeroMotor && <DataField label="Nº Motor" value={moto.numeroMotor} />}
-                    {moto.numeroCuadro && <DataField label="Nº Cuadro/Chasis" value={moto.numeroCuadro} />}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+            {/* Tabs organizadas por categoría */}
+            <Tabs defaultValue="general" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="general">
+                  <FileText className="h-4 w-4 mr-1" />
+                  General
+                </TabsTrigger>
+                <TabsTrigger value="mantenimientos" onClick={handleMantenimientosTabClick}>
+                  <Wrench className="h-4 w-4 mr-1" />
+                  Mantenimientos
+                </TabsTrigger>
+                <TabsTrigger value="viajes">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  Viajes
+                </TabsTrigger>
+              </TabsList>
 
-              {/* Documentación */}
-              <AccordionItem value="documentacion">
-                <AccordionTrigger className="text-sm font-semibold">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Documentación
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4">
+              {/* TAB: GENERAL */}
+              <TabsContent value="general" className="space-y-4 mt-4">
+                {/* Datos de la Moto */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Car className="h-4 w-4" />
+                      Datos de la Moto
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <DataField label="Marca" value={moto.marca} />
+                      <DataField label="Modelo" value={moto.modelo} />
+                      <DataField label="Año" value={moto.anio} />
+                      <DataField label="Patente" value={moto.patente} />
+                      <DataField label="Cilindrada" value={moto.cilindrada ? `${moto.cilindrada} cc` : "-"} />
+                      <DataField label="Tipo" value={moto.tipo || "-"} />
+                      <DataField label="Color" value={moto.color || "-"} />
+                      <DataField label="Kilometraje" value={`${moto.kilometraje.toLocaleString("es-AR")} km`} />
+                      {moto.numeroMotor && <DataField label="Nº Motor" value={moto.numeroMotor} />}
+                      {moto.numeroCuadro && <DataField label="Nº Cuadro" value={moto.numeroCuadro} />}
+                    </div>
+                    {moto.descripcion && (
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-1">Observaciones</p>
+                        <p className="text-sm">{moto.descripcion}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Documentación */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Documentación
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     {/* Patentamiento */}
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium">Patentamiento</h4>
@@ -249,21 +334,15 @@ export function MotoDetailSheet({
                         </div>
                         {moto.fechaInicioTramitePatente && (
                           <DataField
-                            label="Fecha inicio trámite"
+                            label="Inicio trámite"
                             value={new Date(moto.fechaInicioTramitePatente).toLocaleDateString("es-AR")}
                           />
                         )}
                         {moto.fechaPatentamiento && (
                           <DataField
-                            label="Fecha patentamiento"
+                            label="Patentada"
                             value={new Date(moto.fechaPatentamiento).toLocaleDateString("es-AR")}
                           />
-                        )}
-                        {moto.notasPatentamiento && (
-                          <div className="col-span-2">
-                            <p className="text-xs text-muted-foreground">Notas</p>
-                            <p className="text-sm">{moto.notasPatentamiento}</p>
-                          </div>
                         )}
                       </div>
                     </div>
@@ -292,72 +371,202 @@ export function MotoDetailSheet({
                         </div>
                         {moto.aseguradora && <DataField label="Aseguradora" value={moto.aseguradora} />}
                         {moto.numeroPoliza && <DataField label="Nº Póliza" value={moto.numeroPoliza} />}
-                        {moto.fechaInicioSeguro && (
-                          <DataField
-                            label="Fecha inicio"
-                            value={new Date(moto.fechaInicioSeguro).toLocaleDateString("es-AR")}
-                          />
-                        )}
                         {moto.fechaVencimientoSeguro && (
                           <DataField
                             label="Vigencia hasta"
                             value={new Date(moto.fechaVencimientoSeguro).toLocaleDateString("es-AR")}
                           />
                         )}
-                        {moto.notasSeguro && (
-                          <div className="col-span-2">
-                            <p className="text-xs text-muted-foreground">Notas</p>
-                            <p className="text-sm">{moto.notasSeguro}</p>
-                          </div>
-                        )}
                       </div>
                     </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+                  </CardContent>
+                </Card>
 
-              {/* Mantenimientos */}
-              <AccordionItem value="mantenimientos">
-                <AccordionTrigger className="text-sm font-semibold">
-                  <div className="flex items-center gap-2">
-                    <Wrench className="h-4 w-4" />
-                    Mantenimientos
+                {/* Contrato Activo (si aplica) */}
+                {(moto.estado === "ALQUILADA" || moto.estado === "RESERVADA") && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        {moto.estado === "ALQUILADA" ? "Contrato Activo" : "Contrato en Firma"}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoadingContrato ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                      ) : contratoActivo ? (
+                        <div className="space-y-3 text-sm">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Cliente</p>
+                              <p className="font-medium">{contratoActivo.cliente.nombre}</p>
+                              <p className="text-xs text-muted-foreground">{contratoActivo.cliente.email}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {contratoActivo.estado}
+                            </Badge>
+                          </div>
+                          <Separator />
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Desde
+                              </p>
+                              <p className="font-medium">
+                                {new Date(contratoActivo.fechaInicio).toLocaleDateString("es-AR")}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Hasta
+                              </p>
+                              <p className="font-medium">
+                                {new Date(contratoActivo.fechaFin).toLocaleDateString("es-AR")}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <DollarSign className="h-3 w-3" />
+                                Monto {contratoActivo.frecuenciaPago.toLowerCase()}
+                              </p>
+                              <p className="font-medium">
+                                ${Number(contratoActivo.montoPeriodo).toLocaleString("es-AR")}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Frecuencia
+                              </p>
+                              <p className="font-medium">{contratoActivo.frecuenciaPago}</p>
+                            </div>
+                          </div>
+                          <Link
+                            href={`/admin/contratos/${contratoActivo.id}`}
+                            className="block text-center text-xs text-cyan-600 hover:underline pt-2"
+                          >
+                            Ver contrato completo →
+                          </Link>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No se encontró contrato activo</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              {/* TAB: MANTENIMIENTOS */}
+              <TabsContent value="mantenimientos" className="space-y-4 mt-4">
+                {isLoadingOTs ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
                   </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="rounded-lg border border-dashed p-4 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      No hay mantenimientos registrados
-                    </p>
+                ) : ordenesTrabajo.length > 0 ? (
+                  <div className="space-y-3">
+                    {ordenesTrabajo.map((ot) => (
+                      <Card key={ot.id}>
+                        <CardContent className="pt-4">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-medium">OT {ot.numero}</p>
+                                <p className="text-xs text-muted-foreground">{ot.tipoOT}</p>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                {ot.estado}
+                              </Badge>
+                            </div>
+                            {ot.descripcion && (
+                              <p className="text-sm text-muted-foreground">{ot.descripcion}</p>
+                            )}
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">
+                                {new Date(ot.fechaIngreso).toLocaleDateString("es-AR")}
+                                {ot.fechaFinalizacion && (
+                                  <> → {new Date(ot.fechaFinalizacion).toLocaleDateString("es-AR")}</>
+                                )}
+                              </span>
+                              {ot.costoTotal > 0 && (
+                                <span className="font-medium">
+                                  ${Number(ot.costoTotal).toLocaleString("es-AR")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                     <Link
                       href={`/admin/mantenimientos?motoId=${moto.id}`}
-                      className="mt-2 inline-block text-xs text-cyan-600 hover:underline"
+                      className="block text-center text-sm text-cyan-600 hover:underline pt-2"
                     >
-                      Ver todos →
+                      Ver historial completo →
                     </Link>
                   </div>
-                </AccordionContent>
-              </AccordionItem>
+                ) : (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <Wrench className="h-12 w-12 mx-auto text-muted-foreground/40" />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          No hay mantenimientos registrados
+                        </p>
+                        <Link
+                          href={`/admin/mantenimientos?motoId=${moto.id}`}
+                          className="inline-block mt-2 text-xs text-cyan-600 hover:underline"
+                        >
+                          Crear orden de trabajo →
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
 
-              {/* Observaciones */}
-              <AccordionItem value="observaciones">
-                <AccordionTrigger className="text-sm font-semibold">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Observaciones
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  {moto.descripcion ? (
-                    <p className="text-sm text-muted-foreground">{moto.descripcion}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">
-                      Sin observaciones
-                    </p>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+              {/* TAB: VIAJES (Placeholder para IoT/Telemetría) */}
+              <TabsContent value="viajes" className="space-y-4 mt-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center space-y-3">
+                      <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                        <MapPin className="h-8 w-8 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">Telemetría & IoT</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Próximamente: seguimiento GPS, datos de conducción, historial de viajes
+                        </p>
+                      </div>
+                      <div className="pt-4 space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">🛰️ GPS tracking</span>
+                          <Badge variant="outline" className="text-xs">Próximamente</Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">📍 Historial de rutas</span>
+                          <Badge variant="outline" className="text-xs">Próximamente</Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">⚡ Datos de conducción</span>
+                          <Badge variant="outline" className="text-xs">Próximamente</Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">🔋 Estado de batería</span>
+                          <Badge variant="outline" className="text-xs">Próximamente</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </>
         ) : (
           <div className="flex h-full items-center justify-center">
