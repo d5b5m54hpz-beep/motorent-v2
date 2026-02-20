@@ -1,17 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Eye, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { Moto } from "../types";
 
 const estadoBadgeMap: Record<string, { label: string; className: string }> = {
@@ -70,8 +63,6 @@ type GridViewProps = {
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onView: (moto: Moto) => void;
-  onEdit: (moto: Moto) => void;
-  onDelete: (moto: Moto) => void;
 };
 
 export function GridView({
@@ -79,8 +70,6 @@ export function GridView({
   selectedIds,
   onToggleSelect,
   onView,
-  onEdit,
-  onDelete,
 }: GridViewProps) {
   if (motos.length === 0) {
     return (
@@ -102,9 +91,24 @@ export function GridView({
         return (
           <Card
             key={moto.id}
-            className={`overflow-hidden transition-all ${
-              isSelected ? "ring-2 ring-cyan-500" : ""
-            }`}
+            onClick={(e) => {
+              const target = e.target as HTMLElement;
+              if (
+                target.closest('[role="checkbox"]') ||
+                target.closest("button") ||
+                target.closest('[role="menuitem"]')
+              ) {
+                return;
+              }
+              onView(moto);
+            }}
+            className={cn(
+              "overflow-hidden transition-all cursor-pointer",
+              "hover:ring-2 hover:ring-cyan-400/40 hover:shadow-[0_0_20px_rgba(56,178,172,0.12)]",
+              isSelected
+                ? "ring-2 ring-cyan-500 shadow-[0_0_20px_rgba(56,178,172,0.2)]"
+                : ""
+            )}
           >
             <CardContent className="p-0">
               {/* Imagen */}
@@ -114,7 +118,7 @@ export function GridView({
                     src={moto.imagen}
                     alt={`${moto.marca} ${moto.modelo}`}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">
@@ -136,42 +140,10 @@ export function GridView({
                   </Badge>
                 </div>
 
-                {/* Actions Menu */}
-                <div className="absolute bottom-2 right-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="h-8 w-8 bg-background/80 backdrop-blur-sm"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onView(moto)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onEdit(moto)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onDelete(moto)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
               </div>
 
               {/* Info */}
               <div className="space-y-3 p-4">
-                {/* Marca y Modelo */}
                 <div>
                   <h3 className="truncate text-lg font-semibold">
                     {moto.marca} {moto.modelo}
@@ -181,7 +153,6 @@ export function GridView({
                   </p>
                 </div>
 
-                {/* Detalles */}
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Patente:</span>
@@ -207,7 +178,6 @@ export function GridView({
                   )}
                 </div>
 
-                {/* Color */}
                 {moto.color && (
                   <div className="flex items-center gap-2">
                     <div

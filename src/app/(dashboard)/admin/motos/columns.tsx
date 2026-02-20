@@ -1,17 +1,11 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type { Moto } from "./types";
 
 const estadoBadgeMap: Record<string, { label: string; className: string }> = {
@@ -66,9 +60,6 @@ const estadoBadgeMap: Record<string, { label: string; className: string }> = {
 };
 
 type ColumnActions = {
-  onView: (moto: Moto) => void;
-  onEdit: (moto: Moto) => void;
-  onDelete: (moto: Moto) => void;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: () => void;
@@ -251,39 +242,6 @@ export function getColumns(actions: ColumnActions): ColumnDef<Moto>[] {
       cell: ({ row }) => {
         const km = row.getValue("kilometraje") as number | null;
         return km ? km.toLocaleString("es-AR") : "0";
-      },
-    },
-    {
-      id: "actions",
-      header: "",
-      cell: ({ row }) => {
-        const moto = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => actions.onView(moto)}>
-                <Eye className="mr-2 h-4 w-4" />
-                Ver
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onEdit(moto)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => actions.onDelete(moto)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
       },
     },
   ];

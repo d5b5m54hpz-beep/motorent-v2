@@ -51,6 +51,11 @@ export async function GET(req: NextRequest) {
     ];
   }
 
+  const motoId = url.searchParams.get("motoId");
+  if (motoId) {
+    where.motoId = motoId;
+  }
+
   if (estado) {
     where.estado = estado;
   }

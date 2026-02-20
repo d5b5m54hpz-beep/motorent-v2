@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import Link from "next/link";
 import {
   useReactTable,
   getCoreRowModel,
@@ -15,7 +14,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -309,18 +307,6 @@ export default function MotosPage() {
   const columns = useMemo(
     () =>
       getColumns({
-        onView: (moto) => {
-          setSelectedMotoId(moto.id);
-          setDetailSheetOpen(true);
-        },
-        onEdit: (moto) => {
-          setSelectedMoto(moto);
-          setDialogOpen(true);
-        },
-        onDelete: (moto) => {
-          setMotoToDelete(moto);
-          setDeleteDialogOpen(true);
-        },
         selectedIds,
         onToggleSelect: handleToggleSelect,
         onToggleSelectAll: handleToggleSelectAll,
@@ -479,19 +465,6 @@ export default function MotosPage() {
             }
             hasSelection={selectedIds.size > 0}
           />
-          <div className="flex items-center gap-2 rounded-lg border border-dashed border-muted-foreground/30 px-4 py-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4 shrink-0" />
-            <span>
-              Las motos se ingresan desde{" "}
-              <Link href="/admin/supply-chain/compra-local" className="font-medium text-foreground underline-offset-4 hover:underline">
-                Compra Local
-              </Link>
-              {" "}o{" "}
-              <Link href="/admin/importaciones" className="font-medium text-foreground underline-offset-4 hover:underline">
-                Importaciones
-              </Link>
-            </span>
-          </div>
         </div>
       </div>
 
@@ -635,14 +608,6 @@ export default function MotosPage() {
             setSelectedMotoId(moto.id);
             setDetailSheetOpen(true);
           }}
-          onEdit={(moto) => {
-            setSelectedMoto(moto);
-            setDialogOpen(true);
-          }}
-          onDelete={(moto) => {
-            setMotoToDelete(moto);
-            setDeleteDialogOpen(true);
-          }}
         />
       )}
 
@@ -725,15 +690,6 @@ export default function MotosPage() {
           if (!open) setSelectedMotoId(null);
         }}
         motoId={selectedMotoId}
-        onDelete={() => {
-          if (selectedMotoId) {
-            const moto = data.find(m => m.id === selectedMotoId);
-            if (moto) {
-              setMotoToDelete(moto);
-              setDeleteDialogOpen(true);
-            }
-          }
-        }}
       />
 
       {/* Delete Dialog */}
