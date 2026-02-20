@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     // Activo No Corriente: Valor de la flota (motos activas)
     const flota = await prisma.moto.aggregate({
-      where: { estado: { not: "BAJA" } },
+      where: { estado: { not: "BAJA_DEFINITIVA" } },
       _sum: { valorCompra: true },
     });
     const activoNoCorriente = Number(flota._sum.valorCompra || 0);

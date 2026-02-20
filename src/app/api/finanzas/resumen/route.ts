@@ -28,7 +28,7 @@ export async function GET() {
     const gastos = Number(gastosMes._sum.monto) || 0;
 
     // Fleet occupancy
-    const totalMotos = await prisma.moto.count({ where: { estado: { not: "BAJA" } } });
+    const totalMotos = await prisma.moto.count({ where: { estado: { not: "BAJA_DEFINITIVA" } } });
     const motosAlquiladas = await prisma.moto.count({ where: { estado: "ALQUILADA" } });
     const ocupacion = totalMotos > 0 ? (motosAlquiladas / totalMotos) * 100 : 0;
 
@@ -157,7 +157,7 @@ export async function GET() {
       FROM "Moto" m
       LEFT JOIN "Contrato" c ON c."motoId" = m.id
       LEFT JOIN "Pago" p ON p."contratoId" = c.id AND p.estado = 'APROBADO'
-      WHERE m.estado != 'BAJA' AND m."valorCompra" > 0
+      WHERE m.estado != 'BAJA_DEFINITIVA' AND m."valorCompra" > 0
       GROUP BY m.id, m.modelo, m.marca, m.patente, m."valorCompra"
       ORDER BY roi DESC
       LIMIT 10

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import {
   useReactTable,
   getCoreRowModel,
@@ -14,6 +15,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -330,8 +332,8 @@ export default function MotosPage() {
   const stats = useMemo(() => {
     const disponibles = data.filter((m) => m.estado === "DISPONIBLE").length;
     const alquiladas = data.filter((m) => m.estado === "ALQUILADA").length;
-    const mantenimiento = data.filter((m) => m.estado === "MANTENIMIENTO").length;
-    const baja = data.filter((m) => m.estado === "BAJA").length;
+    const mantenimiento = data.filter((m) => m.estado === "EN_SERVICE").length;
+    const baja = data.filter((m) => m.estado === "BAJA_DEFINITIVA").length;
 
     return { disponibles, alquiladas, mantenimiento, baja };
   }, [data]);
@@ -474,15 +476,19 @@ export default function MotosPage() {
             hasSelection={selectedIds.size > 0}
           />
           <ImportDialog module="motos" onSuccess={fetchMotos} />
-          <Button
-            onClick={() => {
-              setSelectedMoto(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Moto
-          </Button>
+          <div className="flex items-center gap-2 rounded-lg border border-dashed border-muted-foreground/30 px-4 py-2 text-sm text-muted-foreground">
+            <Info className="h-4 w-4 shrink-0" />
+            <span>
+              Las motos se ingresan desde{" "}
+              <Link href="/admin/supply-chain/compra-local" className="font-medium text-foreground underline-offset-4 hover:underline">
+                Compra Local
+              </Link>
+              {" "}o{" "}
+              <Link href="/admin/importaciones" className="font-medium text-foreground underline-offset-4 hover:underline">
+                Importaciones
+              </Link>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -697,13 +703,9 @@ export default function MotosPage() {
       >
         <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedMoto ? "Editar moto" : "Nueva moto"}
-            </DialogTitle>
+            <DialogTitle>Editar moto</DialogTitle>
             <DialogDescription>
-              {selectedMoto
-                ? "Modifica los datos de la moto"
-                : "Completa los datos para agregar una nueva moto"}
+              Modifica los datos de la moto
             </DialogDescription>
           </DialogHeader>
           <MotoForm

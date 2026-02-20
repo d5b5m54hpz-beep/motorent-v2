@@ -53,7 +53,7 @@ export function StatsCards({
       icon: Wrench,
       color: "text-yellow-600 dark:text-yellow-400",
       bgColor: "bg-yellow-50 dark:bg-yellow-950",
-      estado: "MANTENIMIENTO",
+      estado: "EN_SERVICE",
       clickable: true,
     },
     {
@@ -62,7 +62,7 @@ export function StatsCards({
       icon: XCircle,
       color: "text-red-600 dark:text-red-400",
       bgColor: "bg-red-50 dark:bg-red-950",
-      estado: "BAJA",
+      estado: "BAJA_DEFINITIVA",
       clickable: true,
     },
   ];

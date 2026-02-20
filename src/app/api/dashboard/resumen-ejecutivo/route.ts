@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
 
     // Motos y ocupación
     const [totalMotos, motosAlquiladas] = await Promise.all([
-      prisma.moto.count({ where: { estado: { not: "BAJA" } } }),
+      prisma.moto.count({ where: { estado: { not: "BAJA_DEFINITIVA" } } }),
       prisma.moto.count({ where: { estado: "ALQUILADA" } }),
     ]);
 

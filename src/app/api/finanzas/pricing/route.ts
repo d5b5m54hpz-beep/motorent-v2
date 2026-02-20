@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const margen = parseFloat(url.searchParams.get("margen") ?? "30") / 100;
 
     const motos = await prisma.moto.findMany({
-      where: { estado: { not: "BAJA" } },
+      where: { estado: { not: "BAJA_DEFINITIVA" } },
       select: {
         id: true,
         marca: true,

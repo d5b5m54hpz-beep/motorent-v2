@@ -183,11 +183,18 @@ model Moto {
 }
 
 enum EstadoMoto {
-  DISPONIBLE
-  ALQUILADA
-  MANTENIMIENTO
-  BAJA
-  TRANSFERIDA
+  EN_DEPOSITO      // Ingresada al sistema, sin patente aún. Viene de Supply Chain.
+  EN_PATENTAMIENTO // Documentación enviada a DNRPA. En trámite.
+  DISPONIBLE       // Patentada, lista para asignar a un rider.
+  RESERVADA        // Asignada a rider aprobado, contrato en proceso de firma.
+  ALQUILADA        // Contrato activo, rider en posesión de la moto.
+  EN_SERVICE       // En taller para mantenimiento preventivo programado.
+  EN_REPARACION    // En taller por falla/accidente — correctivo o emergencia.
+  INMOVILIZADA     // Retenida por autoridad (infracción grave).
+  RECUPERACION     // Tras accidente/robo recuperado — evaluando daños.
+  BAJA_TEMP        // Fuera de operación temporalmente (robo en trámite, siniestro).
+  BAJA_DEFINITIVA  // Dada de baja permanente. Irreversible.
+  TRANSFERIDA      // Propiedad transferida al rider (Rent-to-Own completado).
 }
 
 enum TipoMoto {

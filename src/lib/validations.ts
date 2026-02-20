@@ -6,7 +6,7 @@ export const CUIT_REGEX = /^\d{2}-\d{8}-\d$/;
 
 // ─── Motos ───────────────────────────────────────────────────────────────────
 
-export const motoEstados = ["DISPONIBLE", "ALQUILADA", "MANTENIMIENTO", "BAJA"] as const;
+export const motoEstados = ["DISPONIBLE", "ALQUILADA", "EN_SERVICE", "BAJA_DEFINITIVA"] as const;
 export const estadosPatentamiento = ["SIN_PATENTAR", "EN_TRAMITE", "PATENTADA"] as const;
 export const estadosSeguro = ["SIN_SEGURO", "EN_TRAMITE", "ASEGURADA"] as const;
 
@@ -697,7 +697,7 @@ export const ordenMantenimientoSchema = z.object({
   kmAlIngreso: z.coerce.number().int().min(0, "Km al ingreso es requerido"),
   tallerId: z.string().optional(),
   mecanicoId: z.string().optional(),
-  prioridad: z.enum(["BAJA", "MEDIA", "ALTA", "URGENTE"]).optional(),
+  prioridad: z.enum(["BAJA_DEFINITIVA", "MEDIA", "ALTA", "URGENTE"]).optional(),
   fechaProgramada: z.string().optional(),
 });
 

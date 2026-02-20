@@ -14,12 +14,12 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
     });
 
-    const total = await prisma.moto.count({ where: { estado: { not: "BAJA" } } });
+    const total = await prisma.moto.count({ where: { estado: { not: "BAJA_DEFINITIVA" } } });
     const alquiladas = await prisma.moto.count({ where: { estado: "ALQUILADA" } });
 
     // Valor de la flota
     const valorFlota = await prisma.moto.aggregate({
-      where: { estado: { not: "BAJA" }, valorCompra: { not: null } },
+      where: { estado: { not: "BAJA_DEFINITIVA" }, valorCompra: { not: null } },
       _sum: { valorCompra: true, valorResidual: true },
     });
 

@@ -12,7 +12,7 @@ interface CategoriaConfig {
 
 interface DashboardAlerta {
   tipo: string;
-  severidad: "ALTA" | "MEDIA" | "BAJA";
+  severidad: "ALTA" | "MEDIA" | "BAJA_DEFINITIVA";
   mensaje: string;
   repuestoId?: string;
   accion: string;
@@ -324,7 +324,7 @@ export async function GET(req: NextRequest) {
     if (embarquesEnTransito > 0) {
       alertas.push({
         tipo: "EMBARQUE_LLEGANDO",
-        severidad: "BAJA",
+        severidad: "BAJA_DEFINITIVA",
         mensaje: `${embarquesEnTransito} embarques en tránsito`,
         accion: "Preparar recálculo de precios al confirmar llegada",
       });

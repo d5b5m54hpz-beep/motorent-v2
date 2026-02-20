@@ -49,7 +49,7 @@ function getCount(data: SeveridadCount[], sev: string): number {
 }
 
 export function ResumenAnomalias({ data }: { data: ResumenData | null }) {
-  const severidades = ["CRITICA", "ALTA", "MEDIA", "BAJA"];
+  const severidades = ["CRITICA", "ALTA", "MEDIA", "BAJA_DEFINITIVA"];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

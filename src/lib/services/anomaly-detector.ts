@@ -599,7 +599,7 @@ export async function detectarVencimientosProximos(): Promise<number> {
     // A) Check Moto.fechaVencimientoSeguro
     const motosConSeguroProximo = await prisma.moto.findMany({
       where: {
-        estado: { not: "BAJA" as EstadoMoto },
+        estado: { not: "BAJA_DEFINITIVA" as EstadoMoto },
         fechaVencimientoSeguro: {
           lte: fifteenDaysFromNow,
         },
@@ -668,7 +668,7 @@ export async function detectarVencimientosProximos(): Promise<number> {
 
     for (const doc of documentosProximos) {
       if (!doc.fechaVencimiento) continue;
-      if (doc.moto.estado === "BAJA") continue;
+      if (doc.moto.estado === "BAJA_DEFINITIVA") continue;
 
       const diasRestantes = Math.floor(
         (doc.fechaVencimiento.getTime() - now.getTime()) /

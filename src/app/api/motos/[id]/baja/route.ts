@@ -107,7 +107,7 @@ export async function POST(
     await prisma.moto.update({
       where: { id },
       data: {
-        estado: "BAJA" as EstadoMoto,
+        estado: "BAJA_DEFINITIVA" as EstadoMoto,
         estadoLegal,
       },
     });
@@ -117,7 +117,7 @@ export async function POST(
       data: {
         motoId: id,
         estadoAnterior: moto.estado,
-        estadoNuevo: "BAJA" as EstadoMoto,
+        estadoNuevo: "BAJA_DEFINITIVA" as EstadoMoto,
         motivo: `BAJA ${data.tipoBaja} - ${data.motivo || ""}`,
         usuarioId: userId || undefined,
       },

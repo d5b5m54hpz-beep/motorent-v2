@@ -87,12 +87,21 @@ export function MotoDetailSheet({
   };
 
   // Estado badges
-  const estadoBadge = {
+  const estadoBadgeMap: Record<string, { label: string; className: string }> = {
+    EN_DEPOSITO: { label: "En Depósito", className: "bg-gray-100 text-gray-700 border-gray-300" },
+    EN_PATENTAMIENTO: { label: "Patentando", className: "bg-amber-100 text-amber-700 border-amber-300" },
     DISPONIBLE: { label: "Disponible", className: "bg-green-100 text-green-700 border-green-300" },
+    RESERVADA: { label: "Reservada", className: "bg-blue-100 text-blue-700 border-blue-300" },
     ALQUILADA: { label: "Alquilada", className: "bg-cyan-100 text-cyan-700 border-cyan-300" },
-    MANTENIMIENTO: { label: "Mantenimiento", className: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-    BAJA: { label: "Baja", className: "bg-gray-100 text-gray-700 border-gray-300" },
-  }[moto?.estado ?? "DISPONIBLE"] ?? { label: "Desconocido", className: "" };
+    EN_SERVICE: { label: "En Service", className: "bg-orange-100 text-orange-700 border-orange-300" },
+    EN_REPARACION: { label: "En Reparación", className: "bg-red-100 text-red-700 border-red-300" },
+    INMOVILIZADA: { label: "Inmovilizada", className: "bg-purple-100 text-purple-700 border-purple-300" },
+    RECUPERACION: { label: "Recuperación", className: "bg-sky-100 text-sky-700 border-sky-300" },
+    BAJA_TEMP: { label: "Baja Temporal", className: "bg-rose-100 text-rose-700 border-rose-300" },
+    BAJA_DEFINITIVA: { label: "Baja Definitiva", className: "bg-slate-100 text-slate-700 border-slate-300" },
+    TRANSFERIDA: { label: "Transferida", className: "bg-teal-100 text-teal-700 border-teal-300" },
+  };
+  const estadoBadge = estadoBadgeMap[moto?.estado ?? "DISPONIBLE"] ?? { label: "Desconocido", className: "" };
 
   // Patentamiento badge
   const patentamientoBadge = {

@@ -54,8 +54,8 @@ type MotosFiltersProps = {
 const estados = [
   { value: "DISPONIBLE", label: "Disponible" },
   { value: "ALQUILADA", label: "Alquilada" },
-  { value: "MANTENIMIENTO", label: "Mantenimiento" },
-  { value: "BAJA", label: "Baja" },
+  { value: "EN_SERVICE", label: "Mantenimiento" },
+  { value: "BAJA_DEFINITIVA", label: "Baja" },
 ];
 
 export function MotosFiltersComponent({

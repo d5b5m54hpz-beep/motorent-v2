@@ -102,7 +102,7 @@ export default function EmpleadosPage() {
           <TabsTrigger value="ACTIVO">Activos</TabsTrigger>
           <TabsTrigger value="LICENCIA">En Licencia</TabsTrigger>
           <TabsTrigger value="SUSPENDIDO">Suspendidos</TabsTrigger>
-          <TabsTrigger value="BAJA">Bajas</TabsTrigger>
+          <TabsTrigger value="BAJA_DEFINITIVA">Bajas</TabsTrigger>
         </TabsList>
 
         <TabsContent value={estado || "todos"} className="space-y-4">

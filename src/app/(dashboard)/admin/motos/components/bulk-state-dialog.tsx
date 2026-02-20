@@ -36,13 +36,13 @@ const estados = [
     color: "text-blue-600",
   },
   {
-    value: "MANTENIMIENTO",
+    value: "EN_SERVICE",
     label: "Mantenimiento",
     icon: Wrench,
     color: "text-yellow-600",
   },
   {
-    value: "BAJA",
+    value: "BAJA_DEFINITIVA",
     label: "Baja",
     icon: XCircle,
     color: "text-red-600",

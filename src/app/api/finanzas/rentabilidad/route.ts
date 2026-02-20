@@ -9,7 +9,7 @@ export async function GET() {
 
   try {
     const motos = await prisma.moto.findMany({
-      where: { estado: { not: "BAJA" } },
+      where: { estado: { not: "BAJA_DEFINITIVA" } },
       select: {
         id: true,
         marca: true,

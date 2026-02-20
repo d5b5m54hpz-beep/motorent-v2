@@ -37,7 +37,7 @@ async function handleContractFinalize(ctx: EventContext): Promise<void> {
     if (estadoNuevo === "FINALIZADO" || estadoNuevo === "FINALIZADO_COMPRA") {
       await prisma.moto.update({
         where: { id: contrato.motoId },
-        data: { estado: estadoNuevo === "FINALIZADO_COMPRA" ? "BAJA" : "DISPONIBLE" },
+        data: { estado: estadoNuevo === "FINALIZADO_COMPRA" ? "BAJA_DEFINITIVA" : "DISPONIBLE" },
       });
     }
 

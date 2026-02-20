@@ -68,7 +68,7 @@ export const finanzasTools: ToolMetadata[] = [
       motoId: z.string().optional().describe("ID de moto específica, o vacío para todas"),
     }),
     execute: async ({ motoId }) => {
-      const where = motoId ? { id: motoId } : { estado: { not: "BAJA" as EstadoMoto } };
+      const where = motoId ? { id: motoId } : { estado: { not: "BAJA_DEFINITIVA" as EstadoMoto } };
       const motos = await prisma.moto.findMany({
         where,
         select: { id: true, marca: true, modelo: true, patente: true, kilometraje: true, precioMensual: true },
@@ -110,7 +110,7 @@ export const finanzasTools: ToolMetadata[] = [
     }),
     execute: async ({ margen }) => {
       const motos = await prisma.moto.findMany({
-        where: { estado: { not: "BAJA" as EstadoMoto } },
+        where: { estado: { not: "BAJA_DEFINITIVA" as EstadoMoto } },
         select: { id: true, marca: true, modelo: true, patente: true, precioMensual: true, createdAt: true },
       });
 

@@ -21,8 +21,8 @@ export default async function FlotaPage() {
   if (!session?.user) redirect("/login-admin");
 
   const [totalMotos, enMantenimiento, patentamientoPendiente] = await Promise.all([
-    prisma.moto.count({ where: { estado: { not: "BAJA" } } }),
-    prisma.moto.count({ where: { estado: "MANTENIMIENTO" } }),
+    prisma.moto.count({ where: { estado: { not: "BAJA_DEFINITIVA" } } }),
+    prisma.moto.count({ where: { estado: "EN_SERVICE" } }),
     prisma.moto.count({ where: { estadoPatentamiento: { not: "PATENTADA" } } }),
   ]);
 

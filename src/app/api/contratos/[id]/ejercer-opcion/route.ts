@@ -80,7 +80,7 @@ export async function POST(
     await prisma.moto.update({
       where: { id: contrato.motoId },
       data: {
-        estado: "BAJA",
+        estado: "BAJA_DEFINITIVA",
         estadoLegal: "BAJA_DEFINITIVA",
       },
     });
@@ -90,7 +90,7 @@ export async function POST(
       data: {
         motoId: contrato.motoId,
         estadoAnterior: contrato.moto.estado,
-        estadoNuevo: "BAJA",
+        estadoNuevo: "BAJA_DEFINITIVA",
         motivo: `VENTA POR OPCIÓN A COMPRA - Contrato ${id} - Cliente: ${contrato.cliente.user.name}`,
         usuarioId: userId || undefined,
       },

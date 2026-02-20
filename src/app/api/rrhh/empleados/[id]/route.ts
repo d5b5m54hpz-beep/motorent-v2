@@ -85,7 +85,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     // Soft delete - cambiar estado a BAJA
     await prisma.empleado.update({
       where: { id },
-      data: { estado: "BAJA" as EstadoEmpleado, fechaEgreso: new Date() },
+      data: { estado: "BAJA_DEFINITIVA" as EstadoEmpleado, fechaEgreso: new Date() },
     });
 
     eventBus.emit(OPERATIONS.hr.employee.terminate, "Empleado", id, { action: "baja" }, userId).catch(err => console.error("[Events] hr.employee.terminate error:", err));

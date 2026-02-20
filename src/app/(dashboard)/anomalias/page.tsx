@@ -268,7 +268,7 @@ function AnomaliasPageContent() {
             <SelectItem value="CRITICA">Critica</SelectItem>
             <SelectItem value="ALTA">Alta</SelectItem>
             <SelectItem value="MEDIA">Media</SelectItem>
-            <SelectItem value="BAJA">Baja</SelectItem>
+            <SelectItem value="BAJA_DEFINITIVA">Baja</SelectItem>
           </SelectContent>
         </Select>
 

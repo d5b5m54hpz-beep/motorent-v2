@@ -15,21 +15,53 @@ import {
 import type { Moto } from "../types";
 
 const estadoBadgeMap: Record<string, { label: string; className: string }> = {
+  EN_DEPOSITO: {
+    label: "En Depósito",
+    className: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+  },
+  EN_PATENTAMIENTO: {
+    label: "Patentando",
+    className: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+  },
   DISPONIBLE: {
     label: "Disponible",
     className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
   },
-  ALQUILADA: {
-    label: "Alquilada",
+  RESERVADA: {
+    label: "Reservada",
     className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   },
-  MANTENIMIENTO: {
-    label: "Mantenimiento",
-    className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  ALQUILADA: {
+    label: "Alquilada",
+    className: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
   },
-  BAJA: {
-    label: "Baja",
+  EN_SERVICE: {
+    label: "En Service",
+    className: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  },
+  EN_REPARACION: {
+    label: "En Reparación",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  },
+  INMOVILIZADA: {
+    label: "Inmovilizada",
+    className: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+  },
+  RECUPERACION: {
+    label: "Recuperación",
+    className: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
+  },
+  BAJA_TEMP: {
+    label: "Baja Temporal",
+    className: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300",
+  },
+  BAJA_DEFINITIVA: {
+    label: "Baja Definitiva",
+    className: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300",
+  },
+  TRANSFERIDA: {
+    label: "Transferida",
+    className: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   },
 };
 

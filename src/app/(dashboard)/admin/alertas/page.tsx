@@ -37,7 +37,7 @@ type Alerta = {
 
 type PricingAlerta = {
   tipo: string;
-  severidad: "ALTA" | "MEDIA" | "BAJA";
+  severidad: "ALTA" | "MEDIA" | "BAJA_DEFINITIVA";
   mensaje: string;
   repuestoId?: string;
   precioSugerido?: number;

@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       prisma.moto.count(),
       prisma.moto.count({ where: { estado: "DISPONIBLE" } }),
       prisma.moto.count({ where: { estado: "ALQUILADA" } }),
-      prisma.moto.count({ where: { estado: "MANTENIMIENTO" } }),
+      prisma.moto.count({ where: { estado: "EN_SERVICE" } }),
       prisma.cliente.count(),
       prisma.contrato.count({ where: { estado: "ACTIVO" } }),
       prisma.contrato.count({ where: { estado: "PENDIENTE" } }),

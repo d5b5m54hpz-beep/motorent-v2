@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const motoId = searchParams.get('motoId');
 
-    const whereClause = motoId ? { id: motoId } : { estado: { not: 'BAJA' as EstadoMoto } };
+    const whereClause = motoId ? { id: motoId } : { estado: { not: 'BAJA_DEFINITIVA' as EstadoMoto } };
 
     const motos = await prisma.moto.findMany({
       where: whereClause,
