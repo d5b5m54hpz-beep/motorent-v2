@@ -106,6 +106,27 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
 
   try {
+    // Verificar estado de la moto
+    const moto = await prisma.moto.findUnique({
+      where: { id },
+      select: { estado: true },
+    });
+
+    if (!moto) {
+      return NextResponse.json({ error: "Moto no encontrada" }, { status: 404 });
+    }
+
+    // Solo permitir eliminar motos en estados seguros (ingreso temprano o ya dadas de baja)
+    const estadosEliminables = ["EN_DEPOSITO", "EN_PATENTAMIENTO", "BAJA_DEFINITIVA"];
+    if (!estadosEliminables.includes(moto.estado)) {
+      return NextResponse.json(
+        {
+          error: `No se puede eliminar una moto en estado ${moto.estado}. Solo se permiten estados: EN_DEPOSITO, EN_PATENTAMIENTO, BAJA_DEFINITIVA. Use 'Dar de Baja' en su lugar.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Verificar si tiene contratos asociados
     const contratosCount = await prisma.contrato.count({
       where: { motoId: id },

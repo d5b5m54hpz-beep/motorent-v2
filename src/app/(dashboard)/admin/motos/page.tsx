@@ -328,12 +328,16 @@ export default function MotosPage() {
     [selectedIds]
   );
 
-  // Calculate stats
+  // Calculate stats (grouped by lifecycle phase)
   const stats = useMemo(() => {
     const disponibles = data.filter((m) => m.estado === "DISPONIBLE").length;
     const alquiladas = data.filter((m) => m.estado === "ALQUILADA").length;
-    const mantenimiento = data.filter((m) => m.estado === "EN_SERVICE").length;
-    const baja = data.filter((m) => m.estado === "BAJA_DEFINITIVA").length;
+    const mantenimiento = data.filter((m) =>
+      m.estado === "EN_SERVICE" || m.estado === "EN_REPARACION"
+    ).length;
+    const baja = data.filter((m) =>
+      m.estado === "BAJA_TEMP" || m.estado === "BAJA_DEFINITIVA"
+    ).length;
 
     return { disponibles, alquiladas, mantenimiento, baja };
   }, [data]);
